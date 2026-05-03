@@ -134,9 +134,12 @@ void AIRBuilder::createRetVoid() {
 }
 void AIRBuilder::createBr(BasicBlock* target) {
     insertInstruction(AIRInstruction::createBr(target));
+    insertBlock_->addSuccessor(target);
 }
 void AIRBuilder::createCondBr(const unsigned cond, BasicBlock* trueBB, BasicBlock* falseBB) {
     insertInstruction(AIRInstruction::createCondBr(cond, trueBB, falseBB));
+    insertBlock_->addSuccessor(trueBB);
+    insertBlock_->addSuccessor(falseBB);
 }
 void AIRBuilder::createUnreachable() {
     insertInstruction(AIRInstruction::createUnreachable());

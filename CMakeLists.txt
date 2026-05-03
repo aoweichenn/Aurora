@@ -77,6 +77,9 @@ add_subdirectory(lib/MC)
 # ---- Driver ----
 add_subdirectory(tools/aurorac)
 
+# ---- Mini Language Compiler ----
+add_subdirectory(tools/minic)
+
 # ---- Tests ----
 if(AURORA_BUILD_TESTS)
     enable_testing()

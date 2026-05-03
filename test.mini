@@ -1,0 +1,6 @@
+fn add(a, b) = a + b
+fn sub(a, b) = a - b
+fn mul(a, b) = a * b
+fn neg(x) = 0 - x
+fn abs(x) = if x < 0 then 0 - x else x
+fn max(a, b) = if a > b then a else b

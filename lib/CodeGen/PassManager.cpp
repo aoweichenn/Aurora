@@ -127,6 +127,17 @@ public:
                 case AIROpcode::Xor:
                     iselBinOp(*mbb, mi, airOp);
                     break;
+                case AIROpcode::Phi: {
+                    // Simple Phi elimination: copy first incoming value
+                    if (mi->getNumOperands() > 0) {
+                        auto* movMI = new MachineInstr(X86::MOV64rr);
+                        movMI->addOperand(mi->getOperand(0));
+                        for (unsigned j = 1; j < mi->getNumOperands(); ++j)
+                            movMI->addOperand(mi->getOperand(j));
+                        replaceMI(*mbb, mi, movMI);
+                    }
+                    break;
+                }
                 case AIROpcode::SDiv:
                     iselSDiv(*mbb, mi, airOp);
                     break;
@@ -189,7 +200,6 @@ private:
         if (prevMI && prevMI->getOpcode() == X86::CMP64rr) {
             prevIsCmp = true;
             // Find the original AIR ICmp to get condition
-            // Walk AIR BB instructions to find ICmp that produced condVReg
             for (auto& airBB : airFunc.getBlocks()) {
                 const AIRInstruction* airInst = airBB->getFirst();
                 while (airInst) {
@@ -201,13 +211,11 @@ private:
                     airInst = airInst->getNext();
                 }
             }
-            // Remove the CMP MI (it's been fused into the branch)
-            mbb.remove(prevMI);
-            delete prevMI;
+            // Keep CMP in place; it will be followed by Jcc + JMP
         }
 
-        if (prevIsCmp) {
-            // Emit Jcc to true target
+            if (prevIsCmp) {
+            // Emit Jcc to true target (CMP is already in place before this)
             auto* jccMI = new MachineInstr(getJccForCond(icmpCond, false));
             if (successors.size() > 0)
                 jccMI->addOperand(MachineOperand::createMBB(successors[0]));
@@ -217,7 +225,7 @@ private:
             auto* jmpMI = new MachineInstr(X86::JMP_1);
             if (successors.size() > 1)
                 jmpMI->addOperand(MachineOperand::createMBB(successors[1]));
-            mbb.pushBack(jmpMI);
+            mbb.insertAfter(jccMI, jmpMI);
         } else {
             // Emit TEST cond, cond + JNE to true target
             auto* testMI = new MachineInstr(X86::TEST64rr);
