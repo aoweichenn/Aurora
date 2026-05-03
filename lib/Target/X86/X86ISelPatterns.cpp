@@ -53,8 +53,8 @@ static void initPatterns() {
 }
 
 ISelMatchResult X86ISelPatterns::matchPattern(AIROpcode airOp, Type* resultTy,
-                                               const std::vector<unsigned>& vregTypes,
-                                               unsigned op0, unsigned op1) {
+                                               const std::vector<unsigned>& /*vregTypes*/,
+                                               unsigned /*op0*/, unsigned /*op1*/) {
     initPatterns();
     ISelMatchResult ret = {0, false};
 

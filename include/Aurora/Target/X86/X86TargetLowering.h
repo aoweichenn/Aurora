@@ -17,7 +17,7 @@ private:
     void initActions() override;
 
     unsigned actionMap_[64][32]; // [opcode][typeSize]
-    bool typeLegal_[128];
+    bool typeLegal_[257]; // indexed by bit size up to 256
 };
 
 } // namespace aurora

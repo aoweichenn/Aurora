@@ -121,11 +121,11 @@ TEST(BitVectorTest, FindNext) {
     bv.set(10); bv.set(50); bv.set(100);
     int i = bv.find_first();
     EXPECT_EQ(i, 10);
-    i = bv.find_next(i);
+    if (i >= 0) i = bv.find_next(static_cast<unsigned>(i));
     EXPECT_EQ(i, 50);
-    i = bv.find_next(i);
+    if (i >= 0) i = bv.find_next(static_cast<unsigned>(i));
     EXPECT_EQ(i, 100);
-    i = bv.find_next(i);
+    if (i >= 0) i = bv.find_next(static_cast<unsigned>(i));
     EXPECT_EQ(i, -1);
 }
 

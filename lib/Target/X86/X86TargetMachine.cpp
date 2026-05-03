@@ -29,7 +29,7 @@ const TargetFrameLowering& X86TargetMachine::getFrameLowering() const { return *
 
 const DataLayout& X86TargetMachine::getDataLayout() const { return *dataLayout_; }
 
-AsmPrinter* X86TargetMachine::createAsmPrinter(MCStreamer& streamer) const {
+AsmPrinter* X86TargetMachine::createAsmPrinter(MCStreamer& /*streamer*/) const {
     // Created externally by MC layer
     return nullptr;
 }

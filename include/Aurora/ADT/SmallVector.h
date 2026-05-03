@@ -232,7 +232,11 @@ typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator first, it
 template <typename T, unsigned N>
 void SmallVector<T, N>::grow(size_type minSize) {
     size_type oldCap = static_cast<size_type>(capacity_ - begin_);
-    size_type newCap = oldCap * 2;
+    size_type newCap;
+    if (oldCap > static_cast<size_type>(-1) / 2)
+        newCap = static_cast<size_type>(-1);
+    else
+        newCap = oldCap * 2;
     if (newCap < 4) newCap = 4;
     if (newCap < minSize) newCap = minSize;
     T* newBegin = static_cast<T*>(::operator new(newCap * sizeof(T)));

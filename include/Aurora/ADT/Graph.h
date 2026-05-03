@@ -76,7 +76,7 @@ SmallVector<unsigned, 16> DirectedGraph<NodeTy>::reversePostOrder(unsigned entry
     auto po = postOrder(entry);
     SmallVector<unsigned, 16> rpo;
     rpo.reserve(po.size());
-    for (unsigned i = po.size(); i > 0; --i) rpo.push_back(po[i - 1]);
+    for (unsigned i = static_cast<unsigned>(po.size()); i > 0; --i) rpo.push_back(po[i - 1]);
     return rpo;
 }
 

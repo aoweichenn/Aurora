@@ -36,7 +36,7 @@ void InstructionSelector::selectNode(SDNode* node, MachineBasicBlock& mbb) {
     }
 }
 
-MachineInstr* InstructionSelector::createMachineInstrFromPattern(SDNode* node) {
+MachineInstr* InstructionSelector::createMachineInstrFromPattern(SDNode* /*node*/) {
     return nullptr;
 }
 

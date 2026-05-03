@@ -25,8 +25,8 @@ TEST(SmallVectorTest, PushBackBeyondInline) {
     for (int i = 0; i < 10; ++i)
         v.push_back(i);
     EXPECT_EQ(v.size(), 10u);
-    for (int i = 0; i < 10; ++i)
-        EXPECT_EQ(v[i], i);
+    for (size_t i = 0; i < 10; ++i)
+        EXPECT_EQ(v[i], static_cast<int>(i));
 }
 
 TEST(SmallVectorTest, PopBack) {

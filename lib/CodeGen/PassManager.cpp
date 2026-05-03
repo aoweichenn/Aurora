@@ -65,38 +65,34 @@ public:
 
 class PeepholePass : public CodeGenPass {
 public:
-    void run(MachineFunction& mf) override {
-        // Peephole optimizations: mov a,a → remove; xor a,a → a=0; etc.
+    void run(MachineFunction& /*mf*/) override {
     }
     const char* getName() const override { return "Peephole"; }
 };
 
 class PhiEliminationPass : public CodeGenPass {
 public:
-    void run(MachineFunction& mf) override {
-        // Eliminate phi nodes by inserting copies on predecessor edges
+    void run(MachineFunction& /*mf*/) override {
     }
     const char* getName() const override { return "Phi Elimination"; }
 };
 
 class RegisterCoalescerPass : public CodeGenPass {
 public:
-    void run(MachineFunction& mf) override {
-        // Merge copy-connected virtual registers
+    void run(MachineFunction& /*mf*/) override {
     }
     const char* getName() const override { return "Register Coalescer"; }
 };
 
 class BranchFoldingPass : public CodeGenPass {
 public:
-    void run(MachineFunction& mf) override {
-        // Merge consecutive branches to same target
+    void run(MachineFunction& /*mf*/) override {
     }
     const char* getName() const override { return "Branch Folder"; }
 };
 } // anonymous namespace
 
-void CodeGenContext::addStandardPasses(PassManager& pm, TargetMachine& tm) {
+void CodeGenContext::addStandardPasses(PassManager& pm, TargetMachine& /*tm*/) {
     pm.addPass(std::make_unique<AIRToMachineIRPass>());
     pm.addPass(std::make_unique<PeepholePass>());
     pm.addPass(std::make_unique<PhiEliminationPass>());

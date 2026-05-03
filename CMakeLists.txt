@@ -18,7 +18,14 @@ set(AURORA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_library(AuroraCommon INTERFACE)
 target_include_directories(AuroraCommon INTERFACE ${AURORA_INCLUDE_DIR})
 target_compile_options(AuroraCommon INTERFACE
-    -Wall -Wextra -Wpedantic -Wno-unused-parameter
+    -Wall -Wextra -Wpedantic
+    -Wconversion -Wsign-conversion -Wshadow
+    -Wnon-virtual-dtor -Woverloaded-virtual
+    -Wold-style-cast -Wcast-align -Wdouble-promotion
+    -Wformat=2 -Wlogical-op -Wmissing-include-dirs
+    -Wnull-dereference -Wstrict-overflow=4
+    -Wduplicated-branches -Wduplicated-cond
+    -Wuseless-cast -Wunused -Wundef
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )

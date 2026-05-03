@@ -18,12 +18,15 @@ LinearScanRegAlloc::LinearScanRegAlloc(MachineFunction& mf)
 }
 
 void LinearScanRegAlloc::computeLiveIntervals() {
-    // Initialize intervals for all virtual registers
     intervals_.clear();
+    std::map<unsigned, size_t> vregToIdx;
+
     for (unsigned vreg = 0; vreg < mf_.getNumVRegs(); ++vreg) {
         Type* ty = mf_.getVRegType(vreg);
-        if (ty)
+        if (ty) {
+            vregToIdx[vreg] = intervals_.size();
             intervals_.emplace_back(vreg, ty);
+        }
     }
 
     // Dataflow analysis to compute live ranges
@@ -54,13 +57,14 @@ void LinearScanRegAlloc::computeLiveIntervals() {
 
     // Build intervals from def/use pairs
     for (auto& [vreg, def] : lastDef) {
-        if (firstUse.count(vreg)) {
-            intervals_[vreg].addRange(def, firstUse[vreg]);
+        auto it = vregToIdx.find(vreg);
+        if (it != vregToIdx.end() && firstUse.count(vreg)) {
+            intervals_[it->second].addRange(def, firstUse[vreg]);
         }
     }
 }
 
-void LinearScanRegAlloc::expireOldIntervals(LiveInterval& current, unsigned currentStart) {
+void LinearScanRegAlloc::expireOldIntervals(LiveInterval& /*current*/, unsigned /*currentStart*/) {
     // Remove intervals that end before currentStart from active set
     // (handled via sorted processing)
 }
@@ -82,13 +86,13 @@ unsigned LinearScanRegAlloc::tryAllocateFreeReg(LiveInterval& current) {
     return ~0U;
 }
 
-unsigned LinearScanRegAlloc::selectRegToSpill(LiveInterval& current) {
+unsigned LinearScanRegAlloc::selectRegToSpill(LiveInterval& /*current*/) {
     // Select interval with furthest next use position to spill
     // Simplified: return first callee-saved register
     return X86RegisterInfo::RBX;
 }
 
-void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned slot) {
+void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned /*slot*/) {
     int spillSlot = mf_.createStackSlot(8, 8);
     li.setSpillSlot(spillSlot);
 }

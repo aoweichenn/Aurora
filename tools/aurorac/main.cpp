@@ -57,7 +57,7 @@ static std::unique_ptr<Module> buildSampleModule() {
     return mod;
 }
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
     std::cout << "Aurora Compiler Backend v0.1.0\n";
     std::cout << "================================\n\n";
 

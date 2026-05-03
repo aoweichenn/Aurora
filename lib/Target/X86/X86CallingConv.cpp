@@ -44,7 +44,7 @@ SmallVector<CCValAssign, 8> X86CallingConv::analyzeArguments(
         } else {
             // Aggregate: pass on stack
             result.push_back({CCValAssign::Stack, 0, size, stackOff});
-            stackOff += (size + 7) & ~7;
+            stackOff += (size + 7u) & ~7u;
         }
     }
     return result;

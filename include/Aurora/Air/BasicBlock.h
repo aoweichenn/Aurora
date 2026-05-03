@@ -12,6 +12,8 @@ class Function;
 class BasicBlock {
 public:
     explicit BasicBlock(const std::string& name = "");
+    BasicBlock(const BasicBlock&) = delete;
+    BasicBlock& operator=(const BasicBlock&) = delete;
     ~BasicBlock();
 
     const std::string& getName() const noexcept { return name_; }

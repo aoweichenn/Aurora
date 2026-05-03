@@ -13,6 +13,8 @@ class MachineFunction;
 class MachineBasicBlock {
 public:
     explicit MachineBasicBlock(const std::string& name = "");
+    MachineBasicBlock(const MachineBasicBlock&) = delete;
+    MachineBasicBlock& operator=(const MachineBasicBlock&) = delete;
     ~MachineBasicBlock();
 
     const std::string& getName() const noexcept { return name_; }

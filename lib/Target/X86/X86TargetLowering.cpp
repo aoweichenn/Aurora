@@ -14,8 +14,10 @@ void X86TargetLowering::initActions() {
     memset(typeLegal_, 0, sizeof(typeLegal_));
 
     // Types legal on x86-64
-    for (unsigned b : {8, 16, 32, 64, 128, 256})
-        typeLegal_[b] = true;
+    for (unsigned b : {8u, 16u, 32u, 64u, 128u, 256u}) {
+        if (b < sizeof(typeLegal_))
+            typeLegal_[b] = true;
+    }
 
     // i1: not legal, promote to i8
     for (int op = 0; op < 64; ++op)
@@ -50,7 +52,7 @@ LegalizeAction X86TargetLowering::getOperationAction(AIROpcode op, unsigned vtSi
 }
 
 bool X86TargetLowering::isTypeLegal(unsigned typeSize) const {
-    if (typeSize >= 128) return false;
+    if (typeSize >= sizeof(typeLegal_)) return false;
     return typeLegal_[typeSize];
 }
 

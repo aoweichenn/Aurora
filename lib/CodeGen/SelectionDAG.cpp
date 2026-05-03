@@ -19,7 +19,7 @@ SDValue SDNode::getOperand(unsigned i) const {
 void SDNode::addOperand(SDValue val) {
     operands_.push_back(val.getNode());
     if (val.getNode())
-        const_cast<SDNode*>(val.getNode())->addUser(this);
+        val.getNode()->addUser(this);
 }
 
 void SDNode::addUser(SDNode* user) {
@@ -52,8 +52,8 @@ SDValue SelectionDAG::createNode(AIROpcode op, Type* ty, const SmallVector<SDVal
 }
 
 SDValue SelectionDAG::createConstant(int64_t val, Type* ty) {
-    auto* node = createSDNode(AIROpcode::Add, ty); // Placeholder - we use a generic node for constants
-    node->setVReg(val); // Store constant value in vreg field temporarily
+    auto* node = createSDNode(AIROpcode::Add, ty);
+    (void)val; // TODO: store constant value properly
     return SDValue(node);
 }
 
@@ -63,7 +63,7 @@ SDValue SelectionDAG::createRegister(unsigned vreg, Type* ty) {
     return SDValue(node);
 }
 
-void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* mbb) {
+void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* /*mbb*/) {
     // Walk AIR instructions and build DAG nodes
     // For each AIR instruction, create corresponding SDNode
     AIRInstruction* inst = airBB->getFirst();
@@ -81,6 +81,7 @@ void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* mbb
 
         if (inst->hasResult()) {
             auto sv = createNode(op, ty, ops);
+            sv.getNode()->setVReg(inst->getDestVReg());
             roots_.push_back(sv);
         } else {
             createNode(op, ty, ops);
@@ -100,7 +101,7 @@ void SelectionDAG::legalize() {
     // Legalize types and operations per target
 }
 
-void SelectionDAG::select(MachineBasicBlock* mbb) {
+void SelectionDAG::select(MachineBasicBlock* /*mbb*/) {
     // Pattern-match each SDNode to MachineInstr
     for (auto* node : allNodes_) {
         if (node->isSelected()) continue;
@@ -108,7 +109,7 @@ void SelectionDAG::select(MachineBasicBlock* mbb) {
     }
 }
 
-void SelectionDAG::schedule(MachineBasicBlock* mbb) {
+void SelectionDAG::schedule(MachineBasicBlock* /*mbb*/) {
     // Topological sort of DAG → linear instruction sequence
     for (const auto& root : roots_) {
         if (root.getNode()) {

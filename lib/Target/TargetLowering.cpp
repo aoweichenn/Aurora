@@ -4,11 +4,11 @@
 
 namespace aurora {
 
-void TargetLowering::setOperationAction(AIROpcode op, unsigned vtSize, LegalizeAction action) {
+void TargetLowering::setOperationAction(AIROpcode /*op*/, unsigned /*vtSize*/, LegalizeAction /*action*/) {
     // Subclass must implement initActions() to fill its own tables
 }
 
-void TargetLowering::setTypeLegal(unsigned bits, bool legal) {
+void TargetLowering::setTypeLegal(unsigned /*bits*/, bool /*legal*/) {
     // Subclass must implement initActions() to fill its own tables
 }
 

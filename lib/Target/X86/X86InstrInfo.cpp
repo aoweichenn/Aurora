@@ -134,31 +134,20 @@ const MachineOpcodeDesc& X86InstrInfo::get(unsigned opcode) const {
 
 unsigned X86InstrInfo::getNumOpcodes() const { return X86::NUM_OPS; }
 
-bool X86InstrInfo::isMoveImmediate(const MachineInstr& mi, unsigned& dstReg, int64_t& val) const {
-    // Check if instruction is a move-immediate
-    unsigned opc = 0; // mi.getOpcode()
-    if (opc == X86::MOV64ri32 || opc == X86::MOV32ri) {
-        dstReg = 0; // mi.getOperand(0).getReg()
-        val = 0;    // mi.getOperand(1).getImm()
-        return true;
-    }
+bool X86InstrInfo::isMoveImmediate(const MachineInstr& /*mi*/, unsigned& /*dstReg*/, int64_t& /*val*/) const {
     return false;
 }
 
-void X86InstrInfo::copyPhysReg(MachineBasicBlock& mbb, MachineInstr* pos,
-                                const Register& dst, const Register& src) const {
-    // Emit a MOV between physical registers
-    // Implementation: create appropriate MOV instruction based on register sizes
+void X86InstrInfo::copyPhysReg(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                                const Register& /*dst*/, const Register& /*src*/) const {
 }
 
-void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
-                                        const Register& src, int frameIdx) const {
-    // Emit MOVmr with frame index
+void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                                        const Register& /*src*/, int /*frameIdx*/) const {
 }
 
-void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
-                                         const Register& dst, int frameIdx) const {
-    // Emit MOVrm with frame index
+void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                                         const Register& /*dst*/, int /*frameIdx*/) const {
 }
 
 unsigned X86InstrInfo::getMoveOpcode(unsigned srcSize, unsigned dstSize) const {

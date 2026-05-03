@@ -21,6 +21,7 @@ enum class MachineOperandKind : uint8_t {
 
 class MachineOperand {
 public:
+    MachineOperand() : kind_(MachineOperandKind::MO_None), regId(0) {}
     static MachineOperand createReg(unsigned regId);
     static MachineOperand createVReg(unsigned vreg);
     static MachineOperand createImm(int64_t val);

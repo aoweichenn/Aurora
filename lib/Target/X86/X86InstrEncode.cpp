@@ -152,23 +152,20 @@ const X86EncodeEntry X86EncodeTable[] = {
     {X86::NOP, {}, 0, {0x90}, 1, false, false, false, 0, 0},
 };
 
-void X86InstEncoder::encode(const MachineInstr& mi, SmallVector<uint8_t, 32>& out) {
-    const X86EncodeEntry* entry = findEntry(0 /* mi.getOpcode() */);
+void X86InstEncoder::encode(const MachineInstr& /*mi*/, SmallVector<uint8_t, 32>& out) {
+    const X86EncodeEntry* entry = findEntry(0);
     if (!entry) return;
-
     emitPrefixes(entry, out);
     emitOpcode(entry, out);
-
     if (entry->hasModRM) {
-        emitModRM(0, 0, 0, out); // simplified
+        emitModRM(0, 0, 0, out);
     }
     if (entry->immSize > 0) {
         emitImm(0, entry->immSize, out);
     }
 }
 
-void X86InstEncoder::encodeOperand(const MachineOperand& mo, SmallVector<uint8_t, 32>& out, unsigned opIdx) {
-    // Encode a single operand
+void X86InstEncoder::encodeOperand(const MachineOperand& /*mo*/, SmallVector<uint8_t, 32>& /*out*/, unsigned /*opIdx*/) {
 }
 
 const X86EncodeEntry* X86InstEncoder::findEntry(uint16_t opcode) const {
