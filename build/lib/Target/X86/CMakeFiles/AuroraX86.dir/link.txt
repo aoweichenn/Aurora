@@ -1,2 +1,0 @@
-/usr/sbin/ar qc libAuroraX86.a CMakeFiles/AuroraX86.dir/X86RegisterInfo.cpp.o CMakeFiles/AuroraX86.dir/X86InstrInfo.cpp.o CMakeFiles/AuroraX86.dir/X86InstrEncode.cpp.o CMakeFiles/AuroraX86.dir/X86TargetLowering.cpp.o CMakeFiles/AuroraX86.dir/X86CallingConv.cpp.o CMakeFiles/AuroraX86.dir/X86FrameLowering.cpp.o CMakeFiles/AuroraX86.dir/X86TargetMachine.cpp.o CMakeFiles/AuroraX86.dir/X86ISelPatterns.cpp.o
-/usr/sbin/ranlib libAuroraX86.a

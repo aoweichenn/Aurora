@@ -1,2 +1,0 @@
-/usr/sbin/ar qc libAuroraMC.a CMakeFiles/AuroraMC.dir/MCStreamer.cpp.o CMakeFiles/AuroraMC.dir/AsmPrinter.cpp.o CMakeFiles/AuroraMC.dir/X86AsmPrinter.cpp.o CMakeFiles/AuroraMC.dir/X86InstEncoder.cpp.o
-/usr/sbin/ranlib libAuroraMC.a
