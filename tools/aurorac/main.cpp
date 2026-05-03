@@ -90,7 +90,7 @@ int main(int /*argc*/, char** /*argv*/) {
     std::cout << "--------------------------------\n";
 
     AsmTextStreamer streamer(std::cout);
-    const auto& x86RegInfo = static_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
+    const auto& x86RegInfo = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
     X86AsmPrinter printer(streamer, x86RegInfo);
 
     for (auto& fn : module->getFunctions()) {
