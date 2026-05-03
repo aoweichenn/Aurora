@@ -130,17 +130,9 @@ public:
                 case AIROpcode::Xor:
                     iselBinOp(*mbb, mi, airOp);
                     break;
-                case AIROpcode::Phi: {
-                    // Simple Phi elimination: copy first incoming value
-                    if (mi->getNumOperands() > 0) {
-                        auto* movMI = new MachineInstr(X86::MOV64rr);
-                        movMI->addOperand(mi->getOperand(0));
-                        for (unsigned j = 1; j < mi->getNumOperands(); ++j)
-                            movMI->addOperand(mi->getOperand(j));
-                        replaceMI(*mbb, mi, movMI);
-                    }
+                case AIROpcode::Phi:
+                    collectPhi(mf, airFunc, *mbb, mi);
                     break;
-                }
                 case AIROpcode::SDiv:
                     iselSDiv(*mbb, mi, airOp);
                     break;
@@ -173,6 +165,7 @@ public:
 
         // Build MBB successor lists from branch instructions
         rebuildSuccessors(mf);
+        executePhis(mf);
     }
 
     const char* getName() const override { return "Instruction Selection"; }
@@ -550,7 +543,48 @@ private:
     void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT
     std::map<unsigned, int> frameIndexMap_;
     std::map<unsigned, int64_t> constantMap_;
-    std::map<unsigned, unsigned> storeMap_;  // alloca_vreg → stored_value
+    std::map<unsigned, unsigned> storeMap_;
+
+    struct PhiInfo { unsigned resultVReg; MachineBasicBlock* mergeMBB; std::vector<std::pair<std::string, unsigned>> incomings; };
+    std::vector<PhiInfo> pendingPhis_;
+
+    void collectPhi(MachineFunction&, const Function& airFunc, MachineBasicBlock& mbb, MachineInstr* mi) {
+        unsigned resultVReg = ~0U;
+        for (unsigned i = 0; i < mi->getNumOperands(); ++i)
+            if (mi->getOperand(i).isVReg()) { resultVReg = mi->getOperand(i).getVirtualReg(); break; }
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::Phi && airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
+                    PhiInfo pi; pi.resultVReg = resultVReg; pi.mergeMBB = &mbb;
+                    for (auto& inc : airInst->getPhiIncomings()) pi.incomings.push_back({inc.first->getName(), inc.second});
+                    pendingPhis_.push_back(pi); break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+        mbb.remove(mi); delete mi;
+    }
+
+    void executePhis(MachineFunction& mf) {
+        std::map<std::string, MachineBasicBlock*> nameMap;
+        for (auto& mb : mf.getBlocks()) nameMap[mb->getName()] = mb.get();
+        const std::vector<uint16_t> branchOps = {X86::JMP_1, X86::JE_1, X86::JG_1, X86::JL_1, X86::JNE_1, X86::JGE_1, X86::JLE_1, X86::JA_1, X86::JB_1, X86::JAE_1, X86::JBE_1};
+        for (auto& pi : pendingPhis_) {
+            for (auto& inc : pi.incomings) {
+                auto it = nameMap.find(inc.first); if (it == nameMap.end()) continue;
+                auto* pred = it->second;
+                auto* term = pred->getLast();
+                auto* movMI = new MachineInstr(X86::MOV64rr);
+                movMI->addOperand(MachineOperand::createVReg(inc.second));
+                movMI->addOperand(MachineOperand::createVReg(pi.resultVReg));
+                bool hasBranch = false;
+                for (auto op : branchOps) if (term && term->getOpcode() == op) { hasBranch = true; break; }
+                if (hasBranch) pred->insertBefore(term, movMI); else pred->pushBack(movMI);
+            }
+        }
+        pendingPhis_.clear();
+    }
 
     void buildStoreMap(MachineFunction& mf) {
         storeMap_.clear();
