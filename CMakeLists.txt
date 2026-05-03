@@ -22,10 +22,13 @@ target_compile_options(AuroraCommon INTERFACE
     -Wconversion -Wsign-conversion -Wshadow
     -Wnon-virtual-dtor -Woverloaded-virtual
     -Wold-style-cast -Wcast-align -Wdouble-promotion
-    -Wformat=2 -Wlogical-op -Wmissing-include-dirs
-    -Wnull-dereference -Wstrict-overflow=4
-    -Wduplicated-branches -Wduplicated-cond
-    -Wuseless-cast -Wunused -Wundef
+    -Wformat=2 -Wmissing-include-dirs
+    -Wnull-dereference -Wunused -Wundef
+    $<$<CXX_COMPILER_ID:GNU>:-Wlogical-op>
+    $<$<CXX_COMPILER_ID:GNU>:-Wstrict-overflow=4>
+    $<$<CXX_COMPILER_ID:GNU>:-Wduplicated-branches>
+    $<$<CXX_COMPILER_ID:GNU>:-Wduplicated-cond>
+    $<$<CXX_COMPILER_ID:GNU>:-Wuseless-cast>
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
