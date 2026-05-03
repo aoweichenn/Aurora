@@ -19,33 +19,19 @@ static std::unique_ptr<Module> buildSampleModule() {
 
     // Build: int add(int a, int b) { return a + b; }
     SmallVector<Type*, 8> params;
-    params.push_back(Type::getInt32Ty());
-    params.push_back(Type::getInt32Ty());
-    auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
+    params.push_back(Type::getInt64Ty());
+    params.push_back(Type::getInt64Ty());
+    auto* fnTy = new FunctionType(Type::getInt64Ty(), params);
 
     auto* fn = mod->createFunction(fnTy, "add");
-    auto* entry = fn->createBasicBlock("entry");
+    auto* entry = fn->getEntryBlock();
 
     AIRBuilder builder(entry);
 
-    // %0 = alloca i32 (for a)
-    const unsigned allocaA = builder.createAlloca(Type::getInt32Ty());
-    // %1 = alloca i32 (for b)
-    const unsigned allocaB = builder.createAlloca(Type::getInt32Ty());
+    // %2 = add i64 %0, %1  (direct register operation)
+    const unsigned sum = builder.createAdd(Type::getInt64Ty(), 0, 1);
 
-    // store args to allocas (args are vregs 0 and 1)
-    builder.createStore(0, allocaA);  // parameter a
-    builder.createStore(1, allocaB);  // parameter b
-
-    // %2 = load i32, i32* %0
-    const unsigned loadA = builder.createLoad(Type::getInt32Ty(), allocaA);
-    // %3 = load i32, i32* %1
-    const unsigned loadB = builder.createLoad(Type::getInt32Ty(), allocaB);
-
-    // %4 = add i32 %2, %3
-    const unsigned sum = builder.createAdd(Type::getInt32Ty(), loadA, loadB);
-
-    // ret i32 %4
+    // ret i64 %2
     builder.createRet(sum);
 
     return mod;
