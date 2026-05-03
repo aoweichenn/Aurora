@@ -1,9 +1,9 @@
 #ifndef AURORA_AIR_CONSTANT_H
 #define AURORA_AIR_CONSTANT_H
 
-#include "Aurora/Air/Type.h"
 #include <cstdint>
 #include <string>
+#include "Aurora/Air/Type.h"
 
 namespace aurora {
 
@@ -12,7 +12,7 @@ class Function;
 class Constant {
 public:
     virtual ~Constant() = default;
-    Type* getType() const noexcept { return type_; }
+    [[nodiscard]] Type* getType() const noexcept { return type_; }
 protected:
     explicit Constant(Type* t) : type_(t) {}
     Type* type_;
@@ -43,8 +43,8 @@ public:
     static ConstantFP* getFloat(float val);
     static ConstantFP* getDouble(double val);
 
-    float  getFloatValue()  const noexcept;
-    double getDoubleValue() const noexcept;
+    [[nodiscard]] float  getFloatValue()  const noexcept;
+    [[nodiscard]] double getDoubleValue() const noexcept;
 private:
     ConstantFP(Type* ty, double val);
     union { float f; double d; } value_;

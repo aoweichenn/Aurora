@@ -1,9 +1,9 @@
 #ifndef AURORA_AIR_BUILDER_H
 #define AURORA_AIR_BUILDER_H
 
-#include "Aurora/Air/Instruction.h"
-#include "Aurora/Air/BasicBlock.h"
 #include "Aurora/ADT/SmallVector.h"
+#include "Aurora/Air/BasicBlock.h"
+#include "Aurora/Air/Instruction.h"
 
 namespace aurora {
 
@@ -13,7 +13,7 @@ public:
     explicit AIRBuilder(BasicBlock* insertBlock);
 
     void setInsertPoint(BasicBlock* bb, AIRInstruction* before = nullptr);
-    BasicBlock* getInsertBlock() const noexcept { return insertBlock_; }
+    [[nodiscard]] BasicBlock* getInsertBlock() const noexcept { return insertBlock_; }
 
     unsigned createAdd(Type* ty, unsigned lhs, unsigned rhs);
     unsigned createSub(Type* ty, unsigned lhs, unsigned rhs);
@@ -49,7 +49,7 @@ public:
 private:
     BasicBlock* insertBlock_;
     AIRInstruction* insertPoint_;
-    Function* getFunction() const;
+    [[nodiscard]] Function* getFunction() const;
     unsigned allocateVReg(Type* ty);
 
     void insertInstruction(AIRInstruction* inst);

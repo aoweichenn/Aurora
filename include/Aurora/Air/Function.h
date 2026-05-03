@@ -1,11 +1,11 @@
 #ifndef AURORA_AIR_FUNCTION_H
 #define AURORA_AIR_FUNCTION_H
 
-#include "Aurora/Air/Constant.h"
-#include "Aurora/Air/BasicBlock.h"
-#include "Aurora/ADT/SmallVector.h"
-#include <string>
 #include <memory>
+#include <string>
+#include "Aurora/ADT/SmallVector.h"
+#include "Aurora/Air/BasicBlock.h"
+#include "Aurora/Air/Constant.h"
 
 namespace aurora {
 

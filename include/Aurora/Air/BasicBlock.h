@@ -1,9 +1,9 @@
 #ifndef AURORA_AIR_BASICBLOCK_H
 #define AURORA_AIR_BASICBLOCK_H
 
-#include "Aurora/Air/Instruction.h"
-#include "Aurora/ADT/SmallVector.h"
 #include <string>
+#include "Aurora/ADT/SmallVector.h"
+#include "Aurora/Air/Instruction.h"
 
 namespace aurora {
 

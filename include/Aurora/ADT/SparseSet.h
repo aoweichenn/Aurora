@@ -8,7 +8,7 @@ namespace aurora {
 
 template <typename T>
 class SparseSet {
-    static_assert(std::is_integral<T>::value, "SparseSet requires integral type");
+    static_assert(std::is_integral_v<T>, "SparseSet requires integral type");
 
 public:
     SparseSet() = default;

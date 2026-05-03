@@ -1,8 +1,8 @@
 #ifndef AURORA_ADT_GRAPH_H
 #define AURORA_ADT_GRAPH_H
 
-#include "Aurora/ADT/SmallVector.h"
 #include <utility>
+#include "Aurora/ADT/SmallVector.h"
 
 namespace aurora {
 

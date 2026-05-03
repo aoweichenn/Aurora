@@ -49,9 +49,9 @@ public:
     const_iterator end() const noexcept { return end_; }
     const_iterator cend() const noexcept { return end_; }
 
-    size_type size() const noexcept { return static_cast<size_type>(end_ - begin_); }
-    size_type capacity() const noexcept { return static_cast<size_type>(capacity_ - begin_); }
-    bool empty() const noexcept { return begin_ == end_; }
+    [[nodiscard]] size_type size() const noexcept { return static_cast<size_type>(end_ - begin_); }
+    [[nodiscard]] size_type capacity() const noexcept { return static_cast<size_type>(capacity_ - begin_); }
+    [[nodiscard]] bool empty() const noexcept { return begin_ == end_; }
 
     reference operator[](size_type i) noexcept { return begin_[i]; }
     const_reference operator[](size_type i) const noexcept { return begin_[i]; }
@@ -74,10 +74,10 @@ public:
 private:
     pointer inlineStorage() noexcept { return reinterpret_cast<pointer>(&inlineBuf_); }
     const_pointer inlineStorage() const noexcept { return reinterpret_cast<const_pointer>(&inlineBuf_); }
-    bool isSmall() const noexcept { return begin_ == inlineStorage(); }
+    [[nodiscard]] bool isSmall() const noexcept { return begin_ == inlineStorage(); }
     void grow(size_type minSize);
 
-    using StorageType = typename std::aligned_storage<sizeof(T), alignof(T)>::type;
+    using StorageType = std::aligned_storage_t<sizeof(T), alignof(T)>;
     StorageType inlineBuf_[N];
     pointer begin_;
     pointer end_;
@@ -221,7 +221,7 @@ typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator pos) {
 
 template <typename T, unsigned N>
 typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator first, iterator last) {
-    size_type n = static_cast<size_type>(last - first);
+    auto n = static_cast<size_type>(last - first);
     for (iterator p = first; p != last; ++p) p->~T();
     for (iterator p = first; p + n != end_; ++p) { new (p) T(std::move(*(p + n))); (p + n)->~T(); }
     end_ -= n; return first;
@@ -229,7 +229,7 @@ typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator first, it
 
 template <typename T, unsigned N>
 void SmallVector<T, N>::grow(const size_type minSize) {
-    const size_type oldCap = static_cast<size_type>(capacity_ - begin_);
+    const auto oldCap = static_cast<size_type>(capacity_ - begin_);
     size_type newCap;
     if (oldCap > static_cast<size_type>(-1) / 2)
         newCap = static_cast<size_type>(-1);
