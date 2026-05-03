@@ -84,33 +84,33 @@ public:
     static AIRInstruction* createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
     static AIRInstruction* createCall(Type* retTy, Function* callee, const SmallVector<unsigned, 8>& args);
 
-    AIROpcode getOpcode() const noexcept { return opcode_; }
-    Type* getType() const noexcept { return type_; }
+    [[nodiscard]] AIROpcode getOpcode() const noexcept { return opcode_; }
+    [[nodiscard]] Type* getType() const noexcept { return type_; }
 
-    unsigned getDestVReg() const noexcept { return destVReg_; }
-    bool hasResult() const noexcept;
+    [[nodiscard]] unsigned getDestVReg() const noexcept { return destVReg_; }
+    [[nodiscard]] bool hasResult() const noexcept;
 
-    unsigned getOperand(unsigned idx) const;
-    unsigned getNumOperands() const noexcept;
-    BasicBlock* getOperandBlock(unsigned idx) const;
-    Function* getCalledFunction() const noexcept;
-    ICmpCond getICmpCondition() const noexcept;
+    [[nodiscard]] unsigned getOperand(unsigned idx) const;
+    [[nodiscard]] unsigned getNumOperands() const noexcept;
+    [[nodiscard]] BasicBlock* getOperandBlock(unsigned idx) const;
+    [[nodiscard]] Function* getCalledFunction() const noexcept;
+    [[nodiscard]] ICmpCond getICmpCondition() const noexcept;
 
-    const SmallVector<unsigned, 4>& getIndices() const;
-    const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& getPhiIncomings() const;
+    [[nodiscard]] const SmallVector<unsigned, 4>& getIndices() const;
+    [[nodiscard]] const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& getPhiIncomings() const;
 
-    BasicBlock* getParent() const noexcept { return parent_; }
+    [[nodiscard]] BasicBlock* getParent() const noexcept { return parent_; }
     void setParent(BasicBlock* bb) noexcept { parent_ = bb; }
 
-    AIRInstruction* getNext() const noexcept { return next_; }
-    AIRInstruction* getPrev() const noexcept { return prev_; }
+    [[nodiscard]] AIRInstruction* getNext() const noexcept { return next_; }
+    [[nodiscard]] AIRInstruction* getPrev() const noexcept { return prev_; }
     void setNext(AIRInstruction* n) noexcept { next_ = n; }
     void setPrev(AIRInstruction* p) noexcept { prev_ = p; }
 
     void setDestVReg(const unsigned vreg) noexcept { destVReg_ = vreg; }
     void replaceUse(unsigned oldVReg, unsigned newVReg);
 
-    std::string toString() const;
+    [[nodiscard]] std::string toString() const;
 
 private:
     AIRInstruction(AIROpcode op, Type* ty = nullptr);

@@ -14,7 +14,7 @@ struct CCValAssign {
     unsigned regId;
     unsigned size;
     unsigned stackOffset;
-    bool isReg() const { return loc == GPR || loc == XMM; }
+    [[nodiscard]] bool isReg() const { return loc == GPR || loc == XMM; }
 };
 
 class TargetCallingConv {
@@ -26,8 +26,8 @@ public:
 
     virtual SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const = 0;
 
-    virtual unsigned getStackAlignment() const = 0;
-    virtual unsigned getShadowStoreSize() const = 0;
+    [[nodiscard]] virtual unsigned getStackAlignment() const = 0;
+    [[nodiscard]] virtual unsigned getShadowStoreSize() const = 0;
 };
 
 } // namespace aurora

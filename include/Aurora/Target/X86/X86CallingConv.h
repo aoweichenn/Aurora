@@ -12,8 +12,8 @@ public:
 
     SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const override;
 
-    unsigned getStackAlignment() const override { return 16; }
-    unsigned getShadowStoreSize() const override { return 0; }
+    [[nodiscard]] unsigned getStackAlignment() const override { return 16; }
+    [[nodiscard]] unsigned getShadowStoreSize() const override { return 0; }
 };
 
 } // namespace aurora

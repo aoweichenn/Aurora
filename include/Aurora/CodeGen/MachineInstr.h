@@ -28,16 +28,16 @@ public:
     static MachineOperand createMBB(MachineBasicBlock* mbb);
     static MachineOperand createFrameIndex(int idx);
 
-    MachineOperandKind getKind() const noexcept { return kind_; }
-    unsigned getReg() const noexcept;
-    unsigned getVirtualReg() const noexcept;
-    int64_t getImm() const noexcept;
-    MachineBasicBlock* getMBB() const noexcept;
-    int getFrameIndex() const noexcept;
+    [[nodiscard]] MachineOperandKind getKind() const noexcept { return kind_; }
+    [[nodiscard]] unsigned getReg() const noexcept;
+    [[nodiscard]] unsigned getVirtualReg() const noexcept;
+    [[nodiscard]] int64_t getImm() const noexcept;
+    [[nodiscard]] MachineBasicBlock* getMBB() const noexcept;
+    [[nodiscard]] int getFrameIndex() const noexcept;
 
-    bool isReg() const noexcept;
-    bool isVReg() const noexcept;
-    bool isImm() const noexcept;
+    [[nodiscard]] bool isReg() const noexcept;
+    [[nodiscard]] bool isVReg() const noexcept;
+    [[nodiscard]] bool isImm() const noexcept;
 
 private:
     MachineOperandKind kind_;
@@ -55,27 +55,27 @@ public:
     explicit MachineInstr(uint16_t opcode);
     ~MachineInstr();
 
-    uint16_t getOpcode() const noexcept { return opcode_; }
-    unsigned getNumOperands() const noexcept { return static_cast<unsigned>(operands_.size()); }
+    [[nodiscard]] uint16_t getOpcode() const noexcept { return opcode_; }
+    [[nodiscard]] unsigned getNumOperands() const noexcept { return static_cast<unsigned>(operands_.size()); }
     MachineOperand& getOperand(unsigned i);
-    const MachineOperand& getOperand(unsigned i) const;
+    [[nodiscard]] const MachineOperand& getOperand(unsigned i) const;
 
     void addOperand(MachineOperand mo);
     void setOperand(unsigned i, MachineOperand mo);
 
-    MachineBasicBlock* getParent() const noexcept { return parent_; }
+    [[nodiscard]] MachineBasicBlock* getParent() const noexcept { return parent_; }
     void setParent(MachineBasicBlock* bb) noexcept { parent_ = bb; }
 
-    MachineInstr* getNext() const noexcept { return next_; }
-    MachineInstr* getPrev() const noexcept { return prev_; }
+    [[nodiscard]] MachineInstr* getNext() const noexcept { return next_; }
+    [[nodiscard]] MachineInstr* getPrev() const noexcept { return prev_; }
     void setNext(MachineInstr* n) noexcept { next_ = n; }
     void setPrev(MachineInstr* p) noexcept { prev_ = p; }
 
-    bool isTerminator() const noexcept;
-    bool isBranch() const noexcept;
-    bool isReturn() const noexcept;
-    bool isCall() const noexcept;
-    bool isMove() const noexcept;
+    [[nodiscard]] bool isTerminator() const noexcept;
+    [[nodiscard]] bool isBranch() const noexcept;
+    [[nodiscard]] bool isReturn() const noexcept;
+    [[nodiscard]] bool isCall() const noexcept;
+    [[nodiscard]] bool isMove() const noexcept;
 
 private:
     uint16_t opcode_;

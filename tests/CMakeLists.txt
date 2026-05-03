@@ -1,5 +1,9 @@
 add_library(AuroraTestCommon INTERFACE)
-target_link_libraries(AuroraTestCommon INTERFACE pthread)
+target_link_libraries(AuroraTestCommon INTERFACE
+    pthread
+    GTest::gtest
+    GTest::gtest_main
+)
 
 add_executable(ADT_tests
     ADT/SmallVectorTest.cpp
@@ -7,9 +11,7 @@ add_executable(ADT_tests
     ADT/GraphTest.cpp
     ADT/AllocatorTest.cpp
 )
-target_link_libraries(ADT_tests PRIVATE AuroraADT AuroraTestCommon pthread)
-target_link_libraries(ADT_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest_main.a)
-target_link_libraries(ADT_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest.a)
+target_link_libraries(ADT_tests PRIVATE AuroraADT AuroraTestCommon)
 add_test(NAME ADT_tests COMMAND ADT_tests)
 
 add_executable(Air_tests
@@ -19,9 +21,7 @@ add_executable(Air_tests
     Air/FunctionTest.cpp
     Air/BuilderTest.cpp
 )
-target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon pthread)
-target_link_libraries(Air_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest_main.a)
-target_link_libraries(Air_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest.a)
+target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
 add_test(NAME Air_tests COMMAND Air_tests)
 
 add_executable(Target_tests
@@ -30,9 +30,7 @@ add_executable(Target_tests
     Target/X86ISelPatternsTest.cpp
     Target/X86CallingConvTest.cpp
 )
-target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraTestCommon pthread)
-target_link_libraries(Target_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest_main.a)
-target_link_libraries(Target_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest.a)
+target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraTestCommon)
 add_test(NAME Target_tests COMMAND Target_tests)
 
 add_executable(CodeGen_tests
@@ -41,18 +39,14 @@ add_executable(CodeGen_tests
     CodeGen/InstructionSelectorTest.cpp
     CodeGen/PassManagerTest.cpp
 )
-target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon pthread)
-target_link_libraries(CodeGen_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest_main.a)
-target_link_libraries(CodeGen_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest.a)
+target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
 
 add_executable(MC_tests
     MC/AsmPrinterTest.cpp
     MC/IntegrationTest.cpp
 )
-target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon pthread)
-target_link_libraries(MC_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest_main.a)
-target_link_libraries(MC_tests PRIVATE /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/libgtest.a)
+target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)
 
 # ---- Benchmarks ----
