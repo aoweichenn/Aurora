@@ -1,8 +1,7 @@
-#ifndef AURORA_X86_X86TARGETMACHINE_H
-#define AURORA_X86_X86TARGETMACHINE_H
+#pragma once
 
-#include "Aurora/Target/TargetMachine.h"
 #include <memory>
+#include "Aurora/Target/TargetMachine.h"
 
 namespace aurora {
 
@@ -23,7 +22,7 @@ public:
     [[nodiscard]] const TargetCallingConv&   getCallingConv() const override;
     [[nodiscard]] const TargetFrameLowering& getFrameLowering() const override;
 
-    AsmPrinter* createAsmPrinter(MCStreamer& streamer) const override;
+    [[nodiscard]] AsmPrinter* createAsmPrinter(MCStreamer& streamer) const override;
     [[nodiscard]] const DataLayout& getDataLayout() const override;
     [[nodiscard]] const char* getTargetTriple() const override { return "x86_64-unknown-linux-gnu"; }
 
@@ -38,4 +37,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86TARGETMACHINE_H

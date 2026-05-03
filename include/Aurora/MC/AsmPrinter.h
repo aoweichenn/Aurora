@@ -1,5 +1,4 @@
-#ifndef AURORA_MC_ASMPRINTER_H
-#define AURORA_MC_ASMPRINTER_H
+#pragma once
 
 namespace aurora {
 
@@ -19,7 +18,7 @@ public:
     virtual void emitInstruction(const MachineInstr& mi) = 0;
 
 protected:
-    MCStreamer& getStreamer() noexcept { return streamer_; }
+    [[nodiscard]] MCStreamer& getStreamer() noexcept { return streamer_; }
     virtual void emitFunctionHeader(MachineFunction& mf);
     virtual void emitFunctionFooter(MachineFunction& mf);
 
@@ -29,4 +28,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_MC_ASMPRINTER_H

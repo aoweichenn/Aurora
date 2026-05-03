@@ -1,10 +1,9 @@
-#ifndef AURORA_CODEGEN_MACHINEBASICBLOCK_H
-#define AURORA_CODEGEN_MACHINEBASICBLOCK_H
+#pragma once
 
-#include "Aurora/CodeGen/MachineInstr.h"
-#include "Aurora/ADT/SmallVector.h"
-#include "Aurora/ADT/BitVector.h"
 #include <string>
+#include "Aurora/ADT/BitVector.h"
+#include "Aurora/ADT/SmallVector.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 
 namespace aurora {
 
@@ -17,25 +16,25 @@ public:
     MachineBasicBlock& operator=(const MachineBasicBlock&) = delete;
     ~MachineBasicBlock();
 
-    const std::string& getName() const noexcept { return name_; }
-    MachineFunction* getParent() const noexcept { return parent_; }
+    [[nodiscard]] const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] MachineFunction* getParent() const noexcept { return parent_; }
     void setParent(MachineFunction* mf) noexcept { parent_ = mf; }
 
-    bool empty() const noexcept { return first_ == nullptr; }
-    MachineInstr* getFirst() const noexcept { return first_; }
-    MachineInstr* getLast() const noexcept { return last_; }
+    [[nodiscard]] bool empty() const noexcept { return first_ == nullptr; }
+    [[nodiscard]] MachineInstr* getFirst() const noexcept { return first_; }
+    [[nodiscard]] MachineInstr* getLast() const noexcept { return last_; }
 
     void pushBack(MachineInstr* mi);
     void insertAfter(MachineInstr* pos, MachineInstr* mi);
     void insertBefore(MachineInstr* pos, MachineInstr* mi);
 
     void addSuccessor(MachineBasicBlock* succ);
-    const SmallVector<MachineBasicBlock*, 4>& successors() const noexcept { return successors_; }
-    const SmallVector<MachineBasicBlock*, 4>& predecessors() const noexcept { return predecessors_; }
+    [[nodiscard]] const SmallVector<MachineBasicBlock*, 4>& successors() const noexcept { return successors_; }
+    [[nodiscard]] const SmallVector<MachineBasicBlock*, 4>& predecessors() const noexcept { return predecessors_; }
     void addPredecessor(MachineBasicBlock* pred);
 
-    BitVector& getLiveIns() noexcept { return liveIns_; }
-    BitVector& getLiveOuts() noexcept { return liveOuts_; }
+    [[nodiscard]] BitVector& getLiveIns() noexcept { return liveIns_; }
+    [[nodiscard]] BitVector& getLiveOuts() noexcept { return liveOuts_; }
 
 private:
     std::string name_;
@@ -50,4 +49,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_CODEGEN_MACHINEBASICBLOCK_H

@@ -1,5 +1,4 @@
-#ifndef AURORA_ADT_SMALLVECTOR_H
-#define AURORA_ADT_SMALLVECTOR_H
+#pragma once
 
 #include <cstddef>
 #include <initializer_list>
@@ -42,25 +41,25 @@ public:
         return *this;
     }
 
-    iterator begin() noexcept { return begin_; }
-    const_iterator begin() const noexcept { return begin_; }
-    const_iterator cbegin() const noexcept { return begin_; }
-    iterator end() noexcept { return end_; }
-    const_iterator end() const noexcept { return end_; }
-    const_iterator cend() const noexcept { return end_; }
+    [[nodiscard]] iterator begin() noexcept { return begin_; }
+    [[nodiscard]] const_iterator begin() const noexcept { return begin_; }
+    [[nodiscard]] const_iterator cbegin() const noexcept { return begin_; }
+    [[nodiscard]] iterator end() noexcept { return end_; }
+    [[nodiscard]] const_iterator end() const noexcept { return end_; }
+    [[nodiscard]] const_iterator cend() const noexcept { return end_; }
 
     [[nodiscard]] size_type size() const noexcept { return static_cast<size_type>(end_ - begin_); }
     [[nodiscard]] size_type capacity() const noexcept { return static_cast<size_type>(capacity_ - begin_); }
     [[nodiscard]] bool empty() const noexcept { return begin_ == end_; }
 
-    reference operator[](size_type i) noexcept { return begin_[i]; }
-    const_reference operator[](size_type i) const noexcept { return begin_[i]; }
-    reference front() noexcept { return begin_[0]; }
-    const_reference front() const noexcept { return begin_[0]; }
-    reference back() noexcept { return *(end_ - 1); }
-    const_reference back() const noexcept { return *(end_ - 1); }
-    pointer data() noexcept { return begin_; }
-    const_pointer data() const noexcept { return begin_; }
+    [[nodiscard]] reference operator[](size_type i) noexcept { return begin_[i]; }
+    [[nodiscard]] const_reference operator[](size_type i) const noexcept { return begin_[i]; }
+    [[nodiscard]] reference front() noexcept { return begin_[0]; }
+    [[nodiscard]] const_reference front() const noexcept { return begin_[0]; }
+    [[nodiscard]] reference back() noexcept { return *(end_ - 1); }
+    [[nodiscard]] const_reference back() const noexcept { return *(end_ - 1); }
+    [[nodiscard]] pointer data() noexcept { return begin_; }
+    [[nodiscard]] const_pointer data() const noexcept { return begin_; }
 
     void push_back(const T& value);
     void push_back(T&& value);
@@ -68,8 +67,8 @@ public:
     void clear() noexcept;
     void reserve(size_type n);
     void resize(size_type n);
-    iterator erase(iterator pos);
-    iterator erase(iterator first, iterator last);
+    [[nodiscard]] iterator erase(iterator pos);
+    [[nodiscard]] iterator erase(iterator first, iterator last);
 
 private:
     pointer inlineStorage() noexcept { return reinterpret_cast<pointer>(&inlineBuf_); }
@@ -246,4 +245,3 @@ void SmallVector<T, N>::grow(const size_type minSize) {
 
 } // namespace aurora
 
-#endif // AURORA_ADT_SMALLVECTOR_H

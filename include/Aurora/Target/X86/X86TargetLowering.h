@@ -1,5 +1,4 @@
-#ifndef AURORA_X86_X86TARGETLOWERING_H
-#define AURORA_X86_X86TARGETLOWERING_H
+#pragma once
 
 #include "Aurora/Target/TargetLowering.h"
 
@@ -11,7 +10,7 @@ public:
 
     [[nodiscard]] LegalizeAction getOperationAction(AIROpcode op, unsigned vtSize) const override;
     [[nodiscard]] bool isTypeLegal(unsigned typeSize) const override;
-    unsigned getRegisterSizeForType(Type* ty) const override;
+    [[nodiscard]] unsigned getRegisterSizeForType(Type* ty) const override;
 
 private:
     void initActions() override;
@@ -22,4 +21,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86TARGETLOWERING_H

@@ -1,5 +1,4 @@
-#ifndef AURORA_AIR_BASICBLOCK_H
-#define AURORA_AIR_BASICBLOCK_H
+#pragma once
 
 #include <string>
 #include "Aurora/ADT/SmallVector.h"
@@ -51,4 +50,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_AIR_BASICBLOCK_H

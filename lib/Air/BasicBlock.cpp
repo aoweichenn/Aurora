@@ -99,10 +99,10 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 void BasicBlock::removePredecessor(BasicBlock* pred) {
     const auto it = std::find(predecessors_.begin(), predecessors_.end(), pred);
     if (it != predecessors_.end()) {
-        predecessors_.erase(it);
+        (void)predecessors_.erase(it);
         const auto sit = std::find(pred->successors_.begin(), pred->successors_.end(), this);
         if (sit != pred->successors_.end())
-            pred->successors_.erase(sit);
+            (void)pred->successors_.erase(sit);
     }
 }
 

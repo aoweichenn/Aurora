@@ -1,8 +1,7 @@
-#ifndef AURORA_X86_X86INSTRENCODE_H
-#define AURORA_X86_X86INSTRENCODE_H
+#pragma once
 
-#include "Aurora/ADT/SmallVector.h"
 #include <cstdint>
+#include "Aurora/ADT/SmallVector.h"
 
 namespace aurora {
 
@@ -28,7 +27,7 @@ public:
     void encodeOperand(const MachineOperand& mo, SmallVector<uint8_t, 32>& out, unsigned opIdx);
 
 private:
-    const X86EncodeEntry* findEntry(uint16_t opcode) const;
+    [[nodiscard]] const X86EncodeEntry* findEntry(uint16_t opcode) const;
     void emitPrefixes(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out);
     void emitOpcode(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out);
     void emitModRM(uint8_t mod, uint8_t regOp, uint8_t rm, SmallVector<uint8_t, 32>& out);
@@ -42,4 +41,3 @@ extern const unsigned kX86EncodeTableSize;
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86INSTRENCODE_H

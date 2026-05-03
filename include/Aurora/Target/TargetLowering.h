@@ -1,5 +1,4 @@
-#ifndef AURORA_TARGET_TARGETLOWERING_H
-#define AURORA_TARGET_TARGETLOWERING_H
+#pragma once
 
 #include <cstdint>
 
@@ -20,9 +19,9 @@ class TargetLowering {
 public:
     virtual ~TargetLowering() = default;
 
-    virtual LegalizeAction getOperationAction(AIROpcode op, unsigned vtSize) const = 0;
-    virtual bool isTypeLegal(unsigned typeSize) const = 0;
-    virtual unsigned getRegisterSizeForType(Type* ty) const = 0;
+    [[nodiscard]] virtual LegalizeAction getOperationAction(AIROpcode op, unsigned vtSize) const = 0;
+    [[nodiscard]] virtual bool isTypeLegal(unsigned typeSize) const = 0;
+    [[nodiscard]] virtual unsigned getRegisterSizeForType(Type* ty) const = 0;
 
 protected:
     void setOperationAction(AIROpcode op, unsigned vtSize, LegalizeAction action);
@@ -35,4 +34,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_TARGET_TARGETLOWERING_H

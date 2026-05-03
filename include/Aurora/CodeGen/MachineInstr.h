@@ -1,8 +1,7 @@
-#ifndef AURORA_CODEGEN_MACHINEINSTR_H
-#define AURORA_CODEGEN_MACHINEINSTR_H
+#pragma once
 
-#include "Aurora/ADT/SmallVector.h"
 #include <cstdint>
+#include "Aurora/ADT/SmallVector.h"
 
 namespace aurora {
 
@@ -22,11 +21,11 @@ enum class MachineOperandKind : uint8_t {
 class MachineOperand {
 public:
     MachineOperand() : kind_(MachineOperandKind::MO_None), regId(0) {}
-    static MachineOperand createReg(unsigned regId);
-    static MachineOperand createVReg(unsigned vreg);
-    static MachineOperand createImm(int64_t val);
-    static MachineOperand createMBB(MachineBasicBlock* mbb);
-    static MachineOperand createFrameIndex(int idx);
+    [[nodiscard]] static MachineOperand createReg(unsigned regId);
+    [[nodiscard]] static MachineOperand createVReg(unsigned vreg);
+    [[nodiscard]] static MachineOperand createImm(int64_t val);
+    [[nodiscard]] static MachineOperand createMBB(MachineBasicBlock* mbb);
+    [[nodiscard]] static MachineOperand createFrameIndex(int idx);
 
     [[nodiscard]] MachineOperandKind getKind() const noexcept { return kind_; }
     [[nodiscard]] unsigned getReg() const noexcept;
@@ -57,7 +56,7 @@ public:
 
     [[nodiscard]] uint16_t getOpcode() const noexcept { return opcode_; }
     [[nodiscard]] unsigned getNumOperands() const noexcept { return static_cast<unsigned>(operands_.size()); }
-    MachineOperand& getOperand(unsigned i);
+    [[nodiscard]] MachineOperand& getOperand(unsigned i);
     [[nodiscard]] const MachineOperand& getOperand(unsigned i) const;
 
     void addOperand(MachineOperand mo);
@@ -87,4 +86,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_CODEGEN_MACHINEINSTR_H

@@ -1,8 +1,7 @@
-#ifndef AURORA_X86_X86ISELPATTERNS_H
-#define AURORA_X86_X86ISELPATTERNS_H
+#pragma once
 
-#include "Aurora/Air/Instruction.h"
 #include <vector>
+#include "Aurora/Air/Instruction.h"
 
 namespace aurora {
 
@@ -36,13 +35,12 @@ struct ISelMatchResult {
 
 class X86ISelPatterns {
 public:
-    static ISelMatchResult matchPattern(AIROpcode airOp, Type* resultTy,
+    [[nodiscard]] static ISelMatchResult matchPattern(AIROpcode airOp, Type* resultTy,
                                         const std::vector<unsigned>& vregTypes,
                                         unsigned op0, unsigned op1);
 
-    static const std::vector<ISelPattern>& getAllPatterns();
+    [[nodiscard]] static const std::vector<ISelPattern>& getAllPatterns();
 };
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86ISELPATTERNS_H

@@ -1,5 +1,4 @@
-#ifndef AURORA_X86_X86CALLINGCONV_H
-#define AURORA_X86_X86CALLINGCONV_H
+#pragma once
 
 #include "Aurora/Target/TargetCallingConv.h"
 
@@ -7,10 +6,10 @@ namespace aurora {
 
 class X86CallingConv : public TargetCallingConv {
 public:
-    SmallVector<CCValAssign, 8> analyzeArguments(
+    [[nodiscard]] SmallVector<CCValAssign, 8> analyzeArguments(
         Type** argTypes, unsigned numArgs) const override;
 
-    SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const override;
+    [[nodiscard]] SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const override;
 
     [[nodiscard]] unsigned getStackAlignment() const override { return 16; }
     [[nodiscard]] unsigned getShadowStoreSize() const override { return 0; }
@@ -18,4 +17,3 @@ public:
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86CALLINGCONV_H

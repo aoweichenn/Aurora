@@ -1,9 +1,8 @@
-#ifndef AURORA_X86_X86REGISTERINFO_H
-#define AURORA_X86_X86REGISTERINFO_H
+#pragma once
 
-#include "Aurora/Target/TargetRegisterInfo.h"
-#include "Aurora/ADT/BitVector.h"
 #include <vector>
+#include "Aurora/ADT/BitVector.h"
+#include "Aurora/Target/TargetRegisterInfo.h"
 
 namespace aurora {
 
@@ -11,15 +10,15 @@ class X86RegisterInfo : public TargetRegisterInfo {
 public:
     X86RegisterInfo();
 
-    const RegisterClass& getRegClass(RegClass id) const override;
-    Register getFramePointer() const override;
-    Register getStackPointer() const override;
-    BitVector getCalleeSavedRegs() const override;
-    BitVector getCallerSavedRegs() const override;
-    const std::vector<unsigned>& getAllocOrder(RegClass rc) const override;
-    unsigned getNumRegs() const override;
+    [[nodiscard]] const RegisterClass& getRegClass(RegClass id) const override;
+    [[nodiscard]] Register getFramePointer() const override;
+    [[nodiscard]] Register getStackPointer() const override;
+    [[nodiscard]] BitVector getCalleeSavedRegs() const override;
+    [[nodiscard]] BitVector getCallerSavedRegs() const override;
+    [[nodiscard]] const std::vector<unsigned>& getAllocOrder(RegClass rc) const override;
+    [[nodiscard]] unsigned getNumRegs() const override;
 
-    static Register getReg(unsigned id);
+    [[nodiscard]] static Register getReg(unsigned id);
 
     // x86 register IDs
     enum : unsigned {
@@ -32,7 +31,7 @@ public:
     };
 
     // Sub-register mappings
-    static unsigned get32Reg(unsigned reg64);
+    [[nodiscard]] static unsigned get32Reg(unsigned reg64);
 
 private:
     std::vector<Register> regs_;
@@ -44,4 +43,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86REGISTERINFO_H

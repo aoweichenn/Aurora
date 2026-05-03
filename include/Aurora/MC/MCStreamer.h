@@ -1,5 +1,4 @@
-#ifndef AURORA_MC_MCSTREAMER_H
-#define AURORA_MC_MCSTREAMER_H
+#pragma once
 
 #include <cstdint>
 #include <ostream>
@@ -40,7 +39,7 @@ public:
     void emitString(const std::string& str) override;
     void emitRawText(const std::string& text) override;
 
-    std::ostream& getOS() noexcept { return os_; }
+    [[nodiscard]] std::ostream& getOS() noexcept { return os_; }
 
 private:
     std::ostream& os_;
@@ -48,4 +47,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_MC_MCSTREAMER_H

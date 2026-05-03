@@ -1,8 +1,7 @@
-#ifndef AURORA_MC_X86ASMPRINTER_H
-#define AURORA_MC_X86ASMPRINTER_H
+#pragma once
 
-#include "Aurora/MC/AsmPrinter.h"
 #include <ostream>
+#include "Aurora/MC/AsmPrinter.h"
 
 namespace aurora {
 
@@ -25,4 +24,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_MC_X86ASMPRINTER_H

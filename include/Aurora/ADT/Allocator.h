@@ -1,5 +1,4 @@
-#ifndef AURORA_ADT_ALLOCATOR_H
-#define AURORA_ADT_ALLOCATOR_H
+#pragma once
 
 #include <cstddef>
 #include <utility>
@@ -16,10 +15,10 @@ public:
     BumpPtrAllocator(const BumpPtrAllocator&) = delete;
     BumpPtrAllocator& operator=(const BumpPtrAllocator&) = delete;
 
-    void* allocate(size_t size, size_t alignment = 8);
+    [[nodiscard]] void* allocate(size_t size, size_t alignment = 8);
 
     template <typename T, typename... Args>
-    T* create(Args&&... args);
+    [[nodiscard]] T* create(Args&&... args);
 
     void reset();
     [[nodiscard]] size_t totalSize() const noexcept { return totalSize_; }
@@ -44,4 +43,3 @@ inline T* BumpPtrAllocator::create(Args&&... args) {
 
 } // namespace aurora
 
-#endif // AURORA_ADT_ALLOCATOR_H

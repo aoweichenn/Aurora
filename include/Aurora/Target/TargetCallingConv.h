@@ -1,5 +1,4 @@
-#ifndef AURORA_TARGET_TARGETCALLINGCONV_H
-#define AURORA_TARGET_TARGETCALLINGCONV_H
+#pragma once
 
 #include "Aurora/ADT/SmallVector.h"
 
@@ -21,10 +20,10 @@ class TargetCallingConv {
 public:
     virtual ~TargetCallingConv() = default;
 
-    virtual SmallVector<CCValAssign, 8> analyzeArguments(
+    [[nodiscard]] virtual SmallVector<CCValAssign, 8> analyzeArguments(
         Type** argTypes, unsigned numArgs) const = 0;
 
-    virtual SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const = 0;
+    [[nodiscard]] virtual SmallVector<CCValAssign, 2> analyzeReturn(Type* retTy) const = 0;
 
     [[nodiscard]] virtual unsigned getStackAlignment() const = 0;
     [[nodiscard]] virtual unsigned getShadowStoreSize() const = 0;
@@ -32,4 +31,3 @@ public:
 
 } // namespace aurora
 
-#endif // AURORA_TARGET_TARGETCALLINGCONV_H

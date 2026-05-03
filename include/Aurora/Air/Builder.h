@@ -1,5 +1,4 @@
-#ifndef AURORA_AIR_BUILDER_H
-#define AURORA_AIR_BUILDER_H
+#pragma once
 
 #include "Aurora/ADT/SmallVector.h"
 #include "Aurora/Air/BasicBlock.h"
@@ -15,28 +14,28 @@ public:
     void setInsertPoint(BasicBlock* bb, AIRInstruction* before = nullptr);
     [[nodiscard]] BasicBlock* getInsertBlock() const noexcept { return insertBlock_; }
 
-    unsigned createAdd(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createSub(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createMul(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createUDiv(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createSDiv(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createAnd(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createOr (Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createXor(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createShl (Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createLShr(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createAShr(Type* ty, unsigned lhs, unsigned rhs);
-    unsigned createICmp(ICmpCond cond, unsigned lhs, unsigned rhs);
-    unsigned createAlloca(Type* allocaTy);
-    unsigned createLoad(Type* ty, unsigned ptr);
+    [[nodiscard]] unsigned createAdd(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createSub(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createMul(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createUDiv(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createSDiv(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createAnd(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createOr (Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createXor(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createShl (Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createLShr(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createAShr(Type* ty, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createICmp(ICmpCond cond, unsigned lhs, unsigned rhs);
+    [[nodiscard]] unsigned createAlloca(Type* allocaTy);
+    [[nodiscard]] unsigned createLoad(Type* ty, unsigned ptr);
     void     createStore(unsigned val, unsigned ptr);
-    unsigned createGEP(Type* resultTy, unsigned ptr, const SmallVector<unsigned, 4>& indices);
-    unsigned createSExt(Type* dstTy, unsigned src);
-    unsigned createZExt(Type* dstTy, unsigned src);
-    unsigned createTrunc(Type* dstTy, unsigned src);
-    unsigned createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
-    unsigned createCall(Function* callee, const SmallVector<unsigned, 8>& args);
-    unsigned createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& incomings);
+    [[nodiscard]] unsigned createGEP(Type* resultTy, unsigned ptr, const SmallVector<unsigned, 4>& indices);
+    [[nodiscard]] unsigned createSExt(Type* dstTy, unsigned src);
+    [[nodiscard]] unsigned createZExt(Type* dstTy, unsigned src);
+    [[nodiscard]] unsigned createTrunc(Type* dstTy, unsigned src);
+    [[nodiscard]] unsigned createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
+    [[nodiscard]] unsigned createCall(Function* callee, const SmallVector<unsigned, 8>& args);
+    [[nodiscard]] unsigned createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& incomings);
 
     void createRet(unsigned val);
     void createRetVoid();
@@ -50,7 +49,7 @@ private:
     BasicBlock* insertBlock_;
     AIRInstruction* insertPoint_;
     [[nodiscard]] Function* getFunction() const;
-    unsigned allocateVReg(Type* ty);
+    [[nodiscard]] unsigned allocateVReg(Type* ty);
 
     void insertInstruction(AIRInstruction* inst);
     void setResult(AIRInstruction* inst, unsigned vreg);
@@ -58,4 +57,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_AIR_BUILDER_H

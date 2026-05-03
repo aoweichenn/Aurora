@@ -1,9 +1,8 @@
-#ifndef AURORA_TARGET_TARGETREGISTERINFO_H
-#define AURORA_TARGET_TARGETREGISTERINFO_H
+#pragma once
 
-#include "Aurora/ADT/BitVector.h"
 #include <string>
 #include <vector>
+#include "Aurora/ADT/BitVector.h"
 
 namespace aurora {
 
@@ -23,9 +22,9 @@ public:
     unsigned bitWidth;
     RegClass regClass;
 
-    bool isGeneralPurpose() const noexcept;
-    bool isFloatingPoint()  const noexcept;
-    bool isFlag()           const noexcept;
+    [[nodiscard]] bool isGeneralPurpose() const noexcept;
+    [[nodiscard]] bool isFloatingPoint()  const noexcept;
+    [[nodiscard]] bool isFlag()           const noexcept;
 };
 
 class RegisterClass {
@@ -33,12 +32,12 @@ public:
     RegisterClass() = default;
     RegisterClass(std::string name, std::vector<Register> regs);
 
-    const std::string& getName() const noexcept { return name_; }
-    const std::vector<Register>& getRegisters() const noexcept { return regs_; }
-    bool contains(const Register& reg) const;
-    unsigned getSizeInBits() const noexcept;
-    unsigned getNumRegs() const noexcept { return static_cast<unsigned>(regs_.size()); }
-    const Register& operator[](const unsigned i) const { return regs_[i]; }
+    [[nodiscard]] const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] const std::vector<Register>& getRegisters() const noexcept { return regs_; }
+    [[nodiscard]] bool contains(const Register& reg) const;
+    [[nodiscard]] unsigned getSizeInBits() const noexcept;
+    [[nodiscard]] unsigned getNumRegs() const noexcept { return static_cast<unsigned>(regs_.size()); }
+    [[nodiscard]] const Register& operator[](const unsigned i) const { return regs_[i]; }
 
 private:
     std::string name_;
@@ -49,15 +48,14 @@ class TargetRegisterInfo {
 public:
     virtual ~TargetRegisterInfo() = default;
 
-    virtual const RegisterClass& getRegClass(RegClass id) const = 0;
-    virtual Register getFramePointer() const = 0;
-    virtual Register getStackPointer() const = 0;
-    virtual BitVector getCalleeSavedRegs() const = 0;
-    virtual BitVector getCallerSavedRegs() const = 0;
-    virtual const std::vector<unsigned>& getAllocOrder(RegClass rc) const = 0;
-    virtual unsigned getNumRegs() const = 0;
+    [[nodiscard]] virtual const RegisterClass& getRegClass(RegClass id) const = 0;
+    [[nodiscard]] virtual Register getFramePointer() const = 0;
+    [[nodiscard]] virtual Register getStackPointer() const = 0;
+    [[nodiscard]] virtual BitVector getCalleeSavedRegs() const = 0;
+    [[nodiscard]] virtual BitVector getCallerSavedRegs() const = 0;
+    [[nodiscard]] virtual const std::vector<unsigned>& getAllocOrder(RegClass rc) const = 0;
+    [[nodiscard]] virtual unsigned getNumRegs() const = 0;
 };
 
 } // namespace aurora
 
-#endif // AURORA_TARGET_TARGETREGISTERINFO_H

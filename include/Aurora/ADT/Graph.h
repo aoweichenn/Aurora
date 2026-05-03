@@ -1,5 +1,4 @@
-#ifndef AURORA_ADT_GRAPH_H
-#define AURORA_ADT_GRAPH_H
+#pragma once
 
 #include <utility>
 #include "Aurora/ADT/SmallVector.h"
@@ -19,14 +18,14 @@ public:
     DirectedGraph() = default;
     ~DirectedGraph() = default;
 
-    unsigned addNode(NodeTy data) {
+    [[nodiscard]] unsigned addNode(NodeTy data) {
         const unsigned id = numNodes();
         nodes_.push_back({std::move(data), {}, {}});
         return id;
     }
 
-    NodeTy& getNode(unsigned id) { return nodes_[id].data; }
-    const NodeTy& getNode(unsigned id) const { return nodes_[id].data; }
+    [[nodiscard]] NodeTy& getNode(unsigned id) { return nodes_[id].data; }
+    [[nodiscard]] const NodeTy& getNode(unsigned id) const { return nodes_[id].data; }
     [[nodiscard]] unsigned numNodes() const noexcept { return static_cast<unsigned>(nodes_.size()); }
 
     void addEdge(unsigned from, unsigned to) {
@@ -83,4 +82,3 @@ SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(const unsigned entry)
 
 } // namespace aurora
 
-#endif // AURORA_ADT_GRAPH_H

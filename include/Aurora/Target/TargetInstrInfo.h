@@ -1,5 +1,4 @@
-#ifndef AURORA_TARGET_TARGETINSTRINFO_H
-#define AURORA_TARGET_TARGETINSTRINFO_H
+#pragma once
 
 #include <cstdint>
 
@@ -27,10 +26,10 @@ class TargetInstrInfo {
 public:
     virtual ~TargetInstrInfo() = default;
 
-    virtual const MachineOpcodeDesc& get(unsigned opcode) const = 0;
-    virtual unsigned getNumOpcodes() const = 0;
+    [[nodiscard]] virtual const MachineOpcodeDesc& get(unsigned opcode) const = 0;
+    [[nodiscard]] virtual unsigned getNumOpcodes() const = 0;
 
-    virtual bool isMoveImmediate(const MachineInstr& mi, unsigned& dstReg, int64_t& val) const = 0;
+    [[nodiscard]] virtual bool isMoveImmediate(const MachineInstr& mi, unsigned& dstReg, int64_t& val) const = 0;
     virtual void copyPhysReg(MachineBasicBlock& mbb, MachineInstr* pos,
                              const Register& dst, const Register& src) const = 0;
     virtual void storeRegToStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
@@ -41,4 +40,3 @@ public:
 
 } // namespace aurora
 
-#endif // AURORA_TARGET_TARGETINSTRINFO_H

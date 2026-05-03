@@ -1,5 +1,4 @@
-#ifndef AURORA_AIR_CONSTANT_H
-#define AURORA_AIR_CONSTANT_H
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -20,12 +19,12 @@ protected:
 
 class ConstantInt : public Constant {
 public:
-    static ConstantInt* getInt1(bool val);
-    static ConstantInt* getInt8(int8_t val);
-    static ConstantInt* getInt16(int16_t val);
-    static ConstantInt* getInt32(int32_t val);
-    static ConstantInt* getInt64(int64_t val);
-    static ConstantInt* getInt(Type* ty, uint64_t val);
+    [[nodiscard]] static ConstantInt* getInt1(bool val);
+    [[nodiscard]] static ConstantInt* getInt8(int8_t val);
+    [[nodiscard]] static ConstantInt* getInt16(int16_t val);
+    [[nodiscard]] static ConstantInt* getInt32(int32_t val);
+    [[nodiscard]] static ConstantInt* getInt64(int64_t val);
+    [[nodiscard]] static ConstantInt* getInt(Type* ty, uint64_t val);
 
     [[nodiscard]] int64_t  getSExtValue() const noexcept { return static_cast<int64_t>(value_); }
     [[nodiscard]] uint64_t getZExtValue() const noexcept { return value_; }
@@ -40,8 +39,8 @@ private:
 
 class ConstantFP : public Constant {
 public:
-    static ConstantFP* getFloat(float val);
-    static ConstantFP* getDouble(double val);
+    [[nodiscard]] static ConstantFP* getFloat(float val);
+    [[nodiscard]] static ConstantFP* getDouble(double val);
 
     [[nodiscard]] float  getFloatValue()  const noexcept;
     [[nodiscard]] double getDoubleValue() const noexcept;
@@ -60,4 +59,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_AIR_CONSTANT_H

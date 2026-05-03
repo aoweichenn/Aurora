@@ -1,9 +1,8 @@
-#ifndef AURORA_AIR_TYPE_H
-#define AURORA_AIR_TYPE_H
+#pragma once
 
-#include "Aurora/ADT/SmallVector.h"
 #include <cstdint>
 #include <string>
+#include "Aurora/ADT/SmallVector.h"
 
 namespace aurora {
 
@@ -19,46 +18,46 @@ enum class TypeKind : uint8_t {
 
 class Type {
 public:
-    TypeKind getKind() const noexcept { return kind_; }
-    unsigned getSizeInBits() const noexcept { return sizeInBits_; }
-    unsigned getAlignInBits() const noexcept { return alignInBits_; }
+    [[nodiscard]] TypeKind getKind() const noexcept { return kind_; }
+    [[nodiscard]] unsigned getSizeInBits() const noexcept { return sizeInBits_; }
+    [[nodiscard]] unsigned getAlignInBits() const noexcept { return alignInBits_; }
 
-    bool isInteger() const noexcept { return kind_ == TypeKind::Integer; }
-    bool isFloat()   const noexcept { return kind_ == TypeKind::Float; }
-    bool isPointer() const noexcept { return kind_ == TypeKind::Pointer; }
-    bool isArray()   const noexcept { return kind_ == TypeKind::Array; }
-    bool isStruct()  const noexcept { return kind_ == TypeKind::Struct; }
-    bool isFunction()const noexcept { return kind_ == TypeKind::Function; }
-    bool isVoid()    const noexcept { return kind_ == TypeKind::Void; }
+    [[nodiscard]] bool isInteger() const noexcept { return kind_ == TypeKind::Integer; }
+    [[nodiscard]] bool isFloat()   const noexcept { return kind_ == TypeKind::Float; }
+    [[nodiscard]] bool isPointer() const noexcept { return kind_ == TypeKind::Pointer; }
+    [[nodiscard]] bool isArray()   const noexcept { return kind_ == TypeKind::Array; }
+    [[nodiscard]] bool isStruct()  const noexcept { return kind_ == TypeKind::Struct; }
+    [[nodiscard]] bool isFunction()const noexcept { return kind_ == TypeKind::Function; }
+    [[nodiscard]] bool isVoid()    const noexcept { return kind_ == TypeKind::Void; }
 
     // Integer
-    static Type* getInt1Ty();
-    static Type* getInt8Ty();
-    static Type* getInt16Ty();
-    static Type* getInt32Ty();
-    static Type* getInt64Ty();
+    [[nodiscard]] static Type* getInt1Ty();
+    [[nodiscard]] static Type* getInt8Ty();
+    [[nodiscard]] static Type* getInt16Ty();
+    [[nodiscard]] static Type* getInt32Ty();
+    [[nodiscard]] static Type* getInt64Ty();
 
     // Float
-    static Type* getFloatTy();
-    static Type* getDoubleTy();
+    [[nodiscard]] static Type* getFloatTy();
+    [[nodiscard]] static Type* getDoubleTy();
 
     // Void
-    static Type* getVoidTy();
+    [[nodiscard]] static Type* getVoidTy();
 
     // Derived
-    static Type* getPointerTy(Type* elemType);
-    static Type* getArrayTy(Type* elemType, unsigned numElements);
-    static Type* getStructTy(SmallVector<Type*, 8> members);
-    static Type* getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes);
+    [[nodiscard]] static Type* getPointerTy(Type* elemType);
+    [[nodiscard]] static Type* getArrayTy(Type* elemType, unsigned numElements);
+    [[nodiscard]] static Type* getStructTy(SmallVector<Type*, 8> members);
+    [[nodiscard]] static Type* getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes);
 
     // Accessor for derived types
-    Type* getElementType() const noexcept { return elemType_; }
-    unsigned getNumElements() const noexcept { return numElements_; }
-    const SmallVector<Type*, 8>& getStructMembers() const;
-    Type* getReturnType() const noexcept { return elemType_; }
-    const SmallVector<Type*, 8>& getParamTypes() const;
+    [[nodiscard]] Type* getElementType() const noexcept { return elemType_; }
+    [[nodiscard]] unsigned getNumElements() const noexcept { return numElements_; }
+    [[nodiscard]] const SmallVector<Type*, 8>& getStructMembers() const;
+    [[nodiscard]] Type* getReturnType() const noexcept { return elemType_; }
+    [[nodiscard]] const SmallVector<Type*, 8>& getParamTypes() const;
 
-    std::string toString() const;
+    [[nodiscard]] std::string toString() const;
 
     Type(TypeKind kind, unsigned size, unsigned align);
     Type(TypeKind kind, Type* elem, unsigned size, unsigned align);
@@ -76,4 +75,3 @@ public:
 
 } // namespace aurora
 
-#endif // AURORA_AIR_TYPE_H

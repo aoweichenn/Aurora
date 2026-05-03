@@ -1,8 +1,7 @@
-#ifndef AURORA_X86_X86INSTRINFO_H
-#define AURORA_X86_X86INSTRINFO_H
+#pragma once
 
-#include "Aurora/Target/TargetInstrInfo.h"
 #include <cstdint>
+#include "Aurora/Target/TargetInstrInfo.h"
 
 namespace aurora {
 
@@ -79,10 +78,10 @@ class X86InstrInfo : public TargetInstrInfo {
 public:
     explicit X86InstrInfo(const X86RegisterInfo& regInfo);
 
-    const MachineOpcodeDesc& get(unsigned opcode) const override;
-    unsigned getNumOpcodes() const override;
+    [[nodiscard]] const MachineOpcodeDesc& get(unsigned opcode) const override;
+    [[nodiscard]] unsigned getNumOpcodes() const override;
 
-    bool isMoveImmediate(const MachineInstr& mi, unsigned& dstReg, int64_t& val) const override;
+    [[nodiscard]] bool isMoveImmediate(const MachineInstr& mi, unsigned& dstReg, int64_t& val) const override;
     void copyPhysReg(MachineBasicBlock& mbb, MachineInstr* pos,
                      const Register& dst, const Register& src) const override;
     void storeRegToStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
@@ -90,8 +89,8 @@ public:
     void loadRegFromStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
                               const Register& dst, int frameIdx) const override;
 
-    unsigned getMoveOpcode(unsigned srcSize, unsigned dstSize) const;
-    unsigned getArithOpcode(unsigned opType, unsigned size, bool isImm) const;
+    [[nodiscard]] unsigned getMoveOpcode(unsigned srcSize, unsigned dstSize) const;
+    [[nodiscard]] unsigned getArithOpcode(unsigned opType, unsigned size, bool isImm) const;
 
 private:
     void buildOpcodeTable();
@@ -100,4 +99,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_X86_X86INSTRINFO_H

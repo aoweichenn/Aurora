@@ -1,5 +1,4 @@
-#ifndef AURORA_CODEGEN_PASSMANAGER_H
-#define AURORA_CODEGEN_PASSMANAGER_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -14,7 +13,7 @@ class CodeGenPass {
 public:
     virtual ~CodeGenPass() = default;
     virtual void run(MachineFunction& mf) = 0;
-    virtual const char* getName() const = 0;
+    [[nodiscard]] virtual const char* getName() const = 0;
 };
 
 class PassManager {
@@ -31,8 +30,8 @@ public:
     CodeGenContext(TargetMachine& tm, Module& module);
     void run();
 
-    TargetMachine& getTarget() noexcept { return target_; }
-    Module& getModule() noexcept { return module_; }
+    [[nodiscard]] TargetMachine& getTarget() noexcept { return target_; }
+    [[nodiscard]] Module& getModule() noexcept { return module_; }
 
     static void addStandardPasses(PassManager& pm, TargetMachine& tm);
 
@@ -43,4 +42,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_CODEGEN_PASSMANAGER_H

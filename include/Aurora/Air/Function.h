@@ -1,5 +1,4 @@
-#ifndef AURORA_AIR_FUNCTION_H
-#define AURORA_AIR_FUNCTION_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -14,9 +13,9 @@ class Module;
 class FunctionType {
 public:
     FunctionType(Type* retTy, const SmallVector<Type*, 8>& params);
-    Type* getReturnType() const noexcept { return retTy_; }
-    const SmallVector<Type*, 8>& getParamTypes() const noexcept { return params_; }
-    unsigned getNumParams() const noexcept { return static_cast<unsigned>(params_.size()); }
+    [[nodiscard]] Type* getReturnType() const noexcept { return retTy_; }
+    [[nodiscard]] const SmallVector<Type*, 8>& getParamTypes() const noexcept { return params_; }
+    [[nodiscard]] unsigned getNumParams() const noexcept { return static_cast<unsigned>(params_.size()); }
 private:
     Type* retTy_;
     SmallVector<Type*, 8> params_;
@@ -27,18 +26,18 @@ public:
     Function(FunctionType* ty, const std::string& name, Module* parent = nullptr);
     ~Function();
 
-    const std::string& getName() const noexcept { return name_; }
-    Module* getParent() const noexcept { return module_; }
-    FunctionType* getFunctionType() const noexcept { return fnType_; }
+    [[nodiscard]] const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] Module* getParent() const noexcept { return module_; }
+    [[nodiscard]] FunctionType* getFunctionType() const noexcept { return fnType_; }
 
     [[nodiscard]] BasicBlock* createBasicBlock(const std::string& name = "");
-    const SmallVector<std::unique_ptr<BasicBlock>, 8>& getBlocks() const noexcept { return blocks_; }
+    [[nodiscard]] const SmallVector<std::unique_ptr<BasicBlock>, 8>& getBlocks() const noexcept { return blocks_; }
 
-    BasicBlock* getEntryBlock() const noexcept { return entryBlock_; }
-    unsigned getNumArgs() const noexcept { return fnType_->getNumParams(); }
+    [[nodiscard]] BasicBlock* getEntryBlock() const noexcept { return entryBlock_; }
+    [[nodiscard]] unsigned getNumArgs() const noexcept { return fnType_->getNumParams(); }
 
     [[nodiscard]] unsigned nextVReg() noexcept { return nextVReg_++; }
-    unsigned getNumVRegs() const noexcept { return nextVReg_; }
+    [[nodiscard]] unsigned getNumVRegs() const noexcept { return nextVReg_; }
     void recordVRegType(unsigned vreg, Type* ty);
 
 private:
@@ -53,4 +52,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_AIR_FUNCTION_H

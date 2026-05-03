@@ -1,5 +1,4 @@
-#ifndef AURORA_ADT_BITVECTOR_H
-#define AURORA_ADT_BITVECTOR_H
+#pragma once
 
 #include <cstdint>
 
@@ -19,7 +18,7 @@ public:
     BitVector& operator=(const BitVector& other);
     BitVector& operator=(BitVector&& other) noexcept;
 
-    bool operator[](unsigned idx) const;
+    [[nodiscard]] bool operator[](unsigned idx) const;
     void set(unsigned idx, bool val = true);
     void reset(unsigned idx);
     [[nodiscard]] bool test(unsigned idx) const noexcept;
@@ -48,4 +47,3 @@ private:
 
 } // namespace aurora
 
-#endif // AURORA_ADT_BITVECTOR_H

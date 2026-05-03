@@ -1,5 +1,4 @@
-#ifndef AURORA_CODEGEN_INSTRUCTIONSELECTOR_H
-#define AURORA_CODEGEN_INSTRUCTIONSELECTOR_H
+#pragma once
 
 #include "Aurora/CodeGen/SelectionDAG.h"
 
@@ -17,9 +16,8 @@ public:
 
 private:
     void selectNode(SDNode* node, MachineBasicBlock& mbb);
-    MachineInstr* createMachineInstrFromPattern(SDNode* node);
+    [[nodiscard]] MachineInstr* createMachineInstrFromPattern(SDNode* node);
 };
 
 } // namespace aurora
 
-#endif // AURORA_CODEGEN_INSTRUCTIONSELECTOR_H
