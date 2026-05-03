@@ -9,8 +9,8 @@ class X86TargetLowering : public TargetLowering {
 public:
     X86TargetLowering();
 
-    LegalizeAction getOperationAction(AIROpcode op, unsigned vtSize) const override;
-    bool isTypeLegal(unsigned typeSize) const override;
+    [[nodiscard]] LegalizeAction getOperationAction(AIROpcode op, unsigned vtSize) const override;
+    [[nodiscard]] bool isTypeLegal(unsigned typeSize) const override;
     unsigned getRegisterSizeForType(Type* ty) const override;
 
 private:

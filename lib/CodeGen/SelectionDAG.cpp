@@ -33,13 +33,6 @@ SelectionDAG::~SelectionDAG() {
     for (const auto* n : allNodes_) delete n;
 }
 
-SDNode* SelectionDAG::createSDNode(const AIROpcode op, Type* ty) {
-    auto* node = new SDNode(op, ty);
-    node->setNodeId(nextNodeId_++);
-    allNodes_.push_back(node);
-    return node;
-}
-
 SDValue SelectionDAG::createNode(const AIROpcode op, Type* ty, const SmallVector<SDValue, 4>& ops) {
     auto* node = createSDNode(op, ty);
     for (const auto& o : ops) {
@@ -113,6 +106,13 @@ void SelectionDAG::schedule(MachineBasicBlock* /*mbb*/) {
             // Emit machine instruction
         }
     }
+}
+
+SDNode* SelectionDAG::createSDNode(const AIROpcode op, Type* ty) {
+    auto* node = new SDNode(op, ty);
+    node->setNodeId(nextNodeId_++);
+    allNodes_.push_back(node);
+    return node;
 }
 
 } // namespace aurora

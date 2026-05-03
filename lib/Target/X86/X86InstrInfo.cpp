@@ -8,6 +8,58 @@ X86InstrInfo::X86InstrInfo(const X86RegisterInfo& regInfo) : regInfo_(regInfo) {
     buildOpcodeTable();
 }
 
+const MachineOpcodeDesc& X86InstrInfo::get(const unsigned opcode) const {
+    return opcodeTable_[opcode];
+}
+
+unsigned X86InstrInfo::getNumOpcodes() const { return X86::NUM_OPS; }
+
+bool X86InstrInfo::isMoveImmediate(const MachineInstr& /*mi*/, unsigned& /*dstReg*/, int64_t& /*val*/) const {
+    return false;
+}
+
+void X86InstrInfo::copyPhysReg(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                               const Register& /*dst*/, const Register& /*src*/) const {
+}
+
+void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                                       const Register& /*src*/, int /*frameIdx*/) const {
+}
+
+void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
+                                        const Register& /*dst*/, int /*frameIdx*/) const {
+}
+
+unsigned X86InstrInfo::getMoveOpcode(const unsigned srcSize, const unsigned dstSize) const {
+    const unsigned size = std::max(srcSize, dstSize);
+    if (size == 64) return X86::MOV64rr;
+    if (size == 32) return X86::MOV32rr;
+    return X86::MOV32rr; // default
+}
+
+unsigned X86InstrInfo::getArithOpcode(const unsigned opType, const unsigned size, const bool isImm) const {
+    // opType: 0=add,1=sub,2=and,3=or,4=xor
+    if (size == 64) {
+        const unsigned ops[5][2] = {
+            {X86::ADD64rr, X86::ADD64ri32},
+            {X86::SUB64rr, X86::SUB64ri32},
+            {X86::AND64rr, X86::AND64ri32},
+            {X86::OR64rr,  X86::OR64ri32},
+            {X86::XOR64rr, X86::XOR64ri32},
+        };
+        return ops[opType][isImm ? 1 : 0];
+    } else {
+        const unsigned ops[5][2] = {
+            {X86::ADD32rr, X86::ADD32ri},
+            {X86::SUB32rr, X86::SUB32ri},
+            {X86::AND32rr, X86::AND32ri},
+            {X86::OR32rr,  X86::OR32ri},
+            {X86::XOR32rr, X86::XOR32ri},
+        };
+        return ops[opType][isImm ? 1 : 0];
+    }
+}
+
 void X86InstrInfo::buildOpcodeTable() {
     memset(opcodeTable_, 0, sizeof(opcodeTable_));
 
@@ -126,58 +178,6 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::SUBSDrr, "subsd\t$src, $dst", 2, false, false, false, false, false, false, false);
     setDesc(X86::MULSDrr, "mulsd\t$src, $dst", 2, false, false, false, false, false, false, false);
     setDesc(X86::DIVSDrr, "divsd\t$src, $dst", 2, false, false, false, false, false, false, false);
-}
-
-const MachineOpcodeDesc& X86InstrInfo::get(const unsigned opcode) const {
-    return opcodeTable_[opcode];
-}
-
-unsigned X86InstrInfo::getNumOpcodes() const { return X86::NUM_OPS; }
-
-bool X86InstrInfo::isMoveImmediate(const MachineInstr& /*mi*/, unsigned& /*dstReg*/, int64_t& /*val*/) const {
-    return false;
-}
-
-void X86InstrInfo::copyPhysReg(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                                const Register& /*dst*/, const Register& /*src*/) const {
-}
-
-void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                                        const Register& /*src*/, int /*frameIdx*/) const {
-}
-
-void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                                         const Register& /*dst*/, int /*frameIdx*/) const {
-}
-
-unsigned X86InstrInfo::getMoveOpcode(const unsigned srcSize, const unsigned dstSize) const {
-    const unsigned size = std::max(srcSize, dstSize);
-    if (size == 64) return X86::MOV64rr;
-    if (size == 32) return X86::MOV32rr;
-    return X86::MOV32rr; // default
-}
-
-unsigned X86InstrInfo::getArithOpcode(const unsigned opType, const unsigned size, const bool isImm) const {
-    // opType: 0=add,1=sub,2=and,3=or,4=xor
-    if (size == 64) {
-        const unsigned ops[5][2] = {
-            {X86::ADD64rr, X86::ADD64ri32},
-            {X86::SUB64rr, X86::SUB64ri32},
-            {X86::AND64rr, X86::AND64ri32},
-            {X86::OR64rr,  X86::OR64ri32},
-            {X86::XOR64rr, X86::XOR64ri32},
-        };
-        return ops[opType][isImm ? 1 : 0];
-    } else {
-        const unsigned ops[5][2] = {
-            {X86::ADD32rr, X86::ADD32ri},
-            {X86::SUB32rr, X86::SUB32ri},
-            {X86::AND32rr, X86::AND32ri},
-            {X86::OR32rr,  X86::OR32ri},
-            {X86::XOR32rr, X86::XOR32ri},
-        };
-        return ops[opType][isImm ? 1 : 0];
-    }
 }
 
 } // namespace aurora

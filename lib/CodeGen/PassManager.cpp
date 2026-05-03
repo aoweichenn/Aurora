@@ -90,14 +90,6 @@ public:
 };
 } // anonymous namespace
 
-void CodeGenContext::addStandardPasses(PassManager& pm, TargetMachine& /*tm*/) {
-    pm.addPass(std::make_unique<AIRToMachineIRPass>());
-    pm.addPass(std::make_unique<PeepholePass>());
-    pm.addPass(std::make_unique<PhiEliminationPass>());
-    pm.addPass(std::make_unique<RegisterCoalescerPass>());
-    pm.addPass(std::make_unique<BranchFoldingPass>());
-}
-
 CodeGenContext::CodeGenContext(TargetMachine& tm, Module& module)
     : target_(tm), module_(module) {}
 
@@ -109,6 +101,14 @@ void CodeGenContext::run() {
         MachineFunction mf(*fn, target_);
         pm.run(mf);
     }
+}
+
+void CodeGenContext::addStandardPasses(PassManager& pm, TargetMachine& /*tm*/) {
+    pm.addPass(std::make_unique<AIRToMachineIRPass>());
+    pm.addPass(std::make_unique<PeepholePass>());
+    pm.addPass(std::make_unique<PhiEliminationPass>());
+    pm.addPass(std::make_unique<RegisterCoalescerPass>());
+    pm.addPass(std::make_unique<BranchFoldingPass>());
 }
 
 } // namespace aurora

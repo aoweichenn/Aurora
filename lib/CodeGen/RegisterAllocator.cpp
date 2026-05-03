@@ -16,6 +16,11 @@ LinearScanRegAlloc::LinearScanRegAlloc(MachineFunction& mf)
       instrInfo_(mf.getTarget().getInstrInfo()) {
 }
 
+void LinearScanRegAlloc::allocateRegisters() {
+    computeLiveIntervals();
+    linearScan();
+}
+
 void LinearScanRegAlloc::computeLiveIntervals() {
     intervals_.clear();
     std::map<unsigned, size_t> vregToIdx;
@@ -63,6 +68,36 @@ void LinearScanRegAlloc::computeLiveIntervals() {
     }
 }
 
+void LinearScanRegAlloc::linearScan() {
+    // Sort intervals by start position
+    std::sort(intervals_.begin(), intervals_.end(),
+              [](const LiveInterval& a, const LiveInterval& b) {
+                  return a.start() < b.start();
+              });
+
+    for (auto& li : intervals_) {
+        expireOldIntervals(li, li.start());
+
+        const unsigned reg = tryAllocateFreeReg(li);
+        if (reg == ~0U) {
+            // Need to spill
+            const unsigned spillReg = selectRegToSpill(li);
+            if (spillReg != ~0U) {
+                // Spill the existing interval
+                for (auto& other : intervals_) {
+                    if (other.hasAssignment() && other.getAssignedReg() == spillReg &&
+                        other.overlaps(li)) {
+                        spillAt(other, li.start());
+                    }
+                }
+                assignPhysReg(li, spillReg);
+            }
+        } else {
+            assignPhysReg(li, reg);
+        }
+    }
+}
+
 void LinearScanRegAlloc::expireOldIntervals(LiveInterval& /*current*/, unsigned /*currentStart*/) {
     // Remove intervals that end before currentStart from active set
     // (handled via sorted processing)
@@ -98,41 +133,6 @@ void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned /*slot*/) {
 
 void LinearScanRegAlloc::assignPhysReg(LiveInterval& li, const unsigned reg) {
     li.setAssignedReg(reg);
-}
-
-void LinearScanRegAlloc::linearScan() {
-    // Sort intervals by start position
-    std::sort(intervals_.begin(), intervals_.end(),
-        [](const LiveInterval& a, const LiveInterval& b) {
-            return a.start() < b.start();
-        });
-
-    for (auto& li : intervals_) {
-        expireOldIntervals(li, li.start());
-
-        const unsigned reg = tryAllocateFreeReg(li);
-        if (reg == ~0U) {
-            // Need to spill
-            const unsigned spillReg = selectRegToSpill(li);
-            if (spillReg != ~0U) {
-                // Spill the existing interval
-                for (auto& other : intervals_) {
-                    if (other.hasAssignment() && other.getAssignedReg() == spillReg &&
-                        other.overlaps(li)) {
-                        spillAt(other, li.start());
-                    }
-                }
-                assignPhysReg(li, spillReg);
-            }
-        } else {
-            assignPhysReg(li, reg);
-        }
-    }
-}
-
-void LinearScanRegAlloc::allocateRegisters() {
-    computeLiveIntervals();
-    linearScan();
 }
 
 } // namespace aurora

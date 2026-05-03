@@ -150,11 +150,6 @@ void BitVector::flip() {
     }
 }
 
-void BitVector::clear() noexcept {
-    for (unsigned i = 0; i < numWords_; ++i)
-        words_[i] = 0;
-}
-
 int BitVector::find_first() const {
     for (unsigned i = 0; i < numWords_; ++i) {
         if (words_[i]) {
@@ -194,6 +189,11 @@ void BitVector::resize(const unsigned n) {
         numWords_ = newWords;
     }
     numBits_ = n;
+}
+
+void BitVector::clear() noexcept {
+    for (unsigned i = 0; i < numWords_; ++i)
+        words_[i] = 0;
 }
 
 } // namespace aurora

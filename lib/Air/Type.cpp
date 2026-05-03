@@ -53,6 +53,103 @@ void initTypes() {
 }
 } // anonymous namespace
 
+Type* Type::getInt1Ty () { initTypes(); return g_int1Ty; }
+
+Type* Type::getInt8Ty () { initTypes(); return g_int8Ty; }
+
+Type* Type::getInt16Ty() { initTypes(); return g_int16Ty; }
+
+Type* Type::getInt32Ty() { initTypes(); return g_int32Ty; }
+
+Type* Type::getInt64Ty() { initTypes(); return g_int64Ty; }
+Type* Type::getFloatTy() { initTypes(); return g_floatTy; }
+Type* Type::getDoubleTy(){ initTypes(); return g_doubleTy; }
+Type* Type::getVoidTy() {
+    initTypes();
+    return g_voidTy;
+}
+Type* Type::getPointerTy(Type* elemType) {
+    std::lock_guard<std::mutex> lock(g_typeMutex);
+    const TypeKey key{TypeKind::Pointer, elemType, 0};
+    const auto it = g_ptrTypes.find(key);
+    if (it != g_ptrTypes.end()) return it->second;
+    auto t = new Type(TypeKind::Pointer, elemType, 64, 64);
+    g_ptrTypes[key] = t;
+    return t;
+}
+Type* Type::getArrayTy(Type* elemType, const unsigned numElements) {
+    std::lock_guard<std::mutex> lock(g_typeMutex);
+    const TypeKey key{TypeKind::Array, elemType, numElements};
+    const auto it = g_arrTypes.find(key);
+    if (it != g_arrTypes.end()) return it->second;
+    auto t = new Type(TypeKind::Array, elemType, numElements,
+                      elemType->getSizeInBits() * numElements, elemType->getAlignInBits());
+    g_arrTypes[key] = t;
+    return t;
+}
+Type* Type::getStructTy(SmallVector<Type*, 8> members) {
+    return new Type(TypeKind::Struct, std::move(members));
+}
+Type* Type::getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes) {
+    auto t = new Type(TypeKind::Function, returnType, 0, 0);
+    t->paramTypes_ = std::move(paramTypes);
+    return t;
+}
+
+const SmallVector<Type*, 8>& Type::getStructMembers() const {
+    if (kind_ == TypeKind::Struct) return members_;
+    return g_emptyMembers;
+}
+
+const SmallVector<Type*, 8>& Type::getParamTypes() const {
+    if (kind_ == TypeKind::Function) return paramTypes_;
+    return g_emptyMembers;
+}
+
+std::string Type::toString() const {
+    switch (kind_) {
+        case TypeKind::Void:    return "void";
+        case TypeKind::Integer: {
+            switch (sizeInBits_) {
+                case 1:  return "i1";
+                case 8:  return "i8";
+                case 16: return "i16";
+                case 32: return "i32";
+                case 64: return "i64";
+                default: return "i" + std::to_string(sizeInBits_);
+            }
+        }
+        case TypeKind::Float: {
+            return (sizeInBits_ == 32) ? "float" : "double";
+        }
+        case TypeKind::Pointer:
+            return elemType_ ? (elemType_->toString() + "*") : "ptr";
+        case TypeKind::Array:
+            return "[" + std::to_string(numElements_) + " x " + (elemType_ ? elemType_->toString() : "?") + "]";
+        case TypeKind::Struct: {
+            std::ostringstream os;
+            os << "{";
+            for (unsigned i = 0; i < members_.size(); ++i) {
+                if (i) os << ", ";
+                os << members_[i]->toString();
+            }
+            os << "}";
+            return os.str();
+        }
+        case TypeKind::Function: {
+            std::ostringstream os;
+            os << (elemType_ ? elemType_->toString() : "void") << " (";
+            for (unsigned i = 0; i < paramTypes_.size(); ++i) {
+                if (i) os << ", ";
+                os << paramTypes_[i]->toString();
+            }
+            os << ")";
+            return os.str();
+        }
+    }
+    return "unknown";
+}
+
 Type::Type(const TypeKind kind, const unsigned size, const unsigned align)
     : kind_(kind), sizeInBits_(size), alignInBits_(align),
       elemType_(nullptr), numElements_(0) {}
@@ -74,103 +171,6 @@ Type::Type(const TypeKind kind, SmallVector<Type*, 8> members)
         if (m->getAlignInBits() > alignInBits_)
             alignInBits_ = m->getAlignInBits();
     }
-}
-
-Type* Type::getVoidTy() {
-    initTypes();
-    return g_voidTy;
-}
-Type* Type::getInt1Ty () { initTypes(); return g_int1Ty; }
-Type* Type::getInt8Ty () { initTypes(); return g_int8Ty; }
-Type* Type::getInt16Ty() { initTypes(); return g_int16Ty; }
-Type* Type::getInt32Ty() { initTypes(); return g_int32Ty; }
-Type* Type::getInt64Ty() { initTypes(); return g_int64Ty; }
-Type* Type::getFloatTy() { initTypes(); return g_floatTy; }
-Type* Type::getDoubleTy(){ initTypes(); return g_doubleTy; }
-
-Type* Type::getPointerTy(Type* elemType) {
-    std::lock_guard<std::mutex> lock(g_typeMutex);
-    const TypeKey key{TypeKind::Pointer, elemType, 0};
-    const auto it = g_ptrTypes.find(key);
-    if (it != g_ptrTypes.end()) return it->second;
-    auto t = new Type(TypeKind::Pointer, elemType, 64, 64);
-    g_ptrTypes[key] = t;
-    return t;
-}
-
-Type* Type::getArrayTy(Type* elemType, const unsigned numElements) {
-    std::lock_guard<std::mutex> lock(g_typeMutex);
-    const TypeKey key{TypeKind::Array, elemType, numElements};
-    const auto it = g_arrTypes.find(key);
-    if (it != g_arrTypes.end()) return it->second;
-    auto t = new Type(TypeKind::Array, elemType, numElements,
-                        elemType->getSizeInBits() * numElements, elemType->getAlignInBits());
-    g_arrTypes[key] = t;
-    return t;
-}
-
-Type* Type::getStructTy(SmallVector<Type*, 8> members) {
-    return new Type(TypeKind::Struct, std::move(members));
-}
-
-Type* Type::getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes) {
-    auto t = new Type(TypeKind::Function, returnType, 0, 0);
-    t->paramTypes_ = std::move(paramTypes);
-    return t;
-}
-
-const SmallVector<Type*, 8>& Type::getStructMembers() const {
-    if (kind_ == TypeKind::Struct) return members_;
-    return g_emptyMembers;
-}
-
-const SmallVector<Type*, 8>& Type::getParamTypes() const {
-    if (kind_ == TypeKind::Function) return paramTypes_;
-    return g_emptyMembers;
-}
-
-std::string Type::toString() const {
-    switch (kind_) {
-    case TypeKind::Void:    return "void";
-    case TypeKind::Integer: {
-        switch (sizeInBits_) {
-        case 1:  return "i1";
-        case 8:  return "i8";
-        case 16: return "i16";
-        case 32: return "i32";
-        case 64: return "i64";
-        default: return "i" + std::to_string(sizeInBits_);
-        }
-    }
-    case TypeKind::Float: {
-        return (sizeInBits_ == 32) ? "float" : "double";
-    }
-    case TypeKind::Pointer:
-        return elemType_ ? (elemType_->toString() + "*") : "ptr";
-    case TypeKind::Array:
-        return "[" + std::to_string(numElements_) + " x " + (elemType_ ? elemType_->toString() : "?") + "]";
-    case TypeKind::Struct: {
-        std::ostringstream os;
-        os << "{";
-        for (unsigned i = 0; i < members_.size(); ++i) {
-            if (i) os << ", ";
-            os << members_[i]->toString();
-        }
-        os << "}";
-        return os.str();
-    }
-    case TypeKind::Function: {
-        std::ostringstream os;
-        os << (elemType_ ? elemType_->toString() : "void") << " (";
-        for (unsigned i = 0; i < paramTypes_.size(); ++i) {
-            if (i) os << ", ";
-            os << paramTypes_[i]->toString();
-        }
-        os << ")";
-        return os.str();
-    }
-    }
-    return "unknown";
 }
 
 } // namespace aurora

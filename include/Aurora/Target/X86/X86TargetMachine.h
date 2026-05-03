@@ -17,15 +17,15 @@ public:
     X86TargetMachine();
     ~X86TargetMachine() override;
 
-    const TargetRegisterInfo&  getRegisterInfo() const override;
-    const TargetInstrInfo&     getInstrInfo() const override;
-    const TargetLowering&      getLowering() const override;
-    const TargetCallingConv&   getCallingConv() const override;
-    const TargetFrameLowering& getFrameLowering() const override;
+    [[nodiscard]] const TargetRegisterInfo&  getRegisterInfo() const override;
+    [[nodiscard]] const TargetInstrInfo&     getInstrInfo() const override;
+    [[nodiscard]] const TargetLowering&      getLowering() const override;
+    [[nodiscard]] const TargetCallingConv&   getCallingConv() const override;
+    [[nodiscard]] const TargetFrameLowering& getFrameLowering() const override;
 
     AsmPrinter* createAsmPrinter(MCStreamer& streamer) const override;
-    const DataLayout& getDataLayout() const override;
-    const char* getTargetTriple() const override { return "x86_64-unknown-linux-gnu"; }
+    [[nodiscard]] const DataLayout& getDataLayout() const override;
+    [[nodiscard]] const char* getTargetTriple() const override { return "x86_64-unknown-linux-gnu"; }
 
 private:
     std::unique_ptr<X86RegisterInfo> regInfo_;

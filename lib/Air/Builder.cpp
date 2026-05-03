@@ -11,49 +11,30 @@ void AIRBuilder::setInsertPoint(BasicBlock* bb, AIRInstruction* before) {
     insertPoint_ = before;
 }
 
-Function* AIRBuilder::getFunction() const {
-    return insertBlock_ ? insertBlock_->getParent() : nullptr;
-}
-
-unsigned AIRBuilder::allocateVReg(Type* ty) {
-    auto* fn = getFunction();
-    const unsigned vreg = fn->nextVReg();
-    fn->recordVRegType(vreg, ty);
-    return vreg;
-}
-
-void AIRBuilder::insertInstruction(AIRInstruction* inst) {
-    if (insertPoint_)
-        insertBlock_->insertBefore(insertPoint_, inst);
-    else
-        insertBlock_->pushBack(inst);
-}
-
-void AIRBuilder::setResult(AIRInstruction* inst, const unsigned vreg) {
-    inst->setDestVReg(vreg);
-    insertInstruction(inst);
-}
-
 unsigned AIRBuilder::createAdd(Type* ty, const unsigned lhs, const unsigned rhs) {
     const unsigned vreg = allocateVReg(ty);
     setResult(AIRInstruction::createAdd(ty, lhs, rhs), vreg);
     return vreg;
 }
+
 unsigned AIRBuilder::createSub(Type* ty, const unsigned lhs, const unsigned rhs) {
     const unsigned vreg = allocateVReg(ty);
     setResult(AIRInstruction::createSub(ty, lhs, rhs), vreg);
     return vreg;
 }
+
 unsigned AIRBuilder::createMul(Type* ty, const unsigned lhs, const unsigned rhs) {
     const unsigned vreg = allocateVReg(ty);
     setResult(AIRInstruction::createMul(ty, lhs, rhs), vreg);
     return vreg;
 }
+
 unsigned AIRBuilder::createUDiv(Type* ty, const unsigned lhs, const unsigned rhs) {
     const unsigned vreg = allocateVReg(ty);
     setResult(AIRInstruction::createUDiv(ty, lhs, rhs), vreg);
     return vreg;
 }
+
 unsigned AIRBuilder::createSDiv(Type* ty, const unsigned lhs, const unsigned rhs) {
     const unsigned vreg = allocateVReg(ty);
     setResult(AIRInstruction::createSDiv(ty, lhs, rhs), vreg);
@@ -162,6 +143,25 @@ void AIRBuilder::createUnreachable() {
 }
 void AIRBuilder::setDestVReg(AIRInstruction* inst, const unsigned vreg) {
     inst->setDestVReg(vreg);
+}
+Function* AIRBuilder::getFunction() const {
+    return insertBlock_ ? insertBlock_->getParent() : nullptr;
+}
+unsigned AIRBuilder::allocateVReg(Type* ty) {
+    auto* fn = getFunction();
+    const unsigned vreg = fn->nextVReg();
+    fn->recordVRegType(vreg, ty);
+    return vreg;
+}
+void AIRBuilder::insertInstruction(AIRInstruction* inst) {
+    if (insertPoint_)
+        insertBlock_->insertBefore(insertPoint_, inst);
+    else
+        insertBlock_->pushBack(inst);
+}
+void AIRBuilder::setResult(AIRInstruction* inst, const unsigned vreg) {
+    inst->setDestVReg(vreg);
+    insertInstruction(inst);
 }
 
 } // namespace aurora

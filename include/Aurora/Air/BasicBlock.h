@@ -16,16 +16,16 @@ public:
     BasicBlock& operator=(const BasicBlock&) = delete;
     ~BasicBlock();
 
-    const std::string& getName() const noexcept { return name_; }
-    Function* getParent() const noexcept { return parent_; }
+    [[nodiscard]] const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] Function* getParent() const noexcept { return parent_; }
     void setParent(Function* f) noexcept { parent_ = f; }
 
     // Instruction list
-    AIRInstruction* getFirst() const noexcept { return first_; }
-    AIRInstruction* getLast()  const noexcept { return last_; }
-    AIRInstruction* getTerminator() const;
+    [[nodiscard]] AIRInstruction* getFirst() const noexcept { return first_; }
+    [[nodiscard]] AIRInstruction* getLast()  const noexcept { return last_; }
+    [[nodiscard]] AIRInstruction* getTerminator() const;
 
-    bool empty() const noexcept { return first_ == nullptr; }
+    [[nodiscard]] bool empty() const noexcept { return first_ == nullptr; }
 
     void pushBack(AIRInstruction* inst);
     void pushFront(AIRInstruction* inst);
@@ -35,8 +35,8 @@ public:
 
     // CFG
     void addSuccessor(BasicBlock* succ);
-    const SmallVector<BasicBlock*, 4>& getSuccessors() const noexcept { return successors_; }
-    const SmallVector<BasicBlock*, 4>& getPredecessors() const noexcept { return predecessors_; }
+    [[nodiscard]] const SmallVector<BasicBlock*, 4>& getSuccessors() const noexcept { return successors_; }
+    [[nodiscard]] const SmallVector<BasicBlock*, 4>& getPredecessors() const noexcept { return predecessors_; }
     void addPredecessor(BasicBlock* pred);
     void removePredecessor(BasicBlock* pred);
 

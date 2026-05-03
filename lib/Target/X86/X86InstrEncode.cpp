@@ -7,6 +7,61 @@ namespace aurora {
 // Format per entry:
 // {opcode, {prefixes}, numPrefixes, {baseOpcode}, opcodeSize, hasModRM, hasSIB, hasREX, immSize, dispSize}
 
+void X86InstEncoder::encode(const MachineInstr& /*mi*/, SmallVector<uint8_t, 32>& out) {
+    const X86EncodeEntry* entry = findEntry(0);
+    if (!entry) return;
+    emitPrefixes(entry, out);
+    emitOpcode(entry, out);
+    if (entry->hasModRM) {
+        emitModRM(0, 0, 0, out);
+    }
+    if (entry->immSize > 0) {
+        emitImm(0, entry->immSize, out);
+    }
+}
+
+void X86InstEncoder::encodeOperand(const MachineOperand& /*mo*/, SmallVector<uint8_t, 32>& /*out*/, unsigned /*opIdx*/) {
+}
+
+const X86EncodeEntry* X86InstEncoder::findEntry(const uint16_t opcode) const {
+    for (const auto& e : X86EncodeTable) {
+        if (e.opcode == opcode) return &e;
+    }
+    return nullptr;
+}
+
+void X86InstEncoder::emitPrefixes(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out) {
+    for (uint8_t i = 0; i < e->numPrefixes; ++i)
+        out.push_back(e->prefixes[i]);
+    if (e->hasREX) {
+        // REX.W prefix for 64-bit operations
+        out.push_back(0x48); // REX.W
+    }
+}
+
+void X86InstEncoder::emitOpcode(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out) {
+    for (uint8_t i = 0; i < e->opcodeSize; ++i)
+        out.push_back(e->baseOpcode[i]);
+}
+
+void X86InstEncoder::emitModRM(const uint8_t mod, const uint8_t regOp, const uint8_t rm, SmallVector<uint8_t, 32>& out) {
+    out.push_back((mod << 6) | ((regOp & 7) << 3) | (rm & 7));
+}
+
+void X86InstEncoder::emitSIB(const uint8_t scale, const uint8_t index, const uint8_t base, SmallVector<uint8_t, 32>& out) {
+    out.push_back((scale << 6) | ((index & 7) << 3) | (base & 7));
+}
+
+void X86InstEncoder::emitDisp(const int64_t disp, const unsigned size, SmallVector<uint8_t, 32>& out) {
+    for (unsigned i = 0; i < size; ++i)
+        out.push_back(static_cast<uint8_t>((disp >> (i * 8)) & 0xFF));
+}
+
+void X86InstEncoder::emitImm(const uint64_t imm, const unsigned size, SmallVector<uint8_t, 32>& out) {
+    for (unsigned i = 0; i < size; ++i)
+        out.push_back(static_cast<uint8_t>((imm >> (i * 8)) & 0xFF));
+}
+
 const X86EncodeEntry X86EncodeTable[] = {
     // ADD64rr: REX.W + 0x01 /r
     {X86::ADD64rr, {}, 0, {0x01}, 1, true, false, true, 0, 0},
@@ -150,60 +205,5 @@ const X86EncodeEntry X86EncodeTable[] = {
     // NOP: 0x90
     {X86::NOP, {}, 0, {0x90}, 1, false, false, false, 0, 0},
 };
-
-void X86InstEncoder::encode(const MachineInstr& /*mi*/, SmallVector<uint8_t, 32>& out) {
-    const X86EncodeEntry* entry = findEntry(0);
-    if (!entry) return;
-    emitPrefixes(entry, out);
-    emitOpcode(entry, out);
-    if (entry->hasModRM) {
-        emitModRM(0, 0, 0, out);
-    }
-    if (entry->immSize > 0) {
-        emitImm(0, entry->immSize, out);
-    }
-}
-
-void X86InstEncoder::encodeOperand(const MachineOperand& /*mo*/, SmallVector<uint8_t, 32>& /*out*/, unsigned /*opIdx*/) {
-}
-
-const X86EncodeEntry* X86InstEncoder::findEntry(const uint16_t opcode) const {
-    for (const auto& e : X86EncodeTable) {
-        if (e.opcode == opcode) return &e;
-    }
-    return nullptr;
-}
-
-void X86InstEncoder::emitPrefixes(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out) {
-    for (uint8_t i = 0; i < e->numPrefixes; ++i)
-        out.push_back(e->prefixes[i]);
-    if (e->hasREX) {
-        // REX.W prefix for 64-bit operations
-        out.push_back(0x48); // REX.W
-    }
-}
-
-void X86InstEncoder::emitOpcode(const X86EncodeEntry* e, SmallVector<uint8_t, 32>& out) {
-    for (uint8_t i = 0; i < e->opcodeSize; ++i)
-        out.push_back(e->baseOpcode[i]);
-}
-
-void X86InstEncoder::emitModRM(const uint8_t mod, const uint8_t regOp, const uint8_t rm, SmallVector<uint8_t, 32>& out) {
-    out.push_back((mod << 6) | ((regOp & 7) << 3) | (rm & 7));
-}
-
-void X86InstEncoder::emitSIB(const uint8_t scale, const uint8_t index, const uint8_t base, SmallVector<uint8_t, 32>& out) {
-    out.push_back((scale << 6) | ((index & 7) << 3) | (base & 7));
-}
-
-void X86InstEncoder::emitDisp(const int64_t disp, const unsigned size, SmallVector<uint8_t, 32>& out) {
-    for (unsigned i = 0; i < size; ++i)
-        out.push_back(static_cast<uint8_t>((disp >> (i * 8)) & 0xFF));
-}
-
-void X86InstEncoder::emitImm(const uint64_t imm, const unsigned size, SmallVector<uint8_t, 32>& out) {
-    for (unsigned i = 0; i < size; ++i)
-        out.push_back(static_cast<uint8_t>((imm >> (i * 8)) & 0xFF));
-}
 
 } // namespace aurora

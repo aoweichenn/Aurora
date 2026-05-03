@@ -52,6 +52,15 @@ private:
 };
 
 template <typename NodeTy>
+SmallVector<unsigned, 16> DirectedGraph<NodeTy>::reversePostOrder(const unsigned entry) const {
+    auto po = postOrder(entry);
+    SmallVector<unsigned, 16> rpo;
+    rpo.reserve(po.size());
+    for (auto i = static_cast<unsigned>(po.size()); i > 0; --i) rpo.push_back(po[i - 1]);
+    return rpo;
+}
+
+template <typename NodeTy>
 SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(const unsigned entry) const {
     SmallVector<unsigned, 16> result;
     SmallVector<unsigned, 32> stack;
@@ -70,15 +79,6 @@ SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(const unsigned entry)
         }
     }
     return result;
-}
-
-template <typename NodeTy>
-SmallVector<unsigned, 16> DirectedGraph<NodeTy>::reversePostOrder(const unsigned entry) const {
-    auto po = postOrder(entry);
-    SmallVector<unsigned, 16> rpo;
-    rpo.reserve(po.size());
-    for (auto i = static_cast<unsigned>(po.size()); i > 0; --i) rpo.push_back(po[i - 1]);
-    return rpo;
 }
 
 } // namespace aurora

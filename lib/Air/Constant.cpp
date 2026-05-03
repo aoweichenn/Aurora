@@ -21,19 +21,19 @@ ConstantInt* ConstantInt::getInt(Type* ty, const uint64_t val) {
     return new ConstantInt(ty, val);
 }
 
-ConstantFP::ConstantFP(Type* ty, const double val) : Constant(ty) {
-    if (ty->getSizeInBits() == 32) value_.f = static_cast<float>(val);
-    else value_.d = val;
-}
 ConstantFP* ConstantFP::getFloat(const float val) {
     return new ConstantFP(Type::getFloatTy(), static_cast<double>(val));
 }
 ConstantFP* ConstantFP::getDouble(const double val) {
     return new ConstantFP(Type::getDoubleTy(), val);
 }
-
 float  ConstantFP::getFloatValue()  const noexcept { return type_->getSizeInBits() == 32 ? value_.f : static_cast<float>(value_.d); }
+
 double ConstantFP::getDoubleValue() const noexcept { return type_->getSizeInBits() == 32 ? static_cast<double>(value_.f) : value_.d; }
+ConstantFP::ConstantFP(Type* ty, const double val) : Constant(ty) {
+    if (ty->getSizeInBits() == 32) value_.f = static_cast<float>(val);
+    else value_.d = val;
+}
 
 GlobalVariable::GlobalVariable(Type* ty, const std::string& name)
     : Constant(ty), name_(name) {}

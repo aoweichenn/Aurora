@@ -6,7 +6,29 @@
 namespace aurora {
 
 X86TargetLowering::X86TargetLowering() {
-    initActions();
+    X86TargetLowering::initActions();
+}
+
+LegalizeAction X86TargetLowering::getOperationAction(AIROpcode op, const unsigned vtSize) const {
+    const auto opIdx = static_cast<unsigned>(op);
+    if (opIdx >= 64 || vtSize >= 32) return LegalizeAction::Legal;
+    return static_cast<LegalizeAction>(actionMap_[opIdx][vtSize]);
+}
+
+bool X86TargetLowering::isTypeLegal(const unsigned typeSize) const {
+    if (typeSize >= sizeof(typeLegal_)) return false;
+    return typeLegal_[typeSize];
+}
+
+unsigned X86TargetLowering::getRegisterSizeForType(Type* ty) const {
+    if (!ty) return 64;
+    const unsigned bits = ty->getSizeInBits();
+    if (bits <= 8)  return 8;
+    if (bits <= 16) return 16;
+    if (bits <= 32) return 32;
+    if (bits <= 64) return 64;
+    if (bits <= 128) return 128;
+    return 64;
 }
 
 void X86TargetLowering::initActions() {
@@ -43,28 +65,6 @@ void X86TargetLowering::initActions() {
     // Memory ops legal for all sizes
     typeLegal_[8] = true;
     typeLegal_[16] = true;
-}
-
-LegalizeAction X86TargetLowering::getOperationAction(AIROpcode op, const unsigned vtSize) const {
-    const unsigned opIdx = static_cast<unsigned>(op);
-    if (opIdx >= 64 || vtSize >= 32) return LegalizeAction::Legal;
-    return static_cast<LegalizeAction>(actionMap_[opIdx][vtSize]);
-}
-
-bool X86TargetLowering::isTypeLegal(const unsigned typeSize) const {
-    if (typeSize >= sizeof(typeLegal_)) return false;
-    return typeLegal_[typeSize];
-}
-
-unsigned X86TargetLowering::getRegisterSizeForType(Type* ty) const {
-    if (!ty) return 64;
-    const unsigned bits = ty->getSizeInBits();
-    if (bits <= 8)  return 8;
-    if (bits <= 16) return 16;
-    if (bits <= 32) return 32;
-    if (bits <= 64) return 64;
-    if (bits <= 128) return 128;
-    return 64;
 }
 
 } // namespace aurora

@@ -13,6 +13,46 @@ X86RegisterInfo::X86RegisterInfo() {
     buildRegisterSet();
 }
 
+const RegisterClass& X86RegisterInfo::getRegClass(const RegClass id) const {
+    switch (id) {
+        case RegClass::GPR8:   return gpr8_;
+        case RegClass::GPR16:  return gpr16_;
+        case RegClass::GPR32:  return gpr32_;
+        case RegClass::GPR64:  return gpr64_;
+        case RegClass::XMM128: return xmm128_;
+        default:               return gpr64_;
+    }
+}
+
+Register X86RegisterInfo::getFramePointer() const { return regs_[RBP]; }
+
+Register X86RegisterInfo::getStackPointer() const { return regs_[RSP]; }
+BitVector X86RegisterInfo::getCalleeSavedRegs() const { return calleeSaved_; }
+
+BitVector X86RegisterInfo::getCallerSavedRegs() const { return callerSaved_; }
+const std::vector<unsigned>& X86RegisterInfo::getAllocOrder(const RegClass rc) const {
+    // Return allocation order
+    static std::vector<unsigned> defaultOrder;
+    if (rc == RegClass::GPR64) return allocOrderGPR64_;
+    return defaultOrder;
+}
+
+unsigned X86RegisterInfo::getNumRegs() const { return NUM_REGS; }
+
+Register X86RegisterInfo::getReg(const unsigned id) {
+    if (id >= XMM0) {
+        return {id, XMMNames[id - NUM_GPRS], 128, RegClass::XMM128};
+    }
+    // Default: return 64-bit GPR
+    static X86RegisterInfo ri;
+    return ri.regs_[id];
+}
+
+unsigned X86RegisterInfo::get32Reg(const unsigned reg64) {
+    // For x86-64, 32-bit regs share the same IDs as 64-bit
+    return reg64;
+}
+
 void X86RegisterInfo::buildRegisterSet() {
     regs_.reserve(NUM_REGS);
 
@@ -55,46 +95,6 @@ void X86RegisterInfo::buildRegisterSet() {
 
     // Allocation order for GPR64: caller-saved first, then callee-saved
     allocOrderGPR64_ = {RAX, RCX, RDX, RSI, RDI, R8, R9, R10, R11, RBX, R12, R13, R14, R15, RBP, RSP};
-}
-
-const RegisterClass& X86RegisterInfo::getRegClass(const RegClass id) const {
-    switch (id) {
-    case RegClass::GPR8:   return gpr8_;
-    case RegClass::GPR16:  return gpr16_;
-    case RegClass::GPR32:  return gpr32_;
-    case RegClass::GPR64:  return gpr64_;
-    case RegClass::XMM128: return xmm128_;
-    default:               return gpr64_;
-    }
-}
-
-Register X86RegisterInfo::getFramePointer() const { return regs_[RBP]; }
-Register X86RegisterInfo::getStackPointer() const { return regs_[RSP]; }
-
-BitVector X86RegisterInfo::getCalleeSavedRegs() const { return calleeSaved_; }
-BitVector X86RegisterInfo::getCallerSavedRegs() const { return callerSaved_; }
-
-const std::vector<unsigned>& X86RegisterInfo::getAllocOrder(const RegClass rc) const {
-    // Return allocation order
-    static std::vector<unsigned> defaultOrder;
-    if (rc == RegClass::GPR64) return allocOrderGPR64_;
-    return defaultOrder;
-}
-
-unsigned X86RegisterInfo::getNumRegs() const { return NUM_REGS; }
-
-Register X86RegisterInfo::getReg(const unsigned id) {
-    if (id >= XMM0) {
-        return {id, XMMNames[id - NUM_GPRS], 128, RegClass::XMM128};
-    }
-    // Default: return 64-bit GPR
-    static X86RegisterInfo ri;
-    return ri.regs_[id];
-}
-
-unsigned X86RegisterInfo::get32Reg(const unsigned reg64) {
-    // For x86-64, 32-bit regs share the same IDs as 64-bit
-    return reg64;
 }
 
 } // namespace aurora
