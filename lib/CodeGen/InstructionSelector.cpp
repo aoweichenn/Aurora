@@ -5,8 +5,6 @@
 
 namespace aurora {
 
-InstructionSelector::InstructionSelector(const TargetMachine& tm) : target_(tm) {}
-
 void InstructionSelector::run(SelectionDAG& dag, MachineBasicBlock& mbb) {
     dag.select(&mbb);
 }

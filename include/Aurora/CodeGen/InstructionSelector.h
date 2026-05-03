@@ -11,12 +11,11 @@ class MachineInstr;
 
 class InstructionSelector {
 public:
-    explicit InstructionSelector(const TargetMachine& tm);
+    explicit InstructionSelector(const TargetMachine& /*tm*/) {}
 
     void run(SelectionDAG& dag, MachineBasicBlock& mbb);
 
 private:
-    const TargetMachine& target_;
     void selectNode(SDNode* node, MachineBasicBlock& mbb);
     MachineInstr* createMachineInstrFromPattern(SDNode* node);
 };

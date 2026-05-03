@@ -8,8 +8,8 @@
 
 namespace aurora {
 
-X86AsmPrinter::X86AsmPrinter(MCStreamer& streamer, const X86RegisterInfo& regInfo)
-    : AsmPrinter(streamer), regInfo_(regInfo) {}
+X86AsmPrinter::X86AsmPrinter(MCStreamer& streamer, const X86RegisterInfo& /*regInfo*/)
+    : AsmPrinter(streamer) {}
 
 void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
     std::ostringstream oss;

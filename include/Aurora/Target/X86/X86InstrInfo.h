@@ -94,7 +94,6 @@ public:
     unsigned getArithOpcode(unsigned opType, unsigned size, bool isImm) const;
 
 private:
-    const X86RegisterInfo& regInfo_;
     void buildOpcodeTable();
     MachineOpcodeDesc opcodeTable_[X86::NUM_OPS];
 };

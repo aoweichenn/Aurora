@@ -10,7 +10,7 @@ class X86RegisterInfo;
 
 class X86AsmPrinter : public AsmPrinter {
 public:
-    X86AsmPrinter(MCStreamer& streamer, const X86RegisterInfo& regInfo);
+    X86AsmPrinter(MCStreamer& streamer, const X86RegisterInfo& /*regInfo*/);
 
     void emitInstruction(const MachineInstr& mi) override;
 
@@ -19,7 +19,6 @@ protected:
     void emitFunctionFooter(MachineFunction& mf) override;
 
 private:
-    const X86RegisterInfo& regInfo_;
     void printOperand(const MachineOperand& mo, std::ostream& os);
     void printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os);
 };

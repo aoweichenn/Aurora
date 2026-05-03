@@ -4,7 +4,7 @@
 
 namespace aurora {
 
-X86InstrInfo::X86InstrInfo(const X86RegisterInfo& regInfo) : regInfo_(regInfo) {
+X86InstrInfo::X86InstrInfo(const X86RegisterInfo& /*regInfo*/) {
     buildOpcodeTable();
 }
 
