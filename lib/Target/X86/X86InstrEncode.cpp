@@ -24,8 +24,8 @@ void X86InstEncoder::encodeOperand(const MachineOperand& /*mo*/, SmallVector<uin
 }
 
 const X86EncodeEntry* X86InstEncoder::findEntry(const uint16_t opcode) const {
-    for (const auto& e : X86EncodeTable) {
-        if (e.opcode == opcode) return &e;
+    for (unsigned i = 0; i < kX86EncodeTableSize; ++i) {
+        if (X86EncodeTable[i].opcode == opcode) return &X86EncodeTable[i];
     }
     return nullptr;
 }
@@ -45,11 +45,11 @@ void X86InstEncoder::emitOpcode(const X86EncodeEntry* e, SmallVector<uint8_t, 32
 }
 
 void X86InstEncoder::emitModRM(const uint8_t mod, const uint8_t regOp, const uint8_t rm, SmallVector<uint8_t, 32>& out) {
-    out.push_back((mod << 6) | ((regOp & 7) << 3) | (rm & 7));
+    out.push_back(static_cast<uint8_t>((mod << 6) | ((regOp & 7) << 3) | (rm & 7)));
 }
 
 void X86InstEncoder::emitSIB(const uint8_t scale, const uint8_t index, const uint8_t base, SmallVector<uint8_t, 32>& out) {
-    out.push_back((scale << 6) | ((index & 7) << 3) | (base & 7));
+    out.push_back(static_cast<uint8_t>((scale << 6) | ((index & 7) << 3) | (base & 7)));
 }
 
 void X86InstEncoder::emitDisp(const int64_t disp, const unsigned size, SmallVector<uint8_t, 32>& out) {
@@ -205,5 +205,7 @@ const X86EncodeEntry X86EncodeTable[] = {
     // NOP: 0x90
     {X86::NOP, {}, 0, {0x90}, 1, false, false, false, 0, 0},
 };
+
+const unsigned kX86EncodeTableSize = sizeof(X86EncodeTable) / sizeof(X86EncodeTable[0]);
 
 } // namespace aurora

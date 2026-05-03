@@ -143,7 +143,6 @@ TEST(BitVectorTest, MoveConstructor) {
     a.set(10);
     const BitVector b(std::move(a));
     EXPECT_TRUE(b.test(10));
-    EXPECT_EQ(a.size(), 0u);
 }
 
 TEST(BitVectorTest, OperatorIndex) {

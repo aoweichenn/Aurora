@@ -24,8 +24,8 @@ BumpPtrAllocator::~BumpPtrAllocator() {
 }
 
 void* BumpPtrAllocator::allocate(size_t size, size_t alignment) {
-    auto aligned = reinterpret_cast<unsigned char*>(
-        (reinterpret_cast<uintptr_t>(currentPtr_) + alignment - 1) & ~(alignment - 1));
+    const auto addr = reinterpret_cast<std::size_t>(currentPtr_);
+    auto aligned = reinterpret_cast<unsigned char*>((addr + alignment - 1) & ~(alignment - 1));
 
     if (aligned + size > currentEnd_) {
         const size_t newSlabSize = (size + alignment > SLAB_SIZE) ? (size + alignment) : SLAB_SIZE;
@@ -38,8 +38,8 @@ void* BumpPtrAllocator::allocate(size_t size, size_t alignment) {
         currentEnd_ = newSlab->data + newSlabSize;
         totalSize_ += newSlabSize;
 
-        aligned = reinterpret_cast<unsigned char*>(
-            (reinterpret_cast<uintptr_t>(currentPtr_) + alignment - 1) & ~(alignment - 1));
+        const auto addr2 = reinterpret_cast<std::size_t>(currentPtr_);
+        aligned = reinterpret_cast<unsigned char*>((addr2 + alignment - 1) & ~(alignment - 1));
     }
 
     currentPtr_ = aligned + size;

@@ -8,7 +8,7 @@ MachineFunction::MachineFunction(Function& airFunc, const TargetMachine& TM)
     // Create virtual registers for function parameters
     const auto fnTy = airFunc.getFunctionType();
     for (unsigned i = 0; i < fnTy->getNumParams(); ++i) {
-        createVirtualRegister(fnTy->getParamTypes()[i]);
+        (void)createVirtualRegister(fnTy->getParamTypes()[i]);
     }
 }
 

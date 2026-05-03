@@ -94,7 +94,7 @@ unsigned BitVector::size() const noexcept { return numBits_; }
 unsigned BitVector::count() const {
     unsigned c = 0;
     for (unsigned i = 0; i < numWords_; ++i)
-        c += __builtin_popcountll(words_[i]);
+        c += static_cast<unsigned>(__builtin_popcountll(words_[i]));
     return c;
 }
 
@@ -153,7 +153,7 @@ void BitVector::flip() {
 int BitVector::find_first() const {
     for (unsigned i = 0; i < numWords_; ++i) {
         if (words_[i]) {
-            const int bit = __builtin_ctzll(words_[i]);
+            const unsigned bit = static_cast<unsigned>(__builtin_ctzll(words_[i]));
             const int result = static_cast<int>(i * BITS_PER_WORD + bit);
             return result < static_cast<int>(numBits_) ? result : -1;
         }
@@ -167,7 +167,7 @@ int BitVector::find_next(unsigned idx) const {
     word_type word = words_[wordIdx] & (~static_cast<word_type>(0) << (idx % BITS_PER_WORD));
     while (true) {
         if (word) {
-            const int bit = __builtin_ctzll(word);
+            const unsigned bit = static_cast<unsigned>(__builtin_ctzll(word));
             const int result = static_cast<int>(wordIdx * BITS_PER_WORD + bit);
             return result < static_cast<int>(numBits_) ? result : -1;
         }

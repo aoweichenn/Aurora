@@ -38,6 +38,7 @@ private:
 };
 
 extern const X86EncodeEntry X86EncodeTable[];
+extern const unsigned kX86EncodeTableSize;
 
 } // namespace aurora
 

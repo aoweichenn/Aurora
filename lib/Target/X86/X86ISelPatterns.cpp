@@ -1,4 +1,5 @@
 #include "Aurora/Target/X86/X86ISelPatterns.h"
+#include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Air/Type.h"
 
 namespace aurora {

@@ -31,9 +31,9 @@ TEST(FunctionTest, CreateBasicBlock) {
 TEST(FunctionTest, MultipleBlocks) {
     auto* fnTy = makeTestFnType();
     Function fn(fnTy, "test");
-    fn.createBasicBlock("entry");
-    fn.createBasicBlock("loop");
-    fn.createBasicBlock("exit");
+    (void)fn.createBasicBlock("entry");
+    (void)fn.createBasicBlock("loop");
+    (void)fn.createBasicBlock("exit");
     EXPECT_GE(fn.getBlocks().size(), 3u);
 }
 
@@ -41,8 +41,8 @@ TEST(FunctionTest, NextVReg) {
     auto* fnTy = makeTestFnType();
     Function fn(fnTy, "test");
     // First vregs (0, 1) are params
-    fn.nextVReg(); // alloc vreg 2
-    fn.nextVReg(); // alloc vreg 3
+    (void)fn.nextVReg(); // alloc vreg 2
+    (void)fn.nextVReg(); // alloc vreg 3
     EXPECT_EQ(fn.getNumVRegs(), 4u);
 }
 

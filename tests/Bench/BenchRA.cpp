@@ -10,9 +10,9 @@
 using namespace aurora;
 
 static void BM_RegAlloc_LiveIntervalComputation(benchmark::State& state) {
-    const auto mod = std::make_unique<Module>("bench");
+    auto mod = std::make_unique<Module>("bench");
     SmallVector<Type*, 8> params;
-    for (int i = 0; i < 4; ++i) params.push_back(Type::getInt64Ty());
+    for (auto i = 0; i < 4; ++i) params.push_back(Type::getInt64Ty());
     auto* fnTy = new FunctionType(Type::getInt64Ty(), params);
     auto* fn = mod->createFunction(fnTy, "bench_fn");
     auto* entry = fn->getEntryBlock();
@@ -20,21 +20,19 @@ static void BM_RegAlloc_LiveIntervalComputation(benchmark::State& state) {
     AIRBuilder b(entry);
     unsigned v0 = b.createAdd(Type::getInt64Ty(), 0, 1);
     unsigned v1 = b.createMul(Type::getInt64Ty(), v0, 2);
-    for (int i = 0; i < 50; ++i) {
+    for (auto i = 0; i < 50; ++i) {
         v0 = b.createAdd(Type::getInt64Ty(), v0, v1);
         v1 = b.createMul(Type::getInt64Ty(), v1, v0);
     }
     b.createRet(v0);
 
-    const auto tm = TargetMachine::createX86_64();
+    auto tm = TargetMachine::createX86_64();
     MachineFunction mf(*fn, *tm);
-
-    // Run AIR->MIr pass first
     PassManager pm;
     CodeGenContext::addStandardPasses(pm, *tm);
     pm.run(mf);
 
-    for (auto _ : state) {
+    for (auto _ : state) { // NOLINT
         LinearScanRegAlloc ra(mf);
         ra.allocateRegisters();
     }
