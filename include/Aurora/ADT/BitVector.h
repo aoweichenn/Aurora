@@ -1,7 +1,6 @@
 #ifndef AURORA_ADT_BITVECTOR_H
 #define AURORA_ADT_BITVECTOR_H
 
-#include <cstddef>
 #include <cstdint>
 
 namespace aurora {

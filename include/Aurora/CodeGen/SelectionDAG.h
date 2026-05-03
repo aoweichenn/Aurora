@@ -3,7 +3,6 @@
 
 #include "Aurora/ADT/SmallVector.h"
 #include "Aurora/Air/Instruction.h"
-#include <cstdint>
 #include <vector>
 
 namespace aurora {

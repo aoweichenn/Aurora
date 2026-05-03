@@ -2,7 +2,6 @@
 #define AURORA_TARGET_TARGETCALLINGCONV_H
 
 #include "Aurora/ADT/SmallVector.h"
-#include <cstdint>
 
 namespace aurora {
 

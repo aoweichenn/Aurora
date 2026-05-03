@@ -1,12 +1,10 @@
 #include "Aurora/MC/X86AsmPrinter.h"
 #include "Aurora/MC/MCStreamer.h"
-#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/CodeGen/MachineFunction.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
-#include "Aurora/Target/TargetMachine.h"
 #include <sstream>
-#include <cstring>
 
 namespace aurora {
 

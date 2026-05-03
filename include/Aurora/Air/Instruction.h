@@ -2,7 +2,6 @@
 #define AURORA_AIR_INSTRUCTION_H
 
 #include "Aurora/Air/Type.h"
-#include "Aurora/Air/Constant.h"
 #include "Aurora/ADT/SmallVector.h"
 #include <cstdint>
 #include <string>
@@ -10,6 +9,7 @@
 namespace aurora {
 
 class BasicBlock;
+class Function;
 
 enum class AIROpcode : uint16_t {
     // Terminators

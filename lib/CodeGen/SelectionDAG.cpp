@@ -1,8 +1,5 @@
 #include "Aurora/CodeGen/SelectionDAG.h"
 #include "Aurora/Air/BasicBlock.h"
-#include "Aurora/Air/Function.h"
-#include "Aurora/CodeGen/MachineBasicBlock.h"
-#include "Aurora/CodeGen/MachineInstr.h"
 
 namespace aurora {
 

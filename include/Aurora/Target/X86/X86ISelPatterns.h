@@ -3,7 +3,6 @@
 
 #include "Aurora/Air/Instruction.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
-#include <cstdint>
 #include <vector>
 
 namespace aurora {

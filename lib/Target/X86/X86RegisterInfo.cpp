@@ -1,5 +1,5 @@
 #include "Aurora/Target/X86/X86RegisterInfo.h"
-#include <algorithm>
+#include <utility>
 
 namespace aurora {
 

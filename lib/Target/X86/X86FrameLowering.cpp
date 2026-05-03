@@ -1,7 +1,4 @@
 #include "Aurora/Target/X86/X86FrameLowering.h"
-#include "Aurora/CodeGen/MachineFunction.h"
-#include "Aurora/CodeGen/MachineBasicBlock.h"
-#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 
 namespace aurora {

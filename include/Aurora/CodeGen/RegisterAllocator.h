@@ -3,7 +3,6 @@
 
 #include "Aurora/CodeGen/LiveInterval.h"
 #include <vector>
-#include <queue>
 
 namespace aurora {
 

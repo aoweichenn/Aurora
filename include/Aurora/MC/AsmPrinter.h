@@ -1,9 +1,6 @@
 #ifndef AURORA_MC_ASMPRINTER_H
 #define AURORA_MC_ASMPRINTER_H
 
-#include <memory>
-#include <string>
-
 namespace aurora {
 
 class MachineFunction;

@@ -2,7 +2,6 @@
 #define AURORA_TARGET_TARGETINSTRINFO_H
 
 #include <cstdint>
-#include <string>
 
 namespace aurora {
 

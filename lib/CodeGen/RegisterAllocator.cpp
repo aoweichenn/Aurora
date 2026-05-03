@@ -4,7 +4,6 @@
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/TargetMachine.h"
 #include "Aurora/Target/TargetRegisterInfo.h"
-#include "Aurora/Target/TargetInstrInfo.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 #include <algorithm>
 #include <map>

@@ -1,11 +1,9 @@
 #include "Aurora/CodeGen/PassManager.h"
 #include "Aurora/CodeGen/MachineFunction.h"
-#include "Aurora/CodeGen/InstructionSelector.h"
-#include "Aurora/CodeGen/RegisterAllocator.h"
-#include "Aurora/CodeGen/PrologueEpilogueInserter.h"
+#include "Aurora/CodeGen/MachineBasicBlock.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Function.h"
-#include "Aurora/Target/TargetMachine.h"
 
 namespace aurora {
 

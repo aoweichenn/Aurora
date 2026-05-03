@@ -2,6 +2,7 @@
 #define AURORA_X86_X86INSTRINFO_H
 
 #include "Aurora/Target/TargetInstrInfo.h"
+#include <cstdint>
 
 namespace aurora {
 

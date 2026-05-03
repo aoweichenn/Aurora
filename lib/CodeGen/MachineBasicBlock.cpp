@@ -1,5 +1,4 @@
 #include "Aurora/CodeGen/MachineBasicBlock.h"
-#include <algorithm>
 
 namespace aurora {
 

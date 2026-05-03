@@ -2,7 +2,6 @@
 #define AURORA_TARGET_TARGETMACHINE_H
 
 #include <memory>
-#include <string>
 
 namespace aurora {
 

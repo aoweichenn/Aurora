@@ -2,7 +2,6 @@
 #define AURORA_AIR_CONSTANT_H
 
 #include "Aurora/Air/Type.h"
-#include "Aurora/ADT/SmallVector.h"
 #include <cstdint>
 #include <string>
 

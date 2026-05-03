@@ -1,7 +1,7 @@
 #ifndef AURORA_ADT_SPARSESET_H
 #define AURORA_ADT_SPARSESET_H
 
-#include <algorithm>
+#include <type_traits>
 #include <vector>
 
 namespace aurora {

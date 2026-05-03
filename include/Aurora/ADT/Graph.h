@@ -2,6 +2,7 @@
 #define AURORA_ADT_GRAPH_H
 
 #include "Aurora/ADT/SmallVector.h"
+#include <utility>
 
 namespace aurora {
 

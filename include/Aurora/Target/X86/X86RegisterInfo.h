@@ -2,6 +2,7 @@
 #define AURORA_X86_X86REGISTERINFO_H
 
 #include "Aurora/Target/TargetRegisterInfo.h"
+#include "Aurora/ADT/BitVector.h"
 #include <vector>
 
 namespace aurora {

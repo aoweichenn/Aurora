@@ -1,7 +1,6 @@
 #include "Aurora/CodeGen/InstructionSelector.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
-#include "Aurora/Target/TargetMachine.h"
 #include "Aurora/Target/X86/X86ISelPatterns.h"
 
 namespace aurora {

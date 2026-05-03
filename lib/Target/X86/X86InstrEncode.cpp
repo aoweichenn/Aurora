@@ -1,6 +1,5 @@
 #include "Aurora/Target/X86/X86InstrEncode.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
-#include <cstring>
 
 namespace aurora {
 

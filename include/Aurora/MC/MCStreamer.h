@@ -1,9 +1,10 @@
 #ifndef AURORA_MC_MCSTREAMER_H
 #define AURORA_MC_MCSTREAMER_H
 
+#include <cstdint>
+#include <ostream>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 namespace aurora {
 

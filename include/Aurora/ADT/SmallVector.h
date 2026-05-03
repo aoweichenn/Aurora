@@ -2,14 +2,10 @@
 #define AURORA_ADT_SMALLVECTOR_H
 
 #include <cstddef>
-#include <cstdint>
 #include <initializer_list>
-#include <iterator>
+#include <new>
 #include <type_traits>
 #include <utility>
-#include <new>
-#include <algorithm>
-#include <cstring>
 
 namespace aurora {
 

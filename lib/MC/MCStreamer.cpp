@@ -1,7 +1,6 @@
 #include "Aurora/MC/MCStreamer.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include <iostream>
-#include <iomanip>
 
 namespace aurora {
 
