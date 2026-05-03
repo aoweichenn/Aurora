@@ -51,6 +51,7 @@ enum Opcode : uint16_t {
     JL_1, JL_4, JG_1, JG_4,
     JLE_1, JLE_4, JGE_1, JGE_4,
     JAE_1, JAE_4, JBE_1, JBE_4,
+    JA_1, JB_1,
 
     // Call / Return
     CALL64pcrel32, RETQ, RETIQ,

@@ -111,6 +111,17 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(1), oss);
             }
             break;
+        case X86::TEST64rr:
+            if (mi.getNumOperands() >= 2) {
+                oss << "testq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
+        case X86::CQO:
+            oss << "cqo";
+            break;
         case X86::CALL64pcrel32:
             if (mi.getNumOperands() >= 1) {
                 oss << "call\t";
@@ -136,6 +147,67 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
         case X86::JE_4:
             if (mi.getNumOperands() >= 1) {
                 oss << "je\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JNE_1:
+        case X86::JNE_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jne\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JL_1:
+        case X86::JL_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jl\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JG_1:
+        case X86::JG_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jg\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JLE_1:
+        case X86::JLE_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jle\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JGE_1:
+        case X86::JGE_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jge\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JA_1:
+            if (mi.getNumOperands() >= 1) {
+                oss << "ja\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JB_1:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jb\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JAE_1:
+        case X86::JAE_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jae\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::JBE_1:
+        case X86::JBE_4:
+            if (mi.getNumOperands() >= 1) {
+                oss << "jbe\t";
                 printOperand(mi.getOperand(0), oss);
             }
             break;

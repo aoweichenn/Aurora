@@ -27,6 +27,7 @@ public:
     void pushBack(MachineInstr* mi);
     void insertAfter(MachineInstr* pos, MachineInstr* mi);
     void insertBefore(MachineInstr* pos, MachineInstr* mi);
+    void remove(MachineInstr* mi);
 
     void addSuccessor(MachineBasicBlock* succ);
     [[nodiscard]] const SmallVector<MachineBasicBlock*, 4>& successors() const noexcept { return successors_; }

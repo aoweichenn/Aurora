@@ -51,6 +51,23 @@ static void initPatterns() {
     g_patterns.push_back({AIROpcode::LShr, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S64, OperandSize::Any}, X86::SHR64rCL, {0, 1}});
     // ashr i64
     g_patterns.push_back({AIROpcode::AShr, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S64, OperandSize::Any}, X86::SAR64rCL, {0, 1}});
+
+    // div/sdiv i64 (IDIV uses RAX:RDX with implicit operands; ISel pass handles specially)
+    g_patterns.push_back({AIROpcode::SDiv, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S64, OperandSize::S64}, X86::IDIV64r, {0, 1}});
+
+    // icmp i64 rr
+    g_patterns.push_back({AIROpcode::ICmp, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S64, OperandSize::S64}, X86::CMP64rr, {0, 1}});
+    // icmp i32 rr
+    g_patterns.push_back({AIROpcode::ICmp, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S32, OperandSize::S32}, X86::CMP32rr, {0, 1}});
+
+    // ret (ret handled by ISel pass specially)
+    g_patterns.push_back({AIROpcode::Ret, 0, {OperandKind::None, OperandKind::None, OperandKind::None, OperandKind::None}, {OperandSize::Any, OperandSize::Any, OperandSize::Any, OperandSize::Any}, X86::RETQ, {-1, -1, -1, -1}});
+
+    // br (JMP to MBB)
+    g_patterns.push_back({AIROpcode::Br, 0, {OperandKind::None, OperandKind::None, OperandKind::None, OperandKind::None}, {OperandSize::Any, OperandSize::Any, OperandSize::Any, OperandSize::Any}, X86::JMP_1, {-1, -1, -1, -1}});
+
+    // condbr (handled specially by ISel; placeholder)
+    g_patterns.push_back({AIROpcode::CondBr, 0, {OperandKind::None, OperandKind::None, OperandKind::None, OperandKind::None}, {OperandSize::Any, OperandSize::Any, OperandSize::Any, OperandSize::Any}, X86::JE_1, {-1, -1, -1, -1}});
 }
 
 ISelMatchResult X86ISelPatterns::matchPattern(const AIROpcode airOp, Type* resultTy,
