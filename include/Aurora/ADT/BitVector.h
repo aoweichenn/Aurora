@@ -22,22 +22,23 @@ public:
     bool operator[](unsigned idx) const;
     void set(unsigned idx, bool val = true);
     void reset(unsigned idx);
-    bool test(unsigned idx) const;
+    bool test(unsigned idx) const noexcept;
     unsigned size() const noexcept;
     unsigned count() const;
-    bool any() const;
-    bool none() const;
-    bool all() const;
+    bool any() const noexcept;
+    bool none() const noexcept;
+    bool all() const noexcept;
 
     BitVector& operator|=(const BitVector& rhs);
     BitVector& operator&=(const BitVector& rhs);
     BitVector& operator^=(const BitVector& rhs);
-    BitVector& operator~();
+    void flip();
 
     int find_first() const;
     int find_next(unsigned idx) const;
 
     void resize(unsigned n);
+    void clear() noexcept;
 
 private:
     word_type* words_;

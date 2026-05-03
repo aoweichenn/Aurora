@@ -18,8 +18,8 @@ public:
 
     unsigned getVReg() const noexcept { return vreg_; }
     Type* getType() const noexcept { return type_; }
-    const std::vector<LiveRange>& getRanges() const { return ranges_; }
-    std::vector<LiveRange>& getRanges() { return ranges_; }
+    const std::vector<LiveRange>& getRanges() const noexcept { return ranges_; }
+    std::vector<LiveRange>& getRanges() noexcept { return ranges_; }
 
     void addRange(unsigned start, unsigned end);
     bool overlaps(const LiveInterval& other) const;
@@ -36,8 +36,8 @@ public:
     float getSpillWeight() const noexcept { return spillWeight_; }
     void setSpillWeight(float w) noexcept { spillWeight_ = w; }
 
-    unsigned start() const;
-    unsigned end() const;
+    unsigned start() const noexcept;
+    unsigned end() const noexcept;
 
 private:
     unsigned vreg_;

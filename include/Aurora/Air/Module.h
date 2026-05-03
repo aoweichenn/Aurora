@@ -29,8 +29,8 @@ public:
     const DataLayout& getDataLayout() const noexcept { return dl_; }
     DataLayout& getDataLayout() noexcept { return dl_; }
 
-    Function* createFunction(FunctionType* ty, const std::string& name);
-    GlobalVariable* createGlobal(Type* ty, const std::string& name);
+    [[nodiscard]] Function* createFunction(FunctionType* ty, const std::string& name);
+    [[nodiscard]] GlobalVariable* createGlobal(Type* ty, const std::string& name);
 
     const SmallVector<std::unique_ptr<Function>, 16>& getFunctions() const noexcept { return functions_; }
     const SmallVector<std::unique_ptr<GlobalVariable>, 8>& getGlobals() const noexcept { return globals_; }

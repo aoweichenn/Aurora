@@ -17,10 +17,10 @@ public:
     void setUniverse(unsigned size);
     void insert(T val);
     void erase(T val);
-    bool contains(T val) const;
-    bool empty() const;
-    unsigned size() const;
-    void clear();
+    bool contains(T val) const noexcept;
+    bool empty() const noexcept;
+    unsigned size() const noexcept;
+    void clear() noexcept;
 
     class const_iterator {
     public:

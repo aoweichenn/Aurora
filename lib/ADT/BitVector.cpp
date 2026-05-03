@@ -82,7 +82,7 @@ void BitVector::reset(unsigned idx) {
     words_[wordIdx] &= ~(static_cast<word_type>(1) << bitIdx);
 }
 
-bool BitVector::test(unsigned idx) const {
+bool BitVector::test(unsigned idx) const noexcept {
     if (idx >= numBits_) return false;
     unsigned wordIdx = idx / BITS_PER_WORD;
     unsigned bitIdx = idx % BITS_PER_WORD;
@@ -98,15 +98,15 @@ unsigned BitVector::count() const {
     return c;
 }
 
-bool BitVector::any() const {
+bool BitVector::any() const noexcept {
     for (unsigned i = 0; i < numWords_; ++i)
         if (words_[i]) return true;
     return false;
 }
 
-bool BitVector::none() const { return !any(); }
+bool BitVector::none() const noexcept { return !any(); }
 
-bool BitVector::all() const {
+bool BitVector::all() const noexcept {
     unsigned fullWords = numBits_ / BITS_PER_WORD;
     unsigned remBits = numBits_ % BITS_PER_WORD;
     for (unsigned i = 0; i < fullWords; ++i)
@@ -141,14 +141,18 @@ BitVector& BitVector::operator^=(const BitVector& rhs) {
     return *this;
 }
 
-BitVector& BitVector::operator~() {
+void BitVector::flip() {
     for (unsigned i = 0; i < numWords_; ++i)
         words_[i] = ~words_[i];
     if (numBits_ % BITS_PER_WORD) {
         word_type mask = (static_cast<word_type>(1) << (numBits_ % BITS_PER_WORD)) - 1;
         words_[numWords_ - 1] &= mask;
     }
-    return *this;
+}
+
+void BitVector::clear() noexcept {
+    for (unsigned i = 0; i < numWords_; ++i)
+        words_[i] = 0;
 }
 
 int BitVector::find_first() const {

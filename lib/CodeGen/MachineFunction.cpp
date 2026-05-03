@@ -29,7 +29,7 @@ unsigned MachineFunction::createVirtualRegister(Type* ty) {
     return vreg;
 }
 
-Type* MachineFunction::getVRegType(unsigned vreg) const {
+Type* MachineFunction::getVRegType(unsigned vreg) const noexcept {
     if (vreg >= vregTypes_.size()) return nullptr;
     return vregTypes_[vreg];
 }

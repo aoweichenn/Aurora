@@ -53,13 +53,10 @@ const MachineOperand& MachineInstr::getOperand(unsigned i) const { return operan
 void MachineInstr::addOperand(MachineOperand mo) { operands_.push_back(mo); }
 void MachineInstr::setOperand(unsigned i, MachineOperand mo) { operands_[i] = mo; }
 
-bool MachineInstr::isTerminator() const {
-    // Check target instr info
-    return false;
-}
-bool MachineInstr::isBranch() const { return false; }
-bool MachineInstr::isReturn() const { return false; }
-bool MachineInstr::isCall() const { return false; }
-bool MachineInstr::isMove() const { return false; }
+bool MachineInstr::isTerminator() const noexcept { return false; }
+bool MachineInstr::isBranch() const noexcept { return false; }
+bool MachineInstr::isReturn() const noexcept { return false; }
+bool MachineInstr::isCall() const noexcept { return false; }
+bool MachineInstr::isMove() const noexcept { return false; }
 
 } // namespace aurora

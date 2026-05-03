@@ -89,10 +89,10 @@ TEST(BitVectorTest, BitwiseXor) {
     EXPECT_TRUE(a.test(4));
 }
 
-TEST(BitVectorTest, Not) {
+TEST(BitVectorTest, Flip) {
     BitVector bv(64);
     bv.set(0);
-    ~bv;
+    bv.flip();
     EXPECT_FALSE(bv.test(0));
     EXPECT_EQ(bv.count(), 63u);
 }

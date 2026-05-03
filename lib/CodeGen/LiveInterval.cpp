@@ -34,12 +34,12 @@ bool LiveInterval::liveAt(unsigned slot) const {
     return false;
 }
 
-unsigned LiveInterval::start() const {
+unsigned LiveInterval::start() const noexcept {
     if (ranges_.empty()) return 0;
     return ranges_.front().start;
 }
 
-unsigned LiveInterval::end() const {
+unsigned LiveInterval::end() const noexcept {
     if (ranges_.empty()) return 0;
     return ranges_.back().end;
 }

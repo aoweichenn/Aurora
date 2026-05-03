@@ -52,7 +52,7 @@ private:
 
 class GlobalVariable : public Constant {
 public:
-    GlobalVariable(Type* ty, const std::string& name);
+    explicit GlobalVariable(Type* ty, const std::string& name);
     const std::string& getName() const noexcept { return name_; }
 private:
     std::string name_;

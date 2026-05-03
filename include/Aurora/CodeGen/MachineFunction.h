@@ -27,14 +27,15 @@ public:
     Function& getAIRFunction() const noexcept { return airFunc_; }
     const TargetMachine& getTarget() const noexcept { return target_; }
 
-    MachineBasicBlock* createBasicBlock(const std::string& name = "");
+    [[nodiscard]] MachineBasicBlock* createBasicBlock(const std::string& name = "");
     SmallVector<std::unique_ptr<MachineBasicBlock>, 8>& getBlocks() noexcept { return blocks_; }
+    const SmallVector<std::unique_ptr<MachineBasicBlock>, 8>& getBlocks() const noexcept { return blocks_; }
 
-    unsigned createVirtualRegister(Type* ty);
-    Type* getVRegType(unsigned vreg) const;
+    [[nodiscard]] unsigned createVirtualRegister(Type* ty);
+    Type* getVRegType(unsigned vreg) const noexcept;
 
-    int createStackSlot(unsigned size, unsigned alignment);
-    const std::vector<StackObject>& getStackObjects() const { return stackObjects_; }
+    [[nodiscard]] int createStackSlot(unsigned size, unsigned alignment);
+    const std::vector<StackObject>& getStackObjects() const noexcept { return stackObjects_; }
 
     unsigned getNumVRegs() const noexcept { return nextVReg_; }
 

@@ -28,7 +28,7 @@ public:
     SDValue getOperand(unsigned i) const;
     void addOperand(SDValue val);
 
-    const SmallVector<SDNode*, 4>& getUsers() const { return users_; }
+    const SmallVector<SDNode*, 4>& getUsers() const noexcept { return users_; }
     void addUser(SDNode* user);
 
     bool isSelected() const noexcept { return selected_; }
@@ -76,8 +76,8 @@ public:
     SDValue createRegister(unsigned vreg, Type* ty);
 
     void buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* mbb);
-    const std::vector<SDNode*>& getAllNodes() const { return allNodes_; }
-    const SmallVector<SDValue, 4>& getRoots() const { return roots_; }
+    const std::vector<SDNode*>& getAllNodes() const noexcept { return allNodes_; }
+    const SmallVector<SDValue, 4>& getRoots() const noexcept { return roots_; }
 
     void dagCombine();
     void legalize();

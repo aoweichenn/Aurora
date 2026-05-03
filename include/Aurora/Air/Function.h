@@ -31,13 +31,13 @@ public:
     Module* getParent() const noexcept { return module_; }
     FunctionType* getFunctionType() const noexcept { return fnType_; }
 
-    BasicBlock* createBasicBlock(const std::string& name = "");
+    [[nodiscard]] BasicBlock* createBasicBlock(const std::string& name = "");
     const SmallVector<std::unique_ptr<BasicBlock>, 8>& getBlocks() const noexcept { return blocks_; }
 
     BasicBlock* getEntryBlock() const noexcept { return entryBlock_; }
     unsigned getNumArgs() const noexcept { return fnType_->getNumParams(); }
 
-    unsigned nextVReg() noexcept { return nextVReg_++; }
+    [[nodiscard]] unsigned nextVReg() noexcept { return nextVReg_++; }
     unsigned getNumVRegs() const noexcept { return nextVReg_; }
     void recordVRegType(unsigned vreg, Type* ty);
 

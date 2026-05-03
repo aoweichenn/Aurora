@@ -44,8 +44,10 @@ public:
 
     iterator begin() noexcept { return begin_; }
     const_iterator begin() const noexcept { return begin_; }
+    const_iterator cbegin() const noexcept { return begin_; }
     iterator end() noexcept { return end_; }
     const_iterator end() const noexcept { return end_; }
+    const_iterator cend() const noexcept { return end_; }
 
     size_type size() const noexcept { return static_cast<size_type>(end_ - begin_); }
     size_type capacity() const noexcept { return static_cast<size_type>(capacity_ - begin_); }
@@ -63,7 +65,7 @@ public:
     void push_back(const T& value);
     void push_back(T&& value);
     void pop_back();
-    void clear();
+    void clear() noexcept;
     void reserve(size_type n);
     void resize(size_type n);
     iterator erase(iterator pos);
@@ -194,7 +196,7 @@ template <typename T, unsigned N>
 void SmallVector<T, N>::pop_back() { --end_; end_->~T(); }
 
 template <typename T, unsigned N>
-void SmallVector<T, N>::clear() {
+void SmallVector<T, N>::clear() noexcept {
     for (T* p = begin_; p != end_; ++p) p->~T();
     end_ = begin_;
 }

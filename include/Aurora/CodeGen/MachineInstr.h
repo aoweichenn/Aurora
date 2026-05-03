@@ -71,11 +71,11 @@ public:
     void setNext(MachineInstr* n) noexcept { next_ = n; }
     void setPrev(MachineInstr* p) noexcept { prev_ = p; }
 
-    bool isTerminator() const;
-    bool isBranch() const;
-    bool isReturn() const;
-    bool isCall() const;
-    bool isMove() const;
+    bool isTerminator() const noexcept;
+    bool isBranch() const noexcept;
+    bool isReturn() const noexcept;
+    bool isCall() const noexcept;
+    bool isMove() const noexcept;
 
 private:
     uint16_t opcode_;
