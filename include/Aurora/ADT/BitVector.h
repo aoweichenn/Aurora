@@ -1,0 +1,51 @@
+#ifndef AURORA_ADT_BITVECTOR_H
+#define AURORA_ADT_BITVECTOR_H
+
+#include <cstddef>
+#include <cstdint>
+
+namespace aurora {
+
+class BitVector {
+public:
+    using word_type = uint64_t;
+    static constexpr unsigned BITS_PER_WORD = 64;
+
+    BitVector();
+    explicit BitVector(unsigned size);
+    BitVector(const BitVector& other);
+    BitVector(BitVector&& other) noexcept;
+    ~BitVector();
+
+    BitVector& operator=(const BitVector& other);
+    BitVector& operator=(BitVector&& other) noexcept;
+
+    bool operator[](unsigned idx) const;
+    void set(unsigned idx, bool val = true);
+    void reset(unsigned idx);
+    bool test(unsigned idx) const;
+    unsigned size() const noexcept;
+    unsigned count() const;
+    bool any() const;
+    bool none() const;
+    bool all() const;
+
+    BitVector& operator|=(const BitVector& rhs);
+    BitVector& operator&=(const BitVector& rhs);
+    BitVector& operator^=(const BitVector& rhs);
+    BitVector& operator~();
+
+    int find_first() const;
+    int find_next(unsigned idx) const;
+
+    void resize(unsigned n);
+
+private:
+    word_type* words_;
+    unsigned numWords_;
+    unsigned numBits_;
+};
+
+} // namespace aurora
+
+#endif // AURORA_ADT_BITVECTOR_H

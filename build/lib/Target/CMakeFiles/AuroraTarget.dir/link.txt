@@ -1,0 +1,2 @@
+/usr/sbin/ar qc libAuroraTarget.a CMakeFiles/AuroraTarget.dir/TargetMachine.cpp.o CMakeFiles/AuroraTarget.dir/TargetRegisterInfo.cpp.o CMakeFiles/AuroraTarget.dir/TargetInstrInfo.cpp.o CMakeFiles/AuroraTarget.dir/TargetLowering.cpp.o CMakeFiles/AuroraTarget.dir/TargetCallingConv.cpp.o CMakeFiles/AuroraTarget.dir/TargetFrameLowering.cpp.o
+/usr/sbin/ranlib libAuroraTarget.a

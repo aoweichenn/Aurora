@@ -1,0 +1,2 @@
+/usr/sbin/ar qc libAuroraAir.a CMakeFiles/AuroraAir.dir/Type.cpp.o CMakeFiles/AuroraAir.dir/Constant.cpp.o CMakeFiles/AuroraAir.dir/Instruction.cpp.o CMakeFiles/AuroraAir.dir/BasicBlock.cpp.o CMakeFiles/AuroraAir.dir/Function.cpp.o CMakeFiles/AuroraAir.dir/Module.cpp.o CMakeFiles/AuroraAir.dir/Builder.cpp.o
+/usr/sbin/ranlib libAuroraAir.a

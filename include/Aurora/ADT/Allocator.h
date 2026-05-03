@@ -1,0 +1,48 @@
+#ifndef AURORA_ADT_ALLOCATOR_H
+#define AURORA_ADT_ALLOCATOR_H
+
+#include <cstddef>
+#include <cstdint>
+#include <utility>
+
+namespace aurora {
+
+class BumpPtrAllocator {
+public:
+    static constexpr unsigned SLAB_SIZE = 4096;
+
+    BumpPtrAllocator();
+    ~BumpPtrAllocator();
+
+    BumpPtrAllocator(const BumpPtrAllocator&) = delete;
+    BumpPtrAllocator& operator=(const BumpPtrAllocator&) = delete;
+
+    void* allocate(size_t size, size_t alignment = 8);
+
+    template <typename T, typename... Args>
+    T* create(Args&&... args);
+
+    void reset();
+    size_t totalSize() const noexcept { return totalSize_; }
+
+private:
+    struct Slab {
+        unsigned char* data;
+        size_t size;
+        Slab* next;
+    };
+    Slab* currentSlab_;
+    unsigned char* currentPtr_;
+    unsigned char* currentEnd_;
+    size_t totalSize_;
+};
+
+template <typename T, typename... Args>
+inline T* BumpPtrAllocator::create(Args&&... args) {
+    void* mem = allocate(sizeof(T), alignof(T));
+    return new (mem) T(std::forward<Args>(args)...);
+}
+
+} // namespace aurora
+
+#endif // AURORA_ADT_ALLOCATOR_H

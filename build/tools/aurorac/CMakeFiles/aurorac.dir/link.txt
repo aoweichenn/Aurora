@@ -1,0 +1,1 @@
+/usr/sbin/c++ -Wl,--dependency-file=CMakeFiles/aurorac.dir/link.d CMakeFiles/aurorac.dir/main.cpp.o -o aurorac  ../../lib/MC/libAuroraMC.a ../../lib/CodeGen/libAuroraCodeGen.a ../../lib/Target/X86/libAuroraX86.a ../../lib/Target/libAuroraTarget.a ../../lib/Air/libAuroraAir.a ../../lib/ADT/libAuroraADT.a

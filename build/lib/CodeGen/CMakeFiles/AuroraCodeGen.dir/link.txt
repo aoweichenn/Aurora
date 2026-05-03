@@ -1,0 +1,2 @@
+/usr/sbin/ar qc libAuroraCodeGen.a CMakeFiles/AuroraCodeGen.dir/MachineInstr.cpp.o CMakeFiles/AuroraCodeGen.dir/MachineBasicBlock.cpp.o CMakeFiles/AuroraCodeGen.dir/MachineFunction.cpp.o CMakeFiles/AuroraCodeGen.dir/SelectionDAG.cpp.o CMakeFiles/AuroraCodeGen.dir/InstructionSelector.cpp.o CMakeFiles/AuroraCodeGen.dir/LiveInterval.cpp.o CMakeFiles/AuroraCodeGen.dir/RegisterAllocator.cpp.o CMakeFiles/AuroraCodeGen.dir/PrologueEpilogueInserter.cpp.o CMakeFiles/AuroraCodeGen.dir/PassManager.cpp.o
+/usr/sbin/ranlib libAuroraCodeGen.a

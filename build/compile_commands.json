@@ -1,0 +1,476 @@
+[
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT.dir/SmallVector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SmallVector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SmallVector.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT.dir/SmallVector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT.dir/BitVector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/BitVector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/BitVector.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT.dir/BitVector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT.dir/Graph.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Graph.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Graph.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT.dir/Graph.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT.dir/Allocator.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Allocator.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Allocator.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT.dir/Allocator.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT.dir/SparseSet.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SparseSet.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SparseSet.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT.dir/SparseSet.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++ -DAuroraADT_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT_shared.dir/SmallVector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SmallVector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SmallVector.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT_shared.dir/SmallVector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++ -DAuroraADT_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT_shared.dir/BitVector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/BitVector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/BitVector.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT_shared.dir/BitVector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++ -DAuroraADT_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT_shared.dir/Graph.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Graph.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Graph.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT_shared.dir/Graph.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++ -DAuroraADT_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT_shared.dir/Allocator.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Allocator.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/Allocator.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT_shared.dir/Allocator.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/ADT",
+  "command": "/usr/sbin/c++ -DAuroraADT_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraADT_shared.dir/SparseSet.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SparseSet.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/ADT/SparseSet.cpp",
+  "output": "lib/ADT/CMakeFiles/AuroraADT_shared.dir/SparseSet.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Type.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Type.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Type.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Type.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Constant.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Constant.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Constant.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Constant.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Instruction.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Instruction.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Instruction.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Instruction.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/BasicBlock.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/BasicBlock.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/BasicBlock.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/BasicBlock.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Function.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Function.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Function.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Function.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Module.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Module.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Module.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Module.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir.dir/Builder.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Builder.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Builder.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir.dir/Builder.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Type.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Type.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Type.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Type.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Constant.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Constant.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Constant.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Constant.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Instruction.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Instruction.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Instruction.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Instruction.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/BasicBlock.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/BasicBlock.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/BasicBlock.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/BasicBlock.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Function.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Function.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Function.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Function.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Module.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Module.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Module.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Module.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Air",
+  "command": "/usr/sbin/c++ -DAuroraAir_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraAir_shared.dir/Builder.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Builder.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Air/Builder.cpp",
+  "output": "lib/Air/CMakeFiles/AuroraAir_shared.dir/Builder.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetMachine.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetMachine.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetMachine.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetMachine.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetRegisterInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetRegisterInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetRegisterInfo.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetRegisterInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetInstrInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetInstrInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetInstrInfo.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetInstrInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetLowering.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetCallingConv.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetCallingConv.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetCallingConv.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetCallingConv.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget.dir/TargetFrameLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetFrameLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetFrameLowering.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget.dir/TargetFrameLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetMachine.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetMachine.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetMachine.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetMachine.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetRegisterInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetRegisterInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetRegisterInfo.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetRegisterInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetInstrInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetInstrInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetInstrInfo.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetInstrInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetLowering.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetCallingConv.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetCallingConv.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetCallingConv.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetCallingConv.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target",
+  "command": "/usr/sbin/c++ -DAuroraTarget_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraTarget_shared.dir/TargetFrameLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetFrameLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/TargetFrameLowering.cpp",
+  "output": "lib/Target/CMakeFiles/AuroraTarget_shared.dir/TargetFrameLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86RegisterInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86RegisterInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86RegisterInfo.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86RegisterInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86InstrInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrInfo.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86InstrInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86InstrEncode.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrEncode.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrEncode.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86InstrEncode.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86TargetLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetLowering.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86TargetLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86CallingConv.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86CallingConv.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86CallingConv.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86CallingConv.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86FrameLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86FrameLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86FrameLowering.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86FrameLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86TargetMachine.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetMachine.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetMachine.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86TargetMachine.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86.dir/X86ISelPatterns.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86ISelPatterns.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86ISelPatterns.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86.dir/X86ISelPatterns.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86RegisterInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86RegisterInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86RegisterInfo.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86RegisterInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86InstrInfo.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrInfo.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrInfo.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86InstrInfo.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86InstrEncode.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrEncode.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86InstrEncode.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86InstrEncode.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86TargetLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetLowering.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86TargetLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86CallingConv.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86CallingConv.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86CallingConv.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86CallingConv.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86FrameLowering.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86FrameLowering.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86FrameLowering.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86FrameLowering.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86TargetMachine.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetMachine.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86TargetMachine.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86TargetMachine.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/Target/X86",
+  "command": "/usr/sbin/c++ -DAuroraX86_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraX86_shared.dir/X86ISelPatterns.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86ISelPatterns.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/Target/X86/X86ISelPatterns.cpp",
+  "output": "lib/Target/X86/CMakeFiles/AuroraX86_shared.dir/X86ISelPatterns.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/MachineInstr.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineInstr.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineInstr.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/MachineInstr.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/MachineBasicBlock.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineBasicBlock.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineBasicBlock.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/MachineBasicBlock.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/MachineFunction.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineFunction.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineFunction.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/MachineFunction.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/SelectionDAG.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/SelectionDAG.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/SelectionDAG.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/SelectionDAG.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/InstructionSelector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/InstructionSelector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/InstructionSelector.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/InstructionSelector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/LiveInterval.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/LiveInterval.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/LiveInterval.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/LiveInterval.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/RegisterAllocator.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/RegisterAllocator.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/RegisterAllocator.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/RegisterAllocator.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/PrologueEpilogueInserter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PrologueEpilogueInserter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PrologueEpilogueInserter.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/PrologueEpilogueInserter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen.dir/PassManager.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PassManager.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PassManager.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen.dir/PassManager.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/MachineInstr.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineInstr.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineInstr.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/MachineInstr.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/MachineBasicBlock.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineBasicBlock.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineBasicBlock.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/MachineBasicBlock.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/MachineFunction.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineFunction.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/MachineFunction.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/MachineFunction.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/SelectionDAG.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/SelectionDAG.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/SelectionDAG.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/SelectionDAG.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/InstructionSelector.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/InstructionSelector.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/InstructionSelector.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/InstructionSelector.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/LiveInterval.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/LiveInterval.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/LiveInterval.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/LiveInterval.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/RegisterAllocator.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/RegisterAllocator.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/RegisterAllocator.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/RegisterAllocator.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/PrologueEpilogueInserter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PrologueEpilogueInserter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PrologueEpilogueInserter.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/PrologueEpilogueInserter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/CodeGen",
+  "command": "/usr/sbin/c++ -DAuroraCodeGen_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraCodeGen_shared.dir/PassManager.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PassManager.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/CodeGen/PassManager.cpp",
+  "output": "lib/CodeGen/CMakeFiles/AuroraCodeGen_shared.dir/PassManager.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC.dir/MCStreamer.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/MCStreamer.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/MCStreamer.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC.dir/MCStreamer.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC.dir/AsmPrinter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/AsmPrinter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/AsmPrinter.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC.dir/AsmPrinter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC.dir/X86AsmPrinter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86AsmPrinter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86AsmPrinter.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC.dir/X86AsmPrinter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC.dir/X86InstEncoder.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86InstEncoder.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86InstEncoder.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC.dir/X86InstEncoder.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++ -DAuroraMC_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC_shared.dir/MCStreamer.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/MCStreamer.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/MCStreamer.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC_shared.dir/MCStreamer.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++ -DAuroraMC_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC_shared.dir/AsmPrinter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/AsmPrinter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/AsmPrinter.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC_shared.dir/AsmPrinter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++ -DAuroraMC_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC_shared.dir/X86AsmPrinter.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86AsmPrinter.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86AsmPrinter.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC_shared.dir/X86AsmPrinter.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/lib/MC",
+  "command": "/usr/sbin/c++ -DAuroraMC_shared_EXPORTS -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIC -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/AuroraMC_shared.dir/X86InstEncoder.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86InstEncoder.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/lib/MC/X86InstEncoder.cpp",
+  "output": "lib/MC/CMakeFiles/AuroraMC_shared.dir/X86InstEncoder.cpp.o"
+},
+{
+  "directory": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/build/tools/aurorac",
+  "command": "/usr/sbin/c++  -I/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/include -std=c++17 -fPIE -Wall -Wextra -Wpedantic -Wno-unused-parameter -o CMakeFiles/aurorac.dir/main.cpp.o -c /home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/tools/aurorac/main.cpp",
+  "file": "/home/aoweichen/demos/STU/CPP/COMPLIER/Aurora/tools/aurorac/main.cpp",
+  "output": "tools/aurorac/CMakeFiles/aurorac.dir/main.cpp.o"
+}
+]

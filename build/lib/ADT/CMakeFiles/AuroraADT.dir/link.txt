@@ -1,0 +1,2 @@
+/usr/sbin/ar qc libAuroraADT.a CMakeFiles/AuroraADT.dir/SmallVector.cpp.o CMakeFiles/AuroraADT.dir/BitVector.cpp.o CMakeFiles/AuroraADT.dir/Graph.cpp.o CMakeFiles/AuroraADT.dir/Allocator.cpp.o CMakeFiles/AuroraADT.dir/SparseSet.cpp.o
+/usr/sbin/ranlib libAuroraADT.a
