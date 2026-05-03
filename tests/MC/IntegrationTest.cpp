@@ -118,3 +118,55 @@ TEST(IntegrationTest, MultipleBlocksFunction) {
     // We should have MBBs for each AIR BB
     EXPECT_EQ(mf.getBlocks().size(), 4u);
 }
+
+// Build: int add(int a, int b) { int x = a; int y = b; return x + y; }
+// Uses alloca/store/load pattern (O0 style)
+static std::unique_ptr<Module> buildAllocaLoadStoreModule() {
+    auto mod = std::make_unique<Module>("memtest");
+    SmallVector<Type*, 8> params;
+    params.push_back(Type::getInt64Ty());
+    params.push_back(Type::getInt64Ty());
+    auto* fnTy = new FunctionType(Type::getInt64Ty(), params);
+
+    auto* fn = mod->createFunction(fnTy, "add_mem");
+    auto* entry = fn->createBasicBlock("entry");
+    AIRBuilder builder(entry);
+
+    const unsigned allocaA = builder.createAlloca(Type::getInt64Ty());
+    const unsigned allocaB = builder.createAlloca(Type::getInt64Ty());
+    builder.createStore(0, allocaA);
+    builder.createStore(1, allocaB);
+    const unsigned loadA = builder.createLoad(Type::getInt64Ty(), allocaA);
+    const unsigned loadB = builder.createLoad(Type::getInt64Ty(), allocaB);
+    const unsigned sum = builder.createAdd(Type::getInt64Ty(), loadA, loadB);
+    builder.createRet(sum);
+    return mod;
+}
+
+TEST(IntegrationTest, AllocaLoadStorePipeline) {
+    auto module = buildAllocaLoadStoreModule();
+    auto tm = TargetMachine::createX86_64();
+    ASSERT_NE(tm, nullptr);
+
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const auto& ri = static_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
+    X86AsmPrinter printer(streamer, ri);
+
+    for (auto& fn : module->getFunctions()) {
+        MachineFunction mf(*fn, *tm);
+        PassManager pm;
+        CodeGenContext::addStandardPasses(pm, *tm);
+        pm.run(mf);
+        printer.emitFunction(mf);
+    }
+
+    std::string output = oss.str();
+    EXPECT_NE(output.find(".globl add_mem"), std::string::npos);
+    EXPECT_NE(output.find("add_mem:"), std::string::npos);
+    EXPECT_NE(output.find("movq"), std::string::npos);
+    EXPECT_NE(output.find("addq"), std::string::npos);
+    EXPECT_NE(output.find("ret"), std::string::npos);
+    // Should NOT have unknown opcode
+    EXPECT_EQ(output.find("unknown opcode"), std::string::npos);
+}

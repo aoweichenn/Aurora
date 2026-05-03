@@ -141,6 +141,18 @@ public:
                 case AIROpcode::SDiv:
                     iselSDiv(*mbb, mi, airOp);
                     break;
+                case AIROpcode::Alloca:
+                    iselAlloca(mf, *mbb, mi);
+                    break;
+                case AIROpcode::Load:
+                    iselLoad(*mbb, mi);
+                    break;
+                case AIROpcode::Store:
+                    iselStore(*mbb, mi);
+                    break;
+                case AIROpcode::GetElementPtr:
+                    iselGEP(*mbb, mi);
+                    break;
                 default:
                     // Leave unknown opcodes as-is (they'll print as "# unknown opcode")
                     break;
@@ -324,7 +336,92 @@ private:
         mbb.pushBack(idiv);
     }
 
-    void rebuildSuccessors(MachineFunction& /*mf*/) {}
+    void iselAlloca(MachineFunction& mf, MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Alloca creates a stack slot; result vreg becomes a frame index
+        // On x86, the alloca itself generates no code (stack is managed later)
+        // We just create a stack slot and record the mapping
+        int frameIdx = mf.createStackSlot(8, 8);
+        if (mi->getNumOperands() > 0) {
+            unsigned resultVReg = mi->getOperand(0).getVirtualReg();
+            frameIndexMap_[resultVReg] = frameIdx;
+        }
+        // Remove the alloca MI (no corresponding x86 instruction at ISel time)
+        mbb.remove(mi);
+        delete mi;
+    }
+
+    void iselLoad(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Load: %result = load i64, i64* %ptr
+        // layout: [VReg(ptr), VReg(result)]
+        unsigned resultVReg = ~0U;
+        unsigned ptrVReg = ~0U;
+        if (mi->getNumOperands() >= 1) ptrVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+
+        auto* loadMI = new MachineInstr(X86::MOV64rm);
+        loadMI->addOperand(MachineOperand::createVReg(resultVReg));
+
+        auto it = frameIndexMap_.find(ptrVReg);
+        if (it != frameIndexMap_.end()) {
+            // Pointer is from alloca: use frame index
+            loadMI->addOperand(MachineOperand::createFrameIndex(it->second));
+        } else {
+            // Pointer is a register: indirect load
+            loadMI->addOperand(MachineOperand::createVReg(ptrVReg));
+        }
+        replaceMI(mbb, mi, loadMI);
+    }
+
+    void iselStore(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Store: store i64 %val, i64* %ptr
+        // layout: [VReg(val), VReg(ptr)]
+        unsigned valVReg = ~0U;
+        unsigned ptrVReg = ~0U;
+        if (mi->getNumOperands() >= 1) valVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) ptrVReg = mi->getOperand(1).getVirtualReg();
+
+        auto* storeMI = new MachineInstr(X86::MOV64mr);
+
+        auto it = frameIndexMap_.find(ptrVReg);
+        if (it != frameIndexMap_.end()) {
+            storeMI->addOperand(MachineOperand::createFrameIndex(it->second));
+        } else {
+            storeMI->addOperand(MachineOperand::createVReg(ptrVReg));
+        }
+        storeMI->addOperand(MachineOperand::createVReg(valVReg));
+        replaceMI(mbb, mi, storeMI);
+    }
+
+    void iselGEP(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // GEP: compute pointer = base + index * element_size
+        // layout: [VReg(base_ptr), VReg(index), VReg(result)]
+        // Simplified: result = base + index * 8 (pointer is always 8 bytes)
+        unsigned baseVReg = ~0U, indexVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) baseVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) indexVReg = mi->getOperand(1).getVirtualReg();
+        if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
+
+        // MOV base → result
+        auto* movMI = new MachineInstr(X86::MOV64rr);
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        movMI->addOperand(MachineOperand::createVReg(baseVReg));
+        replaceMI(mbb, mi, movMI);
+
+        // SHL index, 3 (multiply by 8)
+        auto* shlMI = new MachineInstr(X86::SHL64ri);
+        shlMI->addOperand(MachineOperand::createVReg(3)); // shift amount (immediate)
+        shlMI->addOperand(MachineOperand::createVReg(indexVReg));
+        mbb.pushBack(shlMI);
+
+        // ADD index, result (result = base + index*8)
+        auto* addMI = new MachineInstr(X86::ADD64rr);
+        addMI->addOperand(MachineOperand::createVReg(indexVReg));
+        addMI->addOperand(MachineOperand::createVReg(resultVReg));
+        mbb.pushBack(addMI);
+    }
+
+    void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT
+    std::map<unsigned, int> frameIndexMap_;
 };
 
 class RegisterAllocationPass : public CodeGenPass {

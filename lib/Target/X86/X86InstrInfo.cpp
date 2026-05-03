@@ -162,6 +162,12 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::JLE_4, "jle\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(X86::JGE_1, "jge\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(X86::JGE_4, "jge\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(X86::JAE_1, "jae\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(X86::JAE_4, "jae\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(X86::JBE_1, "jbe\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(X86::JBE_4, "jbe\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(X86::JA_1,  "ja\t$dst",  1, true, true, false, false, false, false, true);
+    setDesc(X86::JB_1,  "jb\t$dst",  1, true, true, false, false, false, false, true);
 
     // Call/Return
     setDesc(X86::CALL64pcrel32,"call\t$dst",1, false, false, true, false, false, false, true);

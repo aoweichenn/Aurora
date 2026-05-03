@@ -24,6 +24,22 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
     // Simple mapping to AT&T syntax for common instructions
     // In a full implementation, this would use the InstrInfo tables
     switch (opcode) {
+        case X86::MOV64rm:
+            if (mi.getNumOperands() >= 2) {
+                oss << "movq\t";
+                printOperand(mi.getOperand(1), oss); // src (memory)
+                oss << ", ";
+                printOperand(mi.getOperand(0), oss); // dst (register)
+            }
+            break;
+        case X86::MOV64mr:
+            if (mi.getNumOperands() >= 2) {
+                oss << "movq\t";
+                printOperand(mi.getOperand(1), oss); // src (register)
+                oss << ", ";
+                printOperand(mi.getOperand(0), oss); // dst (memory)
+            }
+            break;
         case X86::MOV32rr:
         case X86::MOV64rr:
             if (mi.getNumOperands() >= 2) {
@@ -101,6 +117,14 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             if (mi.getNumOperands() >= 1) {
                 oss << "shlq\t%cl, ";
                 printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::SHL64ri:
+            if (mi.getNumOperands() >= 2) {
+                oss << "shlq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
             }
             break;
         case X86::CMP64rr:
@@ -254,7 +278,7 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) {
             os << "." << mo.getMBB()->getName();
             break;
         case MachineOperandKind::MO_FrameIndex:
-            os << "-" << (-mo.getFrameIndex() * 8) << "(%rbp)";
+            os << "-" << ((mo.getFrameIndex() + 1) * 8) << "(%rbp)";
             break;
         default:
             os << "?";

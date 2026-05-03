@@ -28,10 +28,20 @@ static std::unique_ptr<Module> buildSampleModule() {
 
     AIRBuilder builder(entry);
 
-    // %2 = add i64 %0, %1  (direct register operation)
-    const unsigned sum = builder.createAdd(Type::getInt64Ty(), 0, 1);
+    // Allocate stack slots for locals
+    const unsigned allocaA = builder.createAlloca(Type::getInt64Ty());
+    const unsigned allocaB = builder.createAlloca(Type::getInt64Ty());
 
-    // ret i64 %2
+    // Store parameters to locals
+    builder.createStore(0, allocaA);  // parameter a
+    builder.createStore(1, allocaB);  // parameter b
+
+    // Load locals and compute
+    const unsigned loadA = builder.createLoad(Type::getInt64Ty(), allocaA);
+    const unsigned loadB = builder.createLoad(Type::getInt64Ty(), allocaB);
+    const unsigned sum = builder.createAdd(Type::getInt64Ty(), loadA, loadB);
+
+    // Return the result
     builder.createRet(sum);
 
     return mod;
