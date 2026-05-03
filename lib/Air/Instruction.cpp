@@ -164,6 +164,11 @@ AIRInstruction* AIRInstruction::createCall(Type* retTy, Function* callee, const 
     for (const auto& arg : args) i->operands_.push_back(arg);
     return i;
 }
+AIRInstruction* AIRInstruction::createConstantInt(Type* ty, const int64_t val) {
+    auto* i = new AIRInstruction(AIROpcode::ConstantInt, ty);
+    i->constantVal_ = val;
+    return i;
+}
 bool AIRInstruction::hasResult() const noexcept {
     switch (opcode_) {
         case AIROpcode::Ret: case AIROpcode::Br: case AIROpcode::CondBr:
@@ -191,6 +196,7 @@ unsigned AIRInstruction::getNumOperands() const noexcept {
         case AIROpcode::ICmp:     return 2;
         case AIROpcode::Load:     return 1;
         case AIROpcode::Alloca:   return 0;
+        case AIROpcode::ConstantInt: return 0;
         case AIROpcode::Phi:      return static_cast<unsigned>(phiIncomings_.size() * 2);
         case AIROpcode::Call:     return static_cast<unsigned>(operands_.size());
         case AIROpcode::Store:    return 2;
@@ -320,6 +326,7 @@ const char* opcodeName(const AIROpcode op) {
         case AIROpcode::Phi:          return "phi";
         case AIROpcode::Select:       return "select";
         case AIROpcode::Call:         return "call";
+        case AIROpcode::ConstantInt:  return "const";
     }
     return "unknown";
 }

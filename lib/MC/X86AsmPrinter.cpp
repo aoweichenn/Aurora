@@ -81,6 +81,14 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(1), oss);
             }
             break;
+        case X86::SUB64ri32:
+            if (mi.getNumOperands() >= 2) {
+                oss << "subq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
         case X86::IMUL64rr:
             if (mi.getNumOperands() >= 2) {
                 oss << "imulq\t";
@@ -243,7 +251,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             }
             break;
         default:
-            oss << "# unknown opcode " << opcode;
+            oss << "# unknown opcode " << opcode << " (0x" << std::hex << opcode << std::dec << ")";
             break;
     }
 

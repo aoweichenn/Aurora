@@ -126,6 +126,12 @@ unsigned AIRBuilder::createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*
     setResult(AIRInstruction::createPhi(ty, incomings), vreg);
     return vreg;
 }
+unsigned AIRBuilder::createConstantInt(const int64_t val) {
+    auto* ty = Type::getInt64Ty();
+    const unsigned vreg = allocateVReg(ty);
+    setResult(AIRInstruction::createConstantInt(ty, val), vreg);
+    return vreg;
+}
 void AIRBuilder::createRet(const unsigned val) {
     insertInstruction(AIRInstruction::createRet(val));
 }

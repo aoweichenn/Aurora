@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         std::cout << "; === x86-64 Assembly ===\n";
 
         AsmTextStreamer streamer(std::cout);
-        const auto& ri = static_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
+        const auto& ri = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
         X86AsmPrinter printer(streamer, ri);
 
         for (auto& fn : module->getFunctions()) {

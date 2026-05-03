@@ -35,7 +35,8 @@ public:
     [[nodiscard]] unsigned createTrunc(Type* dstTy, unsigned src);
     [[nodiscard]] unsigned createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
     [[nodiscard]] unsigned createCall(Function* callee, const SmallVector<unsigned, 8>& args);
-    [[nodiscard]] unsigned createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& incomings);
+    [[nodiscard]]     unsigned createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& incomings);
+    unsigned createConstantInt(int64_t val);
 
     void createRet(unsigned val);
     void createRetVoid();

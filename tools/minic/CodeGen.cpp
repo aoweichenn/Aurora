@@ -50,32 +50,7 @@ unsigned CodeGen::genExpr(const ASTNode& node) {
 }
 
 unsigned CodeGen::genIntLitExpr(const IntLitExpr& ie) {
-    // Strategy: use XOR of param0 with itself to get 0, then build up/down
-    // from 0 using add/sub with constant 1 (derived from ICmp EQ of param0 with itself)
-    if (ie.value == 0) {
-        return builder_->createXor(aurora::Type::getInt64Ty(), 0, 0);
-    }
-
-    // For other values, use a chain of adds from 0:
-    // 0 + 1 + 1 + 1 ... = N  (for positive N)
-    if (ie.value > 0) {
-        unsigned result = builder_->createXor(aurora::Type::getInt64Ty(), 0, 0); // result = 0
-        // Add 1 to result, N times
-        // To add by 1, we need a vreg that holds 1. Use: ICmp EQ param0, param0 → 1
-        unsigned one = builder_->createICmp(aurora::ICmpCond::EQ, 0, 0);
-        for (int64_t i = 0; i < ie.value; ++i) {
-            result = builder_->createAdd(aurora::Type::getInt64Ty(), result, one);
-        }
-        return result;
-    }
-
-    // Negative value: start from 0, subtract through the values
-    unsigned result = builder_->createXor(aurora::Type::getInt64Ty(), 0, 0); // result = 0
-    unsigned one = builder_->createICmp(aurora::ICmpCond::EQ, 0, 0);
-    for (int64_t i = 0; i < -ie.value; ++i) {
-        result = builder_->createSub(aurora::Type::getInt64Ty(), result, one);
-    }
-    return result;
+    return builder_->createConstantInt(ie.value);
 }
 
 unsigned CodeGen::genVarExpr(const VarExpr& ve) {
@@ -112,7 +87,7 @@ unsigned CodeGen::genBinaryExpr(const BinaryExpr& be) {
 
 unsigned CodeGen::genNegExpr(const NegExpr& ne) {
     unsigned val = genExpr(*ne.operand);
-    unsigned zero = builder_->createXor(aurora::Type::getInt64Ty(), 0, 0);
+    unsigned zero = builder_->createConstantInt(0);
     return builder_->createSub(aurora::Type::getInt64Ty(), zero, val);
 }
 

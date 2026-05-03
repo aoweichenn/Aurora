@@ -97,6 +97,9 @@ static uint16_t getX86Opcode(AIROpcode airOp, unsigned sizeBits) {
 class InstructionSelectionPass : public CodeGenPass {
 public:
     void run(MachineFunction& mf) override {
+        frameIndexMap_.clear();
+        constantMap_.clear();
+        buildStoreMap(mf);
         const auto& airFunc = mf.getAIRFunction();
         auto& mbbList = mf.getBlocks();
 
@@ -152,6 +155,12 @@ public:
                     break;
                 case AIROpcode::GetElementPtr:
                     iselGEP(*mbb, mi);
+                    break;
+                case AIROpcode::ConstantInt:
+                    iselConstantInt(*mbb, mi, mf);
+                    break;
+                case AIROpcode::Call:
+                    iselCall(*mbb, mi, mf);
                     break;
                 default:
                     // Leave unknown opcodes as-is (they'll print as "# unknown opcode")
@@ -295,14 +304,57 @@ private:
     }
 
     void iselBinOp(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
-        const unsigned x86Op = getX86Opcode(airOp, 64);
-        if (x86Op == 0) return;
+        // x86 two-address: dst must be one of the source operands
+        // AIR: %result = op %lhs, %rhs
+        // x86: MOV lhs → result; OP rhs, result
+        unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) lhsVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) rhsVReg = mi->getOperand(1).getVirtualReg();
+        if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
+        if (lhsVReg == ~0U || resultVReg == ~0U) return;
 
-        auto* newMI = new MachineInstr(static_cast<uint16_t>(x86Op));
-        for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
-            newMI->addOperand(mi->getOperand(i));
+        auto lhsConstIt = constantMap_.find(lhsVReg);
+        auto rhsConstIt = constantMap_.find(rhsVReg);
+        bool lhsIsConst = lhsConstIt != constantMap_.end();
+        bool rhsIsConst = rhsConstIt != constantMap_.end();
+
+        // Step 1: MOV lhs → result
+        if (lhsVReg != resultVReg) {
+            auto* movMI = new MachineInstr(X86::MOV64rr);
+            if (lhsIsConst) {
+                movMI = new MachineInstr(X86::MOV64ri32);
+                movMI->addOperand(MachineOperand::createImm(lhsConstIt->second));
+            } else {
+                movMI->addOperand(MachineOperand::createVReg(lhsVReg));
+            }
+            movMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.insertBefore(mi, movMI);
         }
-        replaceMI(mbb, mi, newMI);
+
+        // Step 2: OP rhs, result
+        uint16_t x86Op;
+        if (rhsIsConst) {
+            switch (airOp) {
+            case AIROpcode::Add: x86Op = X86::ADD64ri32; break;
+            case AIROpcode::Sub: x86Op = X86::SUB64ri32; break;
+            case AIROpcode::And: x86Op = X86::AND64ri32; break;
+            case AIROpcode::Or:  x86Op = X86::OR64ri32;  break;
+            case AIROpcode::Xor: x86Op = X86::XOR64ri32; break;
+            default: x86Op = getX86Opcode(airOp, 64); break;
+            }
+            if (x86Op == 0) return;
+            auto* newMI = new MachineInstr(x86Op);
+            newMI->addOperand(MachineOperand::createImm(rhsConstIt->second));
+            newMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, newMI);
+        } else {
+            x86Op = getX86Opcode(airOp, 64);
+            if (x86Op == 0) return;
+            auto* newMI = new MachineInstr(x86Op);
+            newMI->addOperand(MachineOperand::createVReg(rhsVReg != ~0U ? rhsVReg : lhsVReg));
+            newMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, newMI);
+        }
     }
 
     void iselSDiv(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode /*airOp*/) {
@@ -351,22 +403,27 @@ private:
     }
 
     void iselLoad(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // Load: %result = load i64, i64* %ptr
-        // layout: [VReg(ptr), VReg(result)]
-        unsigned resultVReg = ~0U;
-        unsigned ptrVReg = ~0U;
+        unsigned resultVReg = ~0U, ptrVReg = ~0U;
         if (mi->getNumOperands() >= 1) ptrVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+
+        // Mem2Reg: if this load's pointer was stored to, skip memory and emit MOV
+        auto storeIt = storeMap_.find(ptrVReg);
+        if (storeIt != storeMap_.end() && storeIt->second != resultVReg) {
+            auto* movMI = new MachineInstr(X86::MOV64rr);
+            movMI->addOperand(MachineOperand::createVReg(storeIt->second));
+            movMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, movMI);
+            return;
+        }
 
         auto* loadMI = new MachineInstr(X86::MOV64rm);
         loadMI->addOperand(MachineOperand::createVReg(resultVReg));
 
         auto it = frameIndexMap_.find(ptrVReg);
         if (it != frameIndexMap_.end()) {
-            // Pointer is from alloca: use frame index
             loadMI->addOperand(MachineOperand::createFrameIndex(it->second));
         } else {
-            // Pointer is a register: indirect load
             loadMI->addOperand(MachineOperand::createVReg(ptrVReg));
         }
         replaceMI(mbb, mi, loadMI);
@@ -420,8 +477,97 @@ private:
         mbb.pushBack(addMI);
     }
 
+    void iselConstantInt(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& /*mf*/) {
+        // ... (existing code)
+        unsigned resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) resultVReg = mi->getOperand(0).getVirtualReg();
+
+        int64_t val = 0;
+        const auto& airFunc = mbb.getParent()->getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::ConstantInt &&
+                    airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
+                    val = airInst->getConstantValue();
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+
+        constantMap_[resultVReg] = val;
+
+        auto* movMI = new MachineInstr(X86::MOV64ri32);
+        movMI->addOperand(MachineOperand::createImm(val));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
+    void iselCall(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& mf) {
+        // Call: %result = call @callee(%arg0, %arg1, ...)
+        // layout: [VReg(arg0), VReg(arg1), ..., VReg(result)]
+        // SysV AMD64 ABI: args in RDI,RSI,RDX,RCX,R8,R9; result in RAX
+        static const unsigned argRegs[] = {
+            X86RegisterInfo::RDI, X86RegisterInfo::RSI, X86RegisterInfo::RDX,
+            X86RegisterInfo::RCX, X86RegisterInfo::R8,  X86RegisterInfo::R9
+        };
+        unsigned numArgs = mi->getNumOperands();
+        if (numArgs > 0) --numArgs; // last is result
+        if (numArgs > 6) numArgs = 6;
+
+        unsigned resultVReg = ~0U;
+        if (mi->getNumOperands() > 0)
+            resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
+
+        // MOV each arg to the correct physical register
+        for (unsigned i = 0; i < numArgs; ++i) {
+            unsigned argVReg = mi->getOperand(i).getVirtualReg();
+            if (argVReg == ~0U) continue;
+            auto* movArg = new MachineInstr(X86::MOV64rr);
+            movArg->addOperand(MachineOperand::createVReg(argVReg));
+            movArg->addOperand(MachineOperand::createReg(argRegs[i]));
+            mbb.insertBefore(mi, movArg);
+        }
+
+        // CALL
+        auto* callMI = new MachineInstr(X86::CALL64pcrel32);
+        // The callee name is in the AIR instruction; for now, emit a placeholder MBB
+        callMI->addOperand(MachineOperand::createImm(0)); // placeholder callee target
+        replaceMI(mbb, mi, callMI);
+
+        // MOV RAX → result
+        if (resultVReg != ~0U) {
+            auto* movRet = new MachineInstr(X86::MOV64rr);
+            movRet->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+            movRet->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.insertAfter(callMI, movRet);
+        }
+
+        (void)mf;
+    }
+
     void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT
     std::map<unsigned, int> frameIndexMap_;
+    std::map<unsigned, int64_t> constantMap_;
+    std::map<unsigned, unsigned> storeMap_;  // alloca_vreg → stored_value
+
+    void buildStoreMap(MachineFunction& mf) {
+        storeMap_.clear();
+        const auto& airFunc = mf.getAIRFunction();
+        for (auto& bb : airFunc.getBlocks()) {
+            const AIRInstruction* inst = bb->getFirst();
+            while (inst) {
+                if (inst->getOpcode() == AIROpcode::Store && inst->getNumOperands() >= 2) {
+                    unsigned valVReg = inst->getOperand(0);
+                    unsigned ptrVReg = inst->getOperand(1);
+                    // Record last store to each alloca (single-block mem2reg)
+                    storeMap_[ptrVReg] = valVReg;
+                }
+                inst = inst->getNext();
+            }
+        }
+    }
 };
 
 class RegisterAllocationPass : public CodeGenPass {
@@ -435,20 +581,10 @@ public:
 
 private:
     void rewriteVirtualRegs(MachineFunction& mf) {
-        // After linear scan, intervals have physical reg assignments
-        // Walk all MBBs and rewrite virtual reg operands to physical regs
-
-        // Collect the vreg → preg mapping from the allocator
-        // The allocator stores assignments in its intervals but doesn't expose them
-        // We need to run a second allocator instance just to get mappings, or store mappings
-
-        // Since LinearScanRegAlloc modifies intervals internally and we can't access them,
-        // we do a simple fallback: use the calling convention to assign params
-        // and a basic round-robin for other vregs
-
         std::map<unsigned, unsigned> vregToPReg;
+        std::map<unsigned, int> spilledVRegs; // vreg → spill slot
 
-        // First pass: collect all vregs
+        // First pass: collect all vregs and assign physical regs
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
@@ -463,9 +599,6 @@ private:
         }
 
         // Simple allocation: allocate from GPR pool (skip RSP, RBP)
-        // Parameters 0,1 get RDI, RSI per SysV ABI; rest get callee-saved
-        // Destination always gets RAX (return reg convention)
-        unsigned nextGPR = 0;
         static const unsigned allocPool[] = {
             X86RegisterInfo::RAX, X86RegisterInfo::RCX, X86RegisterInfo::RDX,
             X86RegisterInfo::RBX, X86RegisterInfo::RSI, X86RegisterInfo::RDI,
@@ -474,30 +607,47 @@ private:
             X86RegisterInfo::R14, X86RegisterInfo::R15,
         };
         static const unsigned numAllocPool = sizeof(allocPool) / sizeof(allocPool[0]);
+        unsigned nextGPR = 0;
 
         for (auto& [vreg, preg] : vregToPReg) {
             if (vreg == 0) {
-                preg = X86RegisterInfo::RDI; // First param
+                preg = X86RegisterInfo::RDI;
             } else if (vreg == 1) {
-                preg = X86RegisterInfo::RSI; // Second param
+                preg = X86RegisterInfo::RSI;
             } else {
-                // Destination registers typically map to RAX
-                preg = allocPool[nextGPR % numAllocPool];
-                nextGPR++;
+                if (nextGPR >= numAllocPool) {
+                    // Spill: no more registers
+                    int spillSlot = mf.createStackSlot(8, 8);
+                    spilledVRegs[vreg] = spillSlot;
+                    preg = X86RegisterInfo::RAX; // Use RAX as temp for spills
+                } else {
+                    preg = allocPool[nextGPR % numAllocPool];
+                    nextGPR++;
+                }
             }
         }
 
-        // Second pass: rewrite
+        // Second pass: rewrite vregs → physical regs, insert spill code
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
                 for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
                     auto& mo = mi->getOperand(i);
                     if (mo.isVReg()) {
-                        const unsigned vreg = mo.getVirtualReg();
-                        auto it = vregToPReg.find(vreg);
-                        if (it != vregToPReg.end() && it->second != ~0U) {
-                            mi->setOperand(i, MachineOperand::createReg(it->second));
+                        unsigned vreg = mo.getVirtualReg();
+                        auto spillIt = spilledVRegs.find(vreg);
+                        if (spillIt != spilledVRegs.end()) {
+                            // Spilled: insert reload before use
+                            auto* reload = new MachineInstr(X86::MOV64rm);
+                            reload->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+                            reload->addOperand(MachineOperand::createFrameIndex(spillIt->second));
+                            mbb->insertBefore(mi, reload);
+                            mo = MachineOperand::createReg(X86RegisterInfo::RAX);
+                        } else {
+                            auto it = vregToPReg.find(vreg);
+                            if (it != vregToPReg.end() && it->second != ~0U) {
+                                mo = MachineOperand::createReg(it->second);
+                            }
                         }
                     }
                 }
@@ -521,6 +671,35 @@ public:
     void run(MachineFunction& /*mf*/) override {
     }
     const char* getName() const override { return "Branch Folder"; }
+};
+
+class Mem2RegPass : public CodeGenPass {
+public:
+    void run(MachineFunction& mf) override {
+        // Inline alloca promotion: eliminate alloca/store/load in single-block functions
+        auto& airFunc = mf.getAIRFunction();
+        auto& blocks = airFunc.getBlocks();
+
+        for (auto& bb : blocks) {
+            std::map<unsigned, unsigned> allocaToValue; // alloca_vreg → stored_value
+
+            const AIRInstruction* inst = bb->getFirst();
+            while (inst) {
+                if (inst->getOpcode() == AIROpcode::Store) {
+                    // store %val, %ptr → record [ptr → val]
+                    if (inst->getNumOperands() >= 2) {
+                        unsigned valVReg = inst->getOperand(0);
+                        unsigned ptrVReg = inst->getOperand(1);
+                        allocaToValue[ptrVReg] = valVReg;
+                    }
+                }
+                inst = inst->getNext();
+            }
+        }
+        // MF modification not needed for AIR level - this pass is informational
+        // The ISel pass will use these mappings through the AIR instructions
+    }
+    const char* getName() const override { return "Mem2Reg"; }
 };
 } // anonymous namespace
 
