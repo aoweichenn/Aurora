@@ -10,6 +10,7 @@ add_executable(ADT_tests
     ADT/BitVectorTest.cpp
     ADT/GraphTest.cpp
     ADT/AllocatorTest.cpp
+    ADT/SparseSetTest.cpp
 )
 target_link_libraries(ADT_tests PRIVATE AuroraADT AuroraTestCommon)
 add_test(NAME ADT_tests COMMAND ADT_tests)
@@ -20,6 +21,8 @@ add_executable(Air_tests
     Air/BasicBlockTest.cpp
     Air/FunctionTest.cpp
     Air/BuilderTest.cpp
+    Air/ConstantTest.cpp
+    Air/ModuleTest.cpp
 )
 target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
 add_test(NAME Air_tests COMMAND Air_tests)
@@ -38,6 +41,7 @@ add_executable(CodeGen_tests
     CodeGen/SelectionDAGTest.cpp
     CodeGen/InstructionSelectorTest.cpp
     CodeGen/PassManagerTest.cpp
+    CodeGen/LiveIntervalTest.cpp
 )
 target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME CodeGen_tests COMMAND CodeGen_tests)

@@ -108,3 +108,121 @@ TEST(MachineBasicBlockTest, SuccessorPredecessor) {
     EXPECT_EQ(bb3.predecessors().size(), 1u);
     EXPECT_EQ(bb2.predecessors()[0], &bb1);
 }
+
+TEST(MachineBasicBlockTest, InsertAfter) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    mbb.pushBack(mi1);
+    mbb.insertAfter(mi1, mi2);
+    EXPECT_EQ(mbb.getFirst(), mi1);
+    EXPECT_EQ(mbb.getLast(), mi2);
+    EXPECT_EQ(mi1->getNext(), mi2);
+    EXPECT_EQ(mi2->getPrev(), mi1);
+}
+
+TEST(MachineBasicBlockTest, InsertAfterMiddle) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    auto* mi3 = new MachineInstr(3);
+    mbb.pushBack(mi1);
+    mbb.pushBack(mi3);
+    mbb.insertAfter(mi1, mi2);
+    EXPECT_EQ(mi1->getNext(), mi2);
+    EXPECT_EQ(mi2->getNext(), mi3);
+    EXPECT_EQ(mi3->getPrev(), mi2);
+    EXPECT_EQ(mbb.getLast(), mi3);
+}
+
+TEST(MachineBasicBlockTest, InsertBefore) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    mbb.pushBack(mi2);
+    mbb.insertBefore(mi2, mi1);
+    EXPECT_EQ(mbb.getFirst(), mi1);
+    EXPECT_EQ(mi1->getNext(), mi2);
+    EXPECT_EQ(mi2->getPrev(), mi1);
+}
+
+TEST(MachineBasicBlockTest, InsertBeforeMiddle) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    auto* mi3 = new MachineInstr(3);
+    mbb.pushBack(mi1);
+    mbb.pushBack(mi3);
+    mbb.insertBefore(mi3, mi2);
+    EXPECT_EQ(mi1->getNext(), mi2);
+    EXPECT_EQ(mi2->getNext(), mi3);
+    EXPECT_EQ(mi2->getPrev(), mi1);
+    EXPECT_EQ(mi3->getPrev(), mi2);
+}
+
+TEST(MachineBasicBlockTest, RemoveFirst) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    mbb.pushBack(mi1);
+    mbb.pushBack(mi2);
+    mbb.remove(mi1);
+    EXPECT_EQ(mbb.getFirst(), mi2);
+    EXPECT_EQ(mbb.getLast(), mi2);
+    EXPECT_EQ(mi1->getParent(), nullptr);
+    delete mi1;
+}
+
+TEST(MachineBasicBlockTest, RemoveLast) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    mbb.pushBack(mi1);
+    mbb.pushBack(mi2);
+    mbb.remove(mi2);
+    EXPECT_EQ(mbb.getFirst(), mi1);
+    EXPECT_EQ(mbb.getLast(), mi1);
+    EXPECT_EQ(mi1->getNext(), nullptr);
+    EXPECT_EQ(mi2->getParent(), nullptr);
+    delete mi2;
+}
+
+TEST(MachineBasicBlockTest, RemoveMiddle) {
+    MachineBasicBlock mbb("test");
+    auto* mi1 = new MachineInstr(1);
+    auto* mi2 = new MachineInstr(2);
+    auto* mi3 = new MachineInstr(3);
+    mbb.pushBack(mi1);
+    mbb.pushBack(mi2);
+    mbb.pushBack(mi3);
+    mbb.remove(mi2);
+    EXPECT_EQ(mbb.getFirst(), mi1);
+    EXPECT_EQ(mbb.getLast(), mi3);
+    EXPECT_EQ(mi1->getNext(), mi3);
+    EXPECT_EQ(mi3->getPrev(), mi1);
+    EXPECT_EQ(mbb.empty(), false);
+    delete mi2;
+}
+
+TEST(MachineBasicBlockTest, RemoveOnlyElement) {
+    MachineBasicBlock mbb("test");
+    auto* mi = new MachineInstr(1);
+    mbb.pushBack(mi);
+    mbb.remove(mi);
+    EXPECT_TRUE(mbb.empty());
+    EXPECT_EQ(mbb.getFirst(), nullptr);
+    EXPECT_EQ(mbb.getLast(), nullptr);
+    delete mi;
+}
+
+TEST(MachineBasicBlockTest, DefaultName) {
+    MachineBasicBlock mbb;
+    EXPECT_EQ(mbb.getName(), "");
+}
+
+TEST(MachineOperandTest, CreateMBB) {
+    MachineBasicBlock target(".Llabel");
+    auto mo = MachineOperand::createMBB(&target);
+    EXPECT_EQ(mo.getKind(), MachineOperandKind::MO_MBB);
+    EXPECT_EQ(mo.getMBB(), &target);
+}
