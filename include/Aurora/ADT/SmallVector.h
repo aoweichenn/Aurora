@@ -30,6 +30,7 @@ public:
 
     SmallVector() noexcept : begin_(inlineStorage()), end_(inlineStorage()), capacity_(end_ + N) {}
     explicit SmallVector(size_type n);
+    SmallVector(size_type n, const T& value);
     SmallVector(std::initializer_list<T> il);
     SmallVector(const SmallVector& other);
     SmallVector(SmallVector&& other) noexcept;
@@ -99,6 +100,20 @@ SmallVector<T, N>::SmallVector(size_type n) : begin_(nullptr), end_(nullptr), ca
         capacity_ = begin_ + n;
     }
     for (size_type i = 0; i < n; ++i) { new (end_) T(); ++end_; }
+}
+
+template <typename T, unsigned N>
+SmallVector<T, N>::SmallVector(size_type n, const T& value) : begin_(nullptr), end_(nullptr), capacity_(nullptr) {
+    if (n <= N) {
+        begin_ = inlineStorage();
+        end_ = begin_;
+        capacity_ = end_ + N;
+    } else {
+        begin_ = static_cast<T*>(::operator new(n * sizeof(T)));
+        end_ = begin_;
+        capacity_ = begin_ + n;
+    }
+    for (size_type i = 0; i < n; ++i) { new (end_) T(value); ++end_; }
 }
 
 template <typename T, unsigned N>

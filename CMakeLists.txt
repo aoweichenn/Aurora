@@ -10,7 +10,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(AURORA_BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(AURORA_BUILD_STATIC_LIBS "Build static libraries" ON)
-option(AURORA_BUILD_TESTS "Build tests" OFF)
+option(AURORA_BUILD_TESTS "Build tests" ON)
+option(AURORA_BUILD_BENCHMARKS "Build benchmarks" ON)
 
 set(AURORA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -21,6 +22,32 @@ target_compile_options(AuroraCommon INTERFACE
     $<$<CONFIG:Debug>:-g -O0>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
+
+# ---- Google Test ----
+if(AURORA_BUILD_TESTS OR AURORA_BUILD_BENCHMARKS)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG v1.15.2
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+# ---- Google Benchmark ----
+if(AURORA_BUILD_BENCHMARKS)
+    FetchContent_Declare(
+        benchmark
+        GIT_REPOSITORY https://github.com/google/benchmark.git
+        GIT_TAG v1.9.1
+    )
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(benchmark)
+endif()
 
 # ---- ADT ----
 add_subdirectory(lib/ADT)
@@ -39,3 +66,9 @@ add_subdirectory(lib/MC)
 
 # ---- Driver ----
 add_subdirectory(tools/aurorac)
+
+# ---- Tests ----
+if(AURORA_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

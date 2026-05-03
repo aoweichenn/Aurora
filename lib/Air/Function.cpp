@@ -15,6 +15,8 @@ Function::Function(FunctionType* ty, const std::string& name, Module* parent)
         nextVReg_++;
         vregTypes_.push_back(ty->getParamTypes()[i]);
     }
+    // Auto-create entry block
+    entryBlock_ = createBasicBlock("entry");
 }
 
 Function::~Function() {

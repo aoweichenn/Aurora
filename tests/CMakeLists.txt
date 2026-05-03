@@ -1,0 +1,64 @@
+add_library(AuroraTestCommon INTERFACE)
+target_link_libraries(AuroraTestCommon INTERFACE gtest gtest_main)
+
+# ---- ADT Tests ----
+add_executable(ADT_tests
+    ADT/SmallVectorTest.cpp
+    ADT/BitVectorTest.cpp
+    ADT/GraphTest.cpp
+    ADT/AllocatorTest.cpp
+)
+target_link_libraries(ADT_tests PRIVATE AuroraADT AuroraTestCommon)
+add_test(NAME ADT_tests COMMAND ADT_tests)
+
+# ---- Air Tests ----
+add_executable(Air_tests
+    Air/TypeTest.cpp
+    Air/InstructionTest.cpp
+    Air/BasicBlockTest.cpp
+    Air/FunctionTest.cpp
+    Air/BuilderTest.cpp
+)
+target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
+add_test(NAME Air_tests COMMAND Air_tests)
+
+# ---- Target Tests ----
+add_executable(Target_tests
+    Target/X86RegisterInfoTest.cpp
+    Target/X86InstrInfoTest.cpp
+    Target/X86ISelPatternsTest.cpp
+    Target/X86CallingConvTest.cpp
+)
+target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraTestCommon)
+add_test(NAME Target_tests COMMAND Target_tests)
+
+# ---- CodeGen Tests ----
+add_executable(CodeGen_tests
+    CodeGen/MachineInstrTest.cpp
+    CodeGen/SelectionDAGTest.cpp
+    CodeGen/InstructionSelectorTest.cpp
+    CodeGen/PassManagerTest.cpp
+)
+target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
+add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
+
+# ---- MC Tests ----
+add_executable(MC_tests
+    MC/AsmPrinterTest.cpp
+    MC/IntegrationTest.cpp
+)
+target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
+add_test(NAME MC_tests COMMAND MC_tests)
+
+# ---- Benchmarks ----
+if(AURORA_BUILD_BENCHMARKS)
+    add_library(AuroraBenchCommon INTERFACE)
+    target_link_libraries(AuroraBenchCommon INTERFACE benchmark::benchmark benchmark::benchmark_main)
+
+    add_executable(AuroraBench
+        Bench/BenchISel.cpp
+        Bench/BenchRA.cpp
+        Bench/BenchADT.cpp
+    )
+    target_link_libraries(AuroraBench PRIVATE AuroraMC AuroraBenchCommon)
+endif()
