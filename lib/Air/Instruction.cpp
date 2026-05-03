@@ -5,7 +5,7 @@
 
 namespace aurora {
 
-const char* opcodeName(AIROpcode op) {
+const char* opcodeName(const AIROpcode op) {
     switch (op) {
     case AIROpcode::Ret:          return "ret";
     case AIROpcode::Br:           return "br";
@@ -42,7 +42,7 @@ const char* opcodeName(AIROpcode op) {
     return "unknown";
 }
 
-const char* icmpCondName(ICmpCond c) {
+const char* icmpCondName(const ICmpCond c) {
     switch (c) {
     case ICmpCond::EQ:  return "eq";
     case ICmpCond::NE:  return "ne";
@@ -58,7 +58,7 @@ const char* icmpCondName(ICmpCond c) {
     return "?";
 }
 
-AIRInstruction::AIRInstruction(AIROpcode op, Type* ty)
+AIRInstruction::AIRInstruction(const AIROpcode op, Type* ty)
     : opcode_(op), type_(ty), destVReg_(~0U),
       parent_(nullptr), next_(nullptr), prev_(nullptr),
       cond_(ICmpCond::EQ), callee_(nullptr) {}
@@ -73,7 +73,7 @@ bool AIRInstruction::hasResult() const noexcept {
     }
 }
 
-unsigned AIRInstruction::getOperand(unsigned idx) const {
+unsigned AIRInstruction::getOperand(const unsigned idx) const {
     if (opcode_ == AIROpcode::Phi) {
         if (idx % 2 == 0) {
             return ~0U; // block operand
@@ -99,7 +99,7 @@ unsigned AIRInstruction::getNumOperands() const noexcept {
     }
 }
 
-BasicBlock* AIRInstruction::getOperandBlock(unsigned idx) const {
+BasicBlock* AIRInstruction::getOperandBlock(const unsigned idx) const {
     if (opcode_ == AIROpcode::CondBr) {
         return idx == 0 ? blockOperands_[0] : blockOperands_[1];
     }
@@ -120,7 +120,7 @@ const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& AIRInstruction::getPhiIn
     return phiIncomings_;
 }
 
-void AIRInstruction::replaceUse(unsigned oldVReg, unsigned newVReg) {
+void AIRInstruction::replaceUse(const unsigned oldVReg, const unsigned newVReg) {
     for (auto& op : operands_) {
         if (op == oldVReg) op = newVReg;
     }
@@ -171,7 +171,7 @@ std::string AIRInstruction::toString() const {
         break;
     case AIROpcode::GetElementPtr:
         os << " %" << operands_[0];
-        for (auto idx : gepIndices_) os << ", %" << idx;
+        for (const auto idx : gepIndices_) os << ", %" << idx;
         break;
     case AIROpcode::Phi:
         for (unsigned i = 0; i < phiIncomings_.size(); ++i) {
@@ -191,7 +191,7 @@ std::string AIRInstruction::toString() const {
 }
 
 // Factory methods
-AIRInstruction* AIRInstruction::createRet(unsigned valVReg) {
+AIRInstruction* AIRInstruction::createRet(const unsigned valVReg) {
     auto* i = new AIRInstruction(AIROpcode::Ret);
     i->destVReg_ = valVReg;
     if (valVReg != ~0U) i->operands_.push_back(valVReg);
@@ -202,7 +202,7 @@ AIRInstruction* AIRInstruction::createBr(BasicBlock* target) {
     i->blockOperands_.push_back(target);
     return i;
 }
-AIRInstruction* AIRInstruction::createCondBr(unsigned cond, BasicBlock* trueBB, BasicBlock* falseBB) {
+AIRInstruction* AIRInstruction::createCondBr(const unsigned cond, BasicBlock* trueBB, BasicBlock* falseBB) {
     auto* i = new AIRInstruction(AIROpcode::CondBr);
     i->operands_.push_back(cond);
     i->blockOperands_.push_back(trueBB);
@@ -212,72 +212,72 @@ AIRInstruction* AIRInstruction::createCondBr(unsigned cond, BasicBlock* trueBB, 
 AIRInstruction* AIRInstruction::createUnreachable() {
     return new AIRInstruction(AIROpcode::Unreachable);
 }
-AIRInstruction* AIRInstruction::createAdd(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createAdd(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Add, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createSub(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createSub(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Sub, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createMul(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createMul(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Mul, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createUDiv(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createUDiv(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::UDiv, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createSDiv(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createSDiv(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::SDiv, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createURem(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createURem(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::URem, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createSRem(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createSRem(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::SRem, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createAnd(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createAnd(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::And, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createOr(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createOr(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Or, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createXor(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createXor(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Xor, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createShl(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createShl(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::Shl, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createLShr(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createLShr(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::LShr, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createAShr(Type* ty, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createAShr(Type* ty, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::AShr, ty);
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
     return i;
 }
-AIRInstruction* AIRInstruction::createICmp(Type* ty, ICmpCond cond, unsigned lhs, unsigned rhs) {
+AIRInstruction* AIRInstruction::createICmp(Type* ty, const ICmpCond cond, const unsigned lhs, const unsigned rhs) {
     auto* i = new AIRInstruction(AIROpcode::ICmp, ty);
     i->cond_ = cond;
     i->operands_.push_back(lhs); i->operands_.push_back(rhs);
@@ -287,34 +287,34 @@ AIRInstruction* AIRInstruction::createAlloca(Type* allocaTy) {
     auto* i = new AIRInstruction(AIROpcode::Alloca, Type::getPointerTy(allocaTy));
     return i;
 }
-AIRInstruction* AIRInstruction::createLoad(Type* ty, unsigned ptr) {
+AIRInstruction* AIRInstruction::createLoad(Type* ty, const unsigned ptr) {
     auto* i = new AIRInstruction(AIROpcode::Load, ty);
     i->operands_.push_back(ptr);
     return i;
 }
-AIRInstruction* AIRInstruction::createStore(unsigned val, unsigned ptr) {
+AIRInstruction* AIRInstruction::createStore(const unsigned val, const unsigned ptr) {
     auto* i = new AIRInstruction(AIROpcode::Store);
     i->operands_.push_back(val);
     i->operands_.push_back(ptr);
     return i;
 }
-AIRInstruction* AIRInstruction::createGEP(Type* ty, unsigned ptr, const SmallVector<unsigned, 4>& indices) {
+AIRInstruction* AIRInstruction::createGEP(Type* ty, const unsigned ptr, const SmallVector<unsigned, 4>& indices) {
     auto* i = new AIRInstruction(AIROpcode::GetElementPtr, ty);
     i->operands_.push_back(ptr);
     i->gepIndices_ = indices;
     return i;
 }
-AIRInstruction* AIRInstruction::createSExt(Type* dstTy, unsigned src) {
+AIRInstruction* AIRInstruction::createSExt(Type* dstTy, const unsigned src) {
     auto* i = new AIRInstruction(AIROpcode::SExt, dstTy);
     i->operands_.push_back(src);
     return i;
 }
-AIRInstruction* AIRInstruction::createZExt(Type* dstTy, unsigned src) {
+AIRInstruction* AIRInstruction::createZExt(Type* dstTy, const unsigned src) {
     auto* i = new AIRInstruction(AIROpcode::ZExt, dstTy);
     i->operands_.push_back(src);
     return i;
 }
-AIRInstruction* AIRInstruction::createTrunc(Type* dstTy, unsigned src) {
+AIRInstruction* AIRInstruction::createTrunc(Type* dstTy, const unsigned src) {
     auto* i = new AIRInstruction(AIROpcode::Trunc, dstTy);
     i->operands_.push_back(src);
     return i;
@@ -324,7 +324,7 @@ AIRInstruction* AIRInstruction::createPhi(Type* ty, const SmallVector<std::pair<
     i->phiIncomings_ = incomings;
     return i;
 }
-AIRInstruction* AIRInstruction::createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal) {
+AIRInstruction* AIRInstruction::createSelect(Type* ty, const unsigned cond, const unsigned tVal, const unsigned fVal) {
     auto* i = new AIRInstruction(AIROpcode::Select, ty);
     i->operands_.push_back(cond);
     i->operands_.push_back(tVal);

@@ -8,9 +8,9 @@ BasicBlock::BasicBlock(const std::string& name)
     : name_(name), parent_(nullptr), first_(nullptr), last_(nullptr) {}
 
 BasicBlock::~BasicBlock() {
-    AIRInstruction* inst = first_;
+    const AIRInstruction* inst = first_;
     while (inst) {
-        AIRInstruction* next = inst->getNext();
+        const AIRInstruction* next = inst->getNext();
         delete inst;
         inst = next;
     }
@@ -97,10 +97,10 @@ void BasicBlock::addPredecessor(BasicBlock* pred) {
 }
 
 void BasicBlock::removePredecessor(BasicBlock* pred) {
-    auto it = std::find(predecessors_.begin(), predecessors_.end(), pred);
+    const auto it = std::find(predecessors_.begin(), predecessors_.end(), pred);
     if (it != predecessors_.end()) {
         predecessors_.erase(it);
-        auto sit = std::find(pred->successors_.begin(), pred->successors_.end(), this);
+        const auto sit = std::find(pred->successors_.begin(), pred->successors_.end(), this);
         if (sit != pred->successors_.end())
             pred->successors_.erase(sit);
     }

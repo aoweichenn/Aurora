@@ -4,7 +4,7 @@
 using namespace aurora;
 
 TEST(TypeTest, VoidType) {
-    auto* t = Type::getVoidTy();
+    const auto* t = Type::getVoidTy();
     EXPECT_EQ(t->getKind(), TypeKind::Void);
     EXPECT_EQ(t->getSizeInBits(), 0u);
     EXPECT_EQ(t->toString(), "void");
@@ -32,7 +32,7 @@ TEST(TypeTest, FloatTypes) {
 
 TEST(TypeTest, PointerType) {
     auto* int32 = Type::getInt32Ty();
-    auto* ptrTy = Type::getPointerTy(int32);
+    const auto* ptrTy = Type::getPointerTy(int32);
     EXPECT_EQ(ptrTy->getKind(), TypeKind::Pointer);
     EXPECT_EQ(ptrTy->getElementType(), int32);
     EXPECT_EQ(ptrTy->getSizeInBits(), 64u); // x86-64 pointer
@@ -47,7 +47,7 @@ TEST(TypeTest, PointerUniqueness) {
 
 TEST(TypeTest, ArrayType) {
     auto* i32 = Type::getInt32Ty();
-    auto* arr = Type::getArrayTy(i32, 10);
+    const auto* arr = Type::getArrayTy(i32, 10);
     EXPECT_EQ(arr->getKind(), TypeKind::Array);
     EXPECT_EQ(arr->getElementType(), i32);
     EXPECT_EQ(arr->getNumElements(), 10u);
@@ -58,7 +58,7 @@ TEST(TypeTest, FunctionType) {
     SmallVector<Type*, 8> params;
     params.push_back(Type::getInt32Ty());
     params.push_back(Type::getFloatTy());
-    auto* fnTy = Type::getFunctionTy(Type::getInt64Ty(), std::move(params));
+    const auto* fnTy = Type::getFunctionTy(Type::getInt64Ty(), std::move(params));
     EXPECT_EQ(fnTy->getKind(), TypeKind::Function);
     EXPECT_EQ(fnTy->getReturnType(), Type::getInt64Ty());
     EXPECT_EQ(fnTy->getParamTypes().size(), 2u);

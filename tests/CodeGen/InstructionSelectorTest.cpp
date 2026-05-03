@@ -5,7 +5,7 @@
 using namespace aurora;
 
 TEST(InstructionSelectorTest, Construction) {
-    auto tm = TargetMachine::createX86_64();
+    const auto tm = TargetMachine::createX86_64();
     InstructionSelector isel(*tm);
     SUCCEED();
 }

@@ -25,7 +25,7 @@ public:
     class const_iterator {
     public:
         using value_type = T;
-        const_iterator(const std::vector<T>* d, unsigned i) : dense_(d), idx_(i) {}
+        const_iterator(const std::vector<T>* d, const unsigned i) : dense_(d), idx_(i) {}
         T operator*() const { return (*dense_)[idx_]; }
         const_iterator& operator++() { ++idx_; return *this; }
         bool operator!=(const const_iterator& o) const { return idx_ != o.idx_; }

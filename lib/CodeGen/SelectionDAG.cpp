@@ -3,17 +3,17 @@
 
 namespace aurora {
 
-SDNode::SDNode(AIROpcode op, Type* ty)
+SDNode::SDNode(const AIROpcode op, Type* ty)
     : opcode_(op), type_(ty), nodeId_(0), vreg_(~0U),
       selected_(false), machOpcode_(0) {}
 
 SDNode::~SDNode() = default;
 
-SDValue SDNode::getOperand(unsigned i) const {
+SDValue SDNode::getOperand(const unsigned i) const {
     return SDValue(operands_[i], 0);
 }
 
-void SDNode::addOperand(SDValue val) {
+void SDNode::addOperand(const SDValue val) {
     operands_.push_back(val.getNode());
     if (val.getNode())
         val.getNode()->addUser(this);
@@ -23,24 +23,24 @@ void SDNode::addUser(SDNode* user) {
     users_.push_back(user);
 }
 
-void SDNode::createMachineInstr(uint16_t opcode) {
+void SDNode::createMachineInstr(const uint16_t opcode) {
     machOpcode_ = opcode;
     selected_ = true;
 }
 
 SelectionDAG::SelectionDAG() : nextNodeId_(0) {}
 SelectionDAG::~SelectionDAG() {
-    for (auto* n : allNodes_) delete n;
+    for (const auto* n : allNodes_) delete n;
 }
 
-SDNode* SelectionDAG::createSDNode(AIROpcode op, Type* ty) {
+SDNode* SelectionDAG::createSDNode(const AIROpcode op, Type* ty) {
     auto* node = new SDNode(op, ty);
     node->setNodeId(nextNodeId_++);
     allNodes_.push_back(node);
     return node;
 }
 
-SDValue SelectionDAG::createNode(AIROpcode op, Type* ty, const SmallVector<SDValue, 4>& ops) {
+SDValue SelectionDAG::createNode(const AIROpcode op, Type* ty, const SmallVector<SDValue, 4>& ops) {
     auto* node = createSDNode(op, ty);
     for (const auto& o : ops) {
         node->addOperand(o);
@@ -48,13 +48,13 @@ SDValue SelectionDAG::createNode(AIROpcode op, Type* ty, const SmallVector<SDVal
     return SDValue(node);
 }
 
-SDValue SelectionDAG::createConstant(int64_t val, Type* ty) {
+SDValue SelectionDAG::createConstant(const int64_t val, Type* ty) {
     auto* node = createSDNode(AIROpcode::Add, ty);
     (void)val; // TODO: store constant value properly
     return SDValue(node);
 }
 
-SDValue SelectionDAG::createRegister(unsigned vreg, Type* ty) {
+SDValue SelectionDAG::createRegister(const unsigned vreg, Type* ty) {
     auto* node = createSDNode(AIROpcode::Add, ty);
     node->setVReg(vreg);
     return SDValue(node);
@@ -63,14 +63,14 @@ SDValue SelectionDAG::createRegister(unsigned vreg, Type* ty) {
 void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* /*mbb*/) {
     // Walk AIR instructions and build DAG nodes
     // For each AIR instruction, create corresponding SDNode
-    AIRInstruction* inst = airBB->getFirst();
+    const AIRInstruction* inst = airBB->getFirst();
     while (inst) {
-        AIROpcode op = inst->getOpcode();
+        const AIROpcode op = inst->getOpcode();
         Type* ty = inst->getType();
 
         SmallVector<SDValue, 4> ops;
         for (unsigned i = 0; i < inst->getNumOperands(); ++i) {
-            unsigned vreg = inst->getOperand(i);
+            const unsigned vreg = inst->getOperand(i);
             if (vreg != ~0U) {
                 ops.push_back(createRegister(vreg, ty));
             }
@@ -100,7 +100,7 @@ void SelectionDAG::legalize() {
 
 void SelectionDAG::select(MachineBasicBlock* /*mbb*/) {
     // Pattern-match each SDNode to MachineInstr
-    for (auto* node : allNodes_) {
+    for (const auto* node : allNodes_) {
         if (node->isSelected()) continue;
         // Pattern matching happens here
     }

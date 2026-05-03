@@ -10,7 +10,7 @@
 using namespace aurora;
 
 static void BM_RegAlloc_LiveIntervalComputation(benchmark::State& state) {
-    auto mod = std::make_unique<Module>("bench");
+    const auto mod = std::make_unique<Module>("bench");
     SmallVector<Type*, 8> params;
     for (int i = 0; i < 4; ++i) params.push_back(Type::getInt64Ty());
     auto* fnTy = new FunctionType(Type::getInt64Ty(), params);
@@ -26,7 +26,7 @@ static void BM_RegAlloc_LiveIntervalComputation(benchmark::State& state) {
     }
     b.createRet(v0);
 
-    auto tm = TargetMachine::createX86_64();
+    const auto tm = TargetMachine::createX86_64();
     MachineFunction mf(*fn, *tm);
 
     // Run AIR->MIr pass first

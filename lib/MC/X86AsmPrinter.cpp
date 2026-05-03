@@ -25,7 +25,7 @@ void X86AsmPrinter::emitFunctionFooter(MachineFunction& mf) {
 void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) {
     switch (mo.getKind()) {
     case MachineOperandKind::MO_Register: {
-        auto reg = X86RegisterInfo::getReg(mo.getReg());
+        const auto reg = X86RegisterInfo::getReg(mo.getReg());
         os << "%" << reg.name;
         break;
     }
@@ -49,7 +49,7 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) {
 
 void X86AsmPrinter::printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os) {
     os << offset.getImm() << "(%";
-    auto reg = X86RegisterInfo::getReg(base.getReg());
+    const auto reg = X86RegisterInfo::getReg(base.getReg());
     os << reg.name << ")";
 }
 
@@ -61,7 +61,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
     oss << "\t";
 
     // Get opcode-level info
-    unsigned opcode = mi.getOpcode();
+    const unsigned opcode = mi.getOpcode();
 
     // Simple mapping to AT&T syntax for common instructions
     // In a full implementation, this would use the InstrInfo tables

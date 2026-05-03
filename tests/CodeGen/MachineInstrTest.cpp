@@ -5,7 +5,7 @@
 using namespace aurora;
 
 TEST(MachineOperandTest, CreateReg) {
-    auto mo = MachineOperand::createReg(5);
+    const auto mo = MachineOperand::createReg(5);
     EXPECT_EQ(mo.getKind(), MachineOperandKind::MO_Register);
     EXPECT_EQ(mo.getReg(), 5u);
     EXPECT_TRUE(mo.isReg());
@@ -14,27 +14,27 @@ TEST(MachineOperandTest, CreateReg) {
 }
 
 TEST(MachineOperandTest, CreateVReg) {
-    auto mo = MachineOperand::createVReg(42);
+    const auto mo = MachineOperand::createVReg(42);
     EXPECT_EQ(mo.getKind(), MachineOperandKind::MO_VirtualReg);
     EXPECT_EQ(mo.getVirtualReg(), 42u);
     EXPECT_TRUE(mo.isVReg());
 }
 
 TEST(MachineOperandTest, CreateImm) {
-    auto mo = MachineOperand::createImm(-100);
+    const auto mo = MachineOperand::createImm(-100);
     EXPECT_EQ(mo.getKind(), MachineOperandKind::MO_Immediate);
     EXPECT_EQ(mo.getImm(), -100);
     EXPECT_TRUE(mo.isImm());
 }
 
 TEST(MachineOperandTest, CreateFrameIndex) {
-    auto mo = MachineOperand::createFrameIndex(-3);
+    const auto mo = MachineOperand::createFrameIndex(-3);
     EXPECT_EQ(mo.getKind(), MachineOperandKind::MO_FrameIndex);
     EXPECT_EQ(mo.getFrameIndex(), -3);
 }
 
 TEST(MachineInstrTest, Construction) {
-    MachineInstr mi(42);
+    const MachineInstr mi(42);
     EXPECT_EQ(mi.getOpcode(), 42u);
     EXPECT_EQ(mi.getNumOperands(), 0u);
     EXPECT_EQ(mi.getParent(), nullptr);
@@ -66,7 +66,7 @@ TEST(MachineInstrTest, ParentLinkage) {
 }
 
 TEST(MachineBasicBlockTest, EmptyAtConstruction) {
-    MachineBasicBlock mbb("test");
+    const MachineBasicBlock mbb("test");
     EXPECT_TRUE(mbb.empty());
     EXPECT_EQ(mbb.getFirst(), nullptr);
     EXPECT_EQ(mbb.getLast(), nullptr);

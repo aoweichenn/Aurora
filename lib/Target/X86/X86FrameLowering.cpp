@@ -9,7 +9,7 @@ void X86FrameLowering::emitPrologue(MachineFunction& /*mf*/, MachineBasicBlock& 
 void X86FrameLowering::emitEpilogue(MachineFunction& /*mf*/, MachineBasicBlock& /*ret*/) const {
 }
 
-int X86FrameLowering::getFrameIndexReference(const MachineFunction& /*mf*/, int frameIdx, unsigned& outReg) const {
+int X86FrameLowering::getFrameIndexReference(const MachineFunction& /*mf*/, const int frameIdx, unsigned& outReg) const {
     outReg = X86RegisterInfo::RBP;
     return -(frameIdx + 1) * 8;
 }

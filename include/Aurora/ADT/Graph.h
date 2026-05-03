@@ -20,27 +20,27 @@ public:
     ~DirectedGraph() = default;
 
     unsigned addNode(NodeTy data) {
-        unsigned id = numNodes();
+        const unsigned id = numNodes();
         nodes_.push_back({std::move(data), {}, {}});
         return id;
     }
 
     NodeTy& getNode(unsigned id) { return nodes_[id].data; }
     const NodeTy& getNode(unsigned id) const { return nodes_[id].data; }
-    unsigned numNodes() const noexcept { return static_cast<unsigned>(nodes_.size()); }
+    [[nodiscard]] unsigned numNodes() const noexcept { return static_cast<unsigned>(nodes_.size()); }
 
     void addEdge(unsigned from, unsigned to) {
         nodes_[from].succs.push_back({to});
         nodes_[to].preds.push_back({from});
     }
 
-    const SmallVector<EdgeType, 4>& successors(unsigned nodeId) const { return nodes_[nodeId].succs; }
-    const SmallVector<EdgeType, 4>& predecessors(unsigned nodeId) const { return nodes_[nodeId].preds; }
-    unsigned numSuccessors(unsigned nodeId) const { return static_cast<unsigned>(nodes_[nodeId].succs.size()); }
-    unsigned numPredecessors(unsigned nodeId) const { return static_cast<unsigned>(nodes_[nodeId].preds.size()); }
+    [[nodiscard]] const SmallVector<EdgeType, 4>& successors(unsigned nodeId) const { return nodes_[nodeId].succs; }
+    [[nodiscard]] const SmallVector<EdgeType, 4>& predecessors(unsigned nodeId) const { return nodes_[nodeId].preds; }
+    [[nodiscard]] unsigned numSuccessors(unsigned nodeId) const { return static_cast<unsigned>(nodes_[nodeId].succs.size()); }
+    [[nodiscard]] unsigned numPredecessors(unsigned nodeId) const { return static_cast<unsigned>(nodes_[nodeId].preds.size()); }
 
-    SmallVector<unsigned, 16> reversePostOrder(unsigned entry) const;
-    SmallVector<unsigned, 16> postOrder(unsigned entry) const;
+    [[nodiscard]] SmallVector<unsigned, 16> reversePostOrder(unsigned entry) const;
+    [[nodiscard]] SmallVector<unsigned, 16> postOrder(unsigned entry) const;
 
 private:
     struct GraphNode {
@@ -52,7 +52,7 @@ private:
 };
 
 template <typename NodeTy>
-SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(unsigned entry) const {
+SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(const unsigned entry) const {
     SmallVector<unsigned, 16> result;
     SmallVector<unsigned, 32> stack;
     SmallVector<unsigned char, 32> visited(numNodes(), 0);
@@ -73,11 +73,11 @@ SmallVector<unsigned, 16> DirectedGraph<NodeTy>::postOrder(unsigned entry) const
 }
 
 template <typename NodeTy>
-SmallVector<unsigned, 16> DirectedGraph<NodeTy>::reversePostOrder(unsigned entry) const {
+SmallVector<unsigned, 16> DirectedGraph<NodeTy>::reversePostOrder(const unsigned entry) const {
     auto po = postOrder(entry);
     SmallVector<unsigned, 16> rpo;
     rpo.reserve(po.size());
-    for (unsigned i = static_cast<unsigned>(po.size()); i > 0; --i) rpo.push_back(po[i - 1]);
+    for (auto i = static_cast<unsigned>(po.size()); i > 0; --i) rpo.push_back(po[i - 1]);
     return rpo;
 }
 

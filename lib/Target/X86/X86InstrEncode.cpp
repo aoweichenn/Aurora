@@ -167,7 +167,7 @@ void X86InstEncoder::encode(const MachineInstr& /*mi*/, SmallVector<uint8_t, 32>
 void X86InstEncoder::encodeOperand(const MachineOperand& /*mo*/, SmallVector<uint8_t, 32>& /*out*/, unsigned /*opIdx*/) {
 }
 
-const X86EncodeEntry* X86InstEncoder::findEntry(uint16_t opcode) const {
+const X86EncodeEntry* X86InstEncoder::findEntry(const uint16_t opcode) const {
     for (const auto& e : X86EncodeTable) {
         if (e.opcode == opcode) return &e;
     }
@@ -188,20 +188,20 @@ void X86InstEncoder::emitOpcode(const X86EncodeEntry* e, SmallVector<uint8_t, 32
         out.push_back(e->baseOpcode[i]);
 }
 
-void X86InstEncoder::emitModRM(uint8_t mod, uint8_t regOp, uint8_t rm, SmallVector<uint8_t, 32>& out) {
+void X86InstEncoder::emitModRM(const uint8_t mod, const uint8_t regOp, const uint8_t rm, SmallVector<uint8_t, 32>& out) {
     out.push_back((mod << 6) | ((regOp & 7) << 3) | (rm & 7));
 }
 
-void X86InstEncoder::emitSIB(uint8_t scale, uint8_t index, uint8_t base, SmallVector<uint8_t, 32>& out) {
+void X86InstEncoder::emitSIB(const uint8_t scale, const uint8_t index, const uint8_t base, SmallVector<uint8_t, 32>& out) {
     out.push_back((scale << 6) | ((index & 7) << 3) | (base & 7));
 }
 
-void X86InstEncoder::emitDisp(int64_t disp, unsigned size, SmallVector<uint8_t, 32>& out) {
+void X86InstEncoder::emitDisp(const int64_t disp, const unsigned size, SmallVector<uint8_t, 32>& out) {
     for (unsigned i = 0; i < size; ++i)
         out.push_back(static_cast<uint8_t>((disp >> (i * 8)) & 0xFF));
 }
 
-void X86InstEncoder::emitImm(uint64_t imm, unsigned size, SmallVector<uint8_t, 32>& out) {
+void X86InstEncoder::emitImm(const uint64_t imm, const unsigned size, SmallVector<uint8_t, 32>& out) {
     for (unsigned i = 0; i < size; ++i)
         out.push_back(static_cast<uint8_t>((imm >> (i * 8)) & 0xFF));
 }

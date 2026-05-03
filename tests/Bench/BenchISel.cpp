@@ -1,12 +1,11 @@
 #include <benchmark/benchmark.h>
 #include "Aurora/Target/X86/X86ISelPatterns.h"
-#include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Air/Type.h"
 
 using namespace aurora;
 
 static void BM_ISel_MatchAdd64(benchmark::State& state) {
-    std::vector<unsigned> vregTypes;
+    const std::vector<unsigned> vregTypes;
     for (auto _ : state) {
         auto result = X86ISelPatterns::matchPattern(
             AIROpcode::Add, Type::getInt64Ty(), vregTypes, 0, 0);
@@ -16,7 +15,7 @@ static void BM_ISel_MatchAdd64(benchmark::State& state) {
 BENCHMARK(BM_ISel_MatchAdd64);
 
 static void BM_ISel_MatchAllPatterns(benchmark::State& state) {
-    std::vector<unsigned> vregTypes;
+    const std::vector<unsigned> vregTypes;
     const auto& patterns = X86ISelPatterns::getAllPatterns();
     for (auto _ : state) {
         for (const auto& pat : patterns) {

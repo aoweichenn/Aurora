@@ -2,19 +2,19 @@
 
 namespace aurora {
 
-MachineOperand MachineOperand::createReg(unsigned regId) {
+MachineOperand MachineOperand::createReg(const unsigned regId) {
     MachineOperand mo;
     mo.kind_ = MachineOperandKind::MO_Register;
     mo.regId = regId;
     return mo;
 }
-MachineOperand MachineOperand::createVReg(unsigned vreg) {
+MachineOperand MachineOperand::createVReg(const unsigned vreg) {
     MachineOperand mo;
     mo.kind_ = MachineOperandKind::MO_VirtualReg;
     mo.vregId = vreg;
     return mo;
 }
-MachineOperand MachineOperand::createImm(int64_t val) {
+MachineOperand MachineOperand::createImm(const int64_t val) {
     MachineOperand mo;
     mo.kind_ = MachineOperandKind::MO_Immediate;
     mo.immVal = val;
@@ -26,7 +26,7 @@ MachineOperand MachineOperand::createMBB(MachineBasicBlock* mbb) {
     mo.mbb = mbb;
     return mo;
 }
-MachineOperand MachineOperand::createFrameIndex(int idx) {
+MachineOperand MachineOperand::createFrameIndex(const int idx) {
     MachineOperand mo;
     mo.kind_ = MachineOperandKind::MO_FrameIndex;
     mo.frameIdx = idx;
@@ -42,16 +42,16 @@ bool MachineOperand::isReg() const noexcept { return kind_ == MachineOperandKind
 bool MachineOperand::isVReg() const noexcept { return kind_ == MachineOperandKind::MO_VirtualReg; }
 bool MachineOperand::isImm() const noexcept { return kind_ == MachineOperandKind::MO_Immediate; }
 
-MachineInstr::MachineInstr(uint16_t opcode)
+MachineInstr::MachineInstr(const uint16_t opcode)
     : opcode_(opcode), parent_(nullptr), next_(nullptr), prev_(nullptr) {}
 
 MachineInstr::~MachineInstr() = default;
 
-MachineOperand& MachineInstr::getOperand(unsigned i) { return operands_[i]; }
-const MachineOperand& MachineInstr::getOperand(unsigned i) const { return operands_[i]; }
+MachineOperand& MachineInstr::getOperand(const unsigned i) { return operands_[i]; }
+const MachineOperand& MachineInstr::getOperand(const unsigned i) const { return operands_[i]; }
 
-void MachineInstr::addOperand(MachineOperand mo) { operands_.push_back(mo); }
-void MachineInstr::setOperand(unsigned i, MachineOperand mo) { operands_[i] = mo; }
+void MachineInstr::addOperand(const MachineOperand mo) { operands_.push_back(mo); }
+void MachineInstr::setOperand(const unsigned i, const MachineOperand mo) { operands_[i] = mo; }
 
 bool MachineInstr::isTerminator() const noexcept { return false; }
 bool MachineInstr::isBranch() const noexcept { return false; }

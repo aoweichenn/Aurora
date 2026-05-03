@@ -46,7 +46,7 @@ TEST(MCStreamerTest, EmitRawText) {
 TEST(X86AsmPrinterTest, Construction) {
     std::ostringstream oss;
     AsmTextStreamer streamer(oss);
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
     X86AsmPrinter printer(streamer, ri);
     SUCCEED();
 }
@@ -54,7 +54,7 @@ TEST(X86AsmPrinterTest, Construction) {
 TEST(X86AsmPrinterTest, EmitMoveInstruction) {
     std::ostringstream oss;
     AsmTextStreamer streamer(oss);
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
 
     MachineInstr mi(X86::MOV64rr);
     mi.addOperand(MachineOperand::createVReg(0));
@@ -70,7 +70,7 @@ TEST(X86AsmPrinterTest, EmitMoveInstruction) {
 TEST(X86AsmPrinterTest, EmitAddInstruction) {
     std::ostringstream oss;
     AsmTextStreamer streamer(oss);
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
 
     MachineInstr mi(X86::ADD64rr);
     mi.addOperand(MachineOperand::createVReg(0));
@@ -86,9 +86,9 @@ TEST(X86AsmPrinterTest, EmitAddInstruction) {
 TEST(X86AsmPrinterTest, EmitReturnInstruction) {
     std::ostringstream oss;
     AsmTextStreamer streamer(oss);
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
 
-    MachineInstr mi(X86::RETQ);
+    const MachineInstr mi(X86::RETQ);
     X86AsmPrinter printer(streamer, ri);
     printer.emitInstruction(mi);
 

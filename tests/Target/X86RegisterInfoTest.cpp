@@ -4,27 +4,27 @@
 using namespace aurora;
 
 TEST(X86RegisterInfoTest, NumRegs) {
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
     EXPECT_EQ(ri.getNumRegs(), X86RegisterInfo::NUM_REGS);
 }
 
 TEST(X86RegisterInfoTest, FramePointer) {
-    X86RegisterInfo ri;
-    auto fp = ri.getFramePointer();
+    const X86RegisterInfo ri;
+    const auto fp = ri.getFramePointer();
     EXPECT_EQ(fp.name, "rbp");
     EXPECT_EQ(fp.bitWidth, 64u);
 }
 
 TEST(X86RegisterInfoTest, StackPointer) {
-    X86RegisterInfo ri;
-    auto sp = ri.getStackPointer();
+    const X86RegisterInfo ri;
+    const auto sp = ri.getStackPointer();
     EXPECT_EQ(sp.name, "rsp");
     EXPECT_EQ(sp.bitWidth, 64u);
 }
 
 TEST(X86RegisterInfoTest, CalleeSavedRegs) {
-    X86RegisterInfo ri;
-    auto cs = ri.getCalleeSavedRegs();
+    const X86RegisterInfo ri;
+    const auto cs = ri.getCalleeSavedRegs();
     // RBX, RBP, R12-R15 should be callee-saved
     EXPECT_TRUE(cs.test(X86RegisterInfo::RBX));
     EXPECT_TRUE(cs.test(X86RegisterInfo::RBP));
@@ -38,8 +38,8 @@ TEST(X86RegisterInfoTest, CalleeSavedRegs) {
 }
 
 TEST(X86RegisterInfoTest, CallerSavedRegs) {
-    X86RegisterInfo ri;
-    auto cs = ri.getCallerSavedRegs();
+    const X86RegisterInfo ri;
+    const auto cs = ri.getCallerSavedRegs();
     EXPECT_TRUE(cs.test(X86RegisterInfo::RAX));
     EXPECT_TRUE(cs.test(X86RegisterInfo::RCX));
     EXPECT_TRUE(cs.test(X86RegisterInfo::RDX));
@@ -49,7 +49,7 @@ TEST(X86RegisterInfoTest, CallerSavedRegs) {
 }
 
 TEST(X86RegisterInfoTest, RegisterClasses) {
-    X86RegisterInfo ri;
+    const X86RegisterInfo ri;
     const auto& gpr64 = ri.getRegClass(RegClass::GPR64);
     EXPECT_EQ(gpr64.getNumRegs(), 16u);
     EXPECT_EQ(gpr64.getName(), "GPR64");
@@ -62,20 +62,20 @@ TEST(X86RegisterInfoTest, RegisterClasses) {
 }
 
 TEST(X86RegisterInfoTest, AllocationOrder) {
-    X86RegisterInfo ri;
-    auto order = ri.getAllocOrder(RegClass::GPR64);
+    const X86RegisterInfo ri;
+    const auto order = ri.getAllocOrder(RegClass::GPR64);
     EXPECT_FALSE(order.empty());
     // RSP should not be early in allocation order
 }
 
 TEST(X86RegisterInfoTest, GetRegById) {
-    auto reg = X86RegisterInfo::getReg(X86RegisterInfo::RAX);
+    const auto reg = X86RegisterInfo::getReg(X86RegisterInfo::RAX);
     EXPECT_EQ(reg.name, "rax");
     EXPECT_TRUE(reg.isGeneralPurpose());
 }
 
 TEST(X86RegisterInfoTest, GetXMMById) {
-    auto reg = X86RegisterInfo::getReg(X86RegisterInfo::XMM0);
+    const auto reg = X86RegisterInfo::getReg(X86RegisterInfo::XMM0);
     EXPECT_EQ(reg.name, "xmm0");
     EXPECT_TRUE(reg.isFloatingPoint());
 }

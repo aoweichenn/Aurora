@@ -5,14 +5,14 @@
 using namespace aurora;
 
 TEST(X86InstrInfoTest, NumOpcodes) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
     EXPECT_EQ(ii.getNumOpcodes(), X86::NUM_OPS);
 }
 
 TEST(X86InstrInfoTest, OpcodeDescriptions) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
 
     // Test that known opcodes have descriptions
     const auto& addDesc = ii.get(X86::ADD64rr);
@@ -26,8 +26,8 @@ TEST(X86InstrInfoTest, OpcodeDescriptions) {
 }
 
 TEST(X86InstrInfoTest, TerminatorOpcodes) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
 
     const auto& retDesc = ii.get(X86::RETQ);
     EXPECT_TRUE(retDesc.isTerminator);
@@ -42,8 +42,8 @@ TEST(X86InstrInfoTest, TerminatorOpcodes) {
 }
 
 TEST(X86InstrInfoTest, CompareOpcodes) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
 
     const auto& cmpDesc = ii.get(X86::CMP64rr);
     EXPECT_TRUE(cmpDesc.isCompare);
@@ -51,16 +51,16 @@ TEST(X86InstrInfoTest, CompareOpcodes) {
 }
 
 TEST(X86InstrInfoTest, GetMoveOpcode) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
 
     EXPECT_EQ(ii.getMoveOpcode(64, 64), X86::MOV64rr);
     EXPECT_EQ(ii.getMoveOpcode(32, 32), X86::MOV32rr);
 }
 
 TEST(X86InstrInfoTest, GetArithOpcode) {
-    X86RegisterInfo ri;
-    X86InstrInfo ii(ri);
+    const X86RegisterInfo ri;
+    const X86InstrInfo ii(ri);
 
     // 0=add, size=64, reg
     EXPECT_EQ(ii.getArithOpcode(0, 64, false), X86::ADD64rr);

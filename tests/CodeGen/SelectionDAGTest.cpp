@@ -7,8 +7,8 @@ using namespace aurora;
 
 TEST(SelectionDAGTest, CreateNode) {
     SelectionDAG dag;
-    SmallVector<SDValue, 4> ops;
-    auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
+    const SmallVector<SDValue, 4> ops;
+    const auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
     EXPECT_TRUE(sv.isValid());
     EXPECT_NE(sv.getNode(), nullptr);
     EXPECT_EQ(sv.getNode()->getOpcode(), AIROpcode::Add);
@@ -16,14 +16,14 @@ TEST(SelectionDAGTest, CreateNode) {
 
 TEST(SelectionDAGTest, NodeWithOperands) {
     SelectionDAG dag;
-    SmallVector<SDValue, 4> emptyOps;
-    auto left = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), emptyOps);
-    auto right = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), emptyOps);
+    const SmallVector<SDValue, 4> emptyOps;
+    const auto left = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), emptyOps);
+    const auto right = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), emptyOps);
 
     SmallVector<SDValue, 4> ops;
     ops.push_back(left);
     ops.push_back(right);
-    auto parent = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
+    const auto parent = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
 
     EXPECT_EQ(parent.getNode()->getNumOperands(), 2u);
     EXPECT_EQ(parent.getNode()->getOperand(0).getNode(), left.getNode());
@@ -32,9 +32,9 @@ TEST(SelectionDAGTest, NodeWithOperands) {
 
 TEST(SelectionDAGTest, NodeIdAssignment) {
     SelectionDAG dag;
-    SmallVector<SDValue, 4> ops;
-    auto n1 = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
-    auto n2 = dag.createNode(AIROpcode::Sub, Type::getInt32Ty(), ops);
+    const SmallVector<SDValue, 4> ops;
+    const auto n1 = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), ops);
+    const auto n2 = dag.createNode(AIROpcode::Sub, Type::getInt32Ty(), ops);
     EXPECT_NE(n1.getNode()->getNodeId(), n2.getNode()->getNodeId());
 }
 
@@ -48,7 +48,7 @@ TEST(SelectionDAGTest, AllNodes) {
 
 TEST(SelectionDAGTest, NodeSelectionFlag) {
     SelectionDAG dag;
-    auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), {});
+    const auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), {});
     EXPECT_FALSE(sv.getNode()->isSelected());
 
     sv.getNode()->setSelected(true);
@@ -57,7 +57,7 @@ TEST(SelectionDAGTest, NodeSelectionFlag) {
 
 TEST(SelectionDAGTest, MachineOpcodeOnNode) {
     SelectionDAG dag;
-    auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), {});
+    const auto sv = dag.createNode(AIROpcode::Add, Type::getInt32Ty(), {});
     sv.getNode()->createMachineInstr(42);
     EXPECT_EQ(sv.getNode()->getMachineOpcode(), 42u);
 }

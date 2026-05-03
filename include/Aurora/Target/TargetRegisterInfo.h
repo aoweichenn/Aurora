@@ -38,7 +38,7 @@ public:
     bool contains(const Register& reg) const;
     unsigned getSizeInBits() const noexcept;
     unsigned getNumRegs() const noexcept { return static_cast<unsigned>(regs_.size()); }
-    const Register& operator[](unsigned i) const { return regs_[i]; }
+    const Register& operator[](const unsigned i) const { return regs_[i]; }
 
 private:
     std::string name_;

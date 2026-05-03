@@ -34,7 +34,7 @@ void LinearScanRegAlloc::computeLiveIntervals() {
     std::map<unsigned, unsigned> lastDef;
     std::map<unsigned, unsigned> firstUse;
 
-    for (auto& mbb : mf_.getBlocks()) {
+    for (const auto& mbb : mf_.getBlocks()) {
         MachineInstr* mi = mbb->getFirst();
         while (mi) {
             for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
@@ -70,7 +70,7 @@ void LinearScanRegAlloc::expireOldIntervals(LiveInterval& /*current*/, unsigned 
 
 unsigned LinearScanRegAlloc::tryAllocateFreeReg(LiveInterval& current) {
     const auto& order = regInfo_.getAllocOrder(RegClass::GPR64);
-    for (unsigned reg : order) {
+    for (const unsigned reg : order) {
         if (reg == X86RegisterInfo::RSP || reg == X86RegisterInfo::RBP)
             continue; // Skip reserved registers
         bool conflict = false;
@@ -92,11 +92,11 @@ unsigned LinearScanRegAlloc::selectRegToSpill(LiveInterval& /*current*/) {
 }
 
 void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned /*slot*/) {
-    int spillSlot = mf_.createStackSlot(8, 8);
+    const int spillSlot = mf_.createStackSlot(8, 8);
     li.setSpillSlot(spillSlot);
 }
 
-void LinearScanRegAlloc::assignPhysReg(LiveInterval& li, unsigned reg) {
+void LinearScanRegAlloc::assignPhysReg(LiveInterval& li, const unsigned reg) {
     li.setAssignedReg(reg);
 }
 
@@ -110,10 +110,10 @@ void LinearScanRegAlloc::linearScan() {
     for (auto& li : intervals_) {
         expireOldIntervals(li, li.start());
 
-        unsigned reg = tryAllocateFreeReg(li);
+        const unsigned reg = tryAllocateFreeReg(li);
         if (reg == ~0U) {
             // Need to spill
-            unsigned spillReg = selectRegToSpill(li);
+            const unsigned spillReg = selectRegToSpill(li);
             if (spillReg != ~0U) {
                 // Spill the existing interval
                 for (auto& other : intervals_) {

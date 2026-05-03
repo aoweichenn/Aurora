@@ -4,7 +4,7 @@
 using namespace aurora;
 
 TEST(SmallVectorTest, DefaultConstruction) {
-    SmallVector<int, 8> v;
+    const SmallVector<int, 8> v;
     EXPECT_TRUE(v.empty());
     EXPECT_EQ(v.size(), 0u);
 }

@@ -27,14 +27,14 @@ public:
     static ConstantInt* getInt64(int64_t val);
     static ConstantInt* getInt(Type* ty, uint64_t val);
 
-    int64_t  getSExtValue() const noexcept { return static_cast<int64_t>(value_); }
-    uint64_t getZExtValue() const noexcept { return value_; }
-    unsigned getBitWidth() const noexcept { return type_->getSizeInBits(); }
-    bool isZero() const noexcept { return value_ == 0; }
-    bool isOne()  const noexcept { return value_ == 1; }
+    [[nodiscard]] int64_t  getSExtValue() const noexcept { return static_cast<int64_t>(value_); }
+    [[nodiscard]] uint64_t getZExtValue() const noexcept { return value_; }
+    [[nodiscard]] unsigned getBitWidth() const noexcept { return type_->getSizeInBits(); }
+    [[nodiscard]] bool isZero() const noexcept { return value_ == 0; }
+    [[nodiscard]] bool isOne()  const noexcept { return value_ == 1; }
 
 private:
-    ConstantInt(Type* ty, uint64_t val) : Constant(ty), value_(val) {}
+    ConstantInt(Type* ty, const uint64_t val) : Constant(ty), value_(val) {}
     uint64_t value_;
 };
 
@@ -53,7 +53,7 @@ private:
 class GlobalVariable : public Constant {
 public:
     explicit GlobalVariable(Type* ty, const std::string& name);
-    const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] const std::string& getName() const noexcept { return name_; }
 private:
     std::string name_;
 };

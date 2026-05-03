@@ -6,7 +6,7 @@
 using namespace aurora;
 
 TEST(BasicBlockTest, Construction) {
-    BasicBlock bb("test_block");
+    const BasicBlock bb("test_block");
     EXPECT_EQ(bb.getName(), "test_block");
     EXPECT_TRUE(bb.empty());
     EXPECT_EQ(bb.getFirst(), nullptr);

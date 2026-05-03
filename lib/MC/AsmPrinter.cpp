@@ -22,7 +22,7 @@ void AsmPrinter::emitFunction(MachineFunction& mf) {
 void AsmPrinter::emitBasicBlock(MachineBasicBlock& mbb) {
     streamer_.emitLabel("." + mbb.getName());
 
-    MachineInstr* mi = mbb.getFirst();
+    const MachineInstr* mi = mbb.getFirst();
     while (mi) {
         emitInstruction(*mi);
         mi = mi->getNext();
@@ -30,14 +30,14 @@ void AsmPrinter::emitBasicBlock(MachineBasicBlock& mbb) {
 }
 
 void AsmPrinter::emitFunctionHeader(MachineFunction& mf) {
-    auto& fn = mf.getAIRFunction();
+    const auto& fn = mf.getAIRFunction();
     streamer_.emitGlobalSymbol(fn.getName());
     streamer_.emitLabel(fn.getName());
     streamer_.emitRawText("\t.type " + fn.getName() + ", @function");
 }
 
 void AsmPrinter::emitFunctionFooter(MachineFunction& mf) {
-    auto& fn = mf.getAIRFunction();
+    const auto& fn = mf.getAIRFunction();
     streamer_.emitRawText("\t.size " + fn.getName() + ", .-" + fn.getName());
 }
 

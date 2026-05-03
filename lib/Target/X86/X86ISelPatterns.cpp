@@ -52,13 +52,13 @@ static void initPatterns() {
     g_patterns.push_back({AIROpcode::AShr, 2, {OperandKind::Reg, OperandKind::Reg}, {OperandSize::S64, OperandSize::Any}, X86::SAR64rCL, {0, 1}});
 }
 
-ISelMatchResult X86ISelPatterns::matchPattern(AIROpcode airOp, Type* resultTy,
+ISelMatchResult X86ISelPatterns::matchPattern(const AIROpcode airOp, Type* resultTy,
                                                const std::vector<unsigned>& /*vregTypes*/,
                                                unsigned /*op0*/, unsigned /*op1*/) {
     initPatterns();
     ISelMatchResult ret = {0, false};
 
-    unsigned resSize = resultTy ? resultTy->getSizeInBits() : 0;
+    const unsigned resSize = resultTy ? resultTy->getSizeInBits() : 0;
 
     for (const auto& pat : g_patterns) {
         if (pat.airOp != airOp) continue;

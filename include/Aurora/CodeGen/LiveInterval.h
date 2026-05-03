@@ -26,15 +26,15 @@ public:
     bool liveAt(unsigned slot) const;
 
     unsigned getAssignedReg() const noexcept { return assignedReg_; }
-    void setAssignedReg(unsigned reg) noexcept { assignedReg_ = reg; }
+    void setAssignedReg(const unsigned reg) noexcept { assignedReg_ = reg; }
     bool hasAssignment() const noexcept { return assignedReg_ != ~0U; }
 
     int getSpillSlot() const noexcept { return spillSlot_; }
-    void setSpillSlot(int slot) noexcept { spillSlot_ = slot; }
+    void setSpillSlot(const int slot) noexcept { spillSlot_ = slot; }
     bool isSpilled() const noexcept { return spillSlot_ >= 0; }
 
     float getSpillWeight() const noexcept { return spillWeight_; }
-    void setSpillWeight(float w) noexcept { spillWeight_ = w; }
+    void setSpillWeight(const float w) noexcept { spillWeight_ = w; }
 
     unsigned start() const noexcept;
     unsigned end() const noexcept;

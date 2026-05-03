@@ -14,7 +14,7 @@ void PrologueEpilogueInserter::run(MachineFunction& mf) {
             frameLowering.emitPrologue(mf, *mbb);
         }
         // Find return blocks and emit epilogue
-        MachineInstr* mi = mbb->getLast();
+        const MachineInstr* mi = mbb->getLast();
         while (mi) {
             if (mi->isReturn()) {
                 frameLowering.emitEpilogue(mf, *mbb);

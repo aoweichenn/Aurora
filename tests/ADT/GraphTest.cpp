@@ -5,15 +5,15 @@ using namespace aurora;
 
 TEST(GraphTest, AddNode) {
     DirectedGraph<int> g;
-    unsigned id = g.addNode(42);
+    const unsigned id = g.addNode(42);
     EXPECT_EQ(g.numNodes(), 1u);
     EXPECT_EQ(g.getNode(id), 42);
 }
 
 TEST(GraphTest, AddEdge) {
     DirectedGraph<int> g;
-    unsigned a = g.addNode(10);
-    unsigned b = g.addNode(20);
+    const unsigned a = g.addNode(10);
+    const unsigned b = g.addNode(20);
     g.addEdge(a, b);
     EXPECT_EQ(g.numSuccessors(a), 1u);
     EXPECT_EQ(g.numPredecessors(b), 1u);
@@ -21,9 +21,9 @@ TEST(GraphTest, AddEdge) {
 
 TEST(GraphTest, SuccessorsAndPredecessors) {
     DirectedGraph<int> g;
-    unsigned a = g.addNode(1);
-    unsigned b = g.addNode(2);
-    unsigned c = g.addNode(3);
+    const unsigned a = g.addNode(1);
+    const unsigned b = g.addNode(2);
+    const unsigned c = g.addNode(3);
     g.addEdge(a, b);
     g.addEdge(b, c);
     g.addEdge(a, c);

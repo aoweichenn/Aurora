@@ -21,11 +21,11 @@ static std::unique_ptr<Module> buildAddModule() {
     params.push_back(Type::getInt32Ty());
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
 
-    auto* fn = mod->createFunction(fnTy, "add");
+    const auto* fn = mod->createFunction(fnTy, "add");
     auto* entry = fn->getEntryBlock();
     AIRBuilder builder(entry);
 
-    unsigned sum = builder.createAdd(Type::getInt32Ty(), 0, 1);
+    const unsigned sum = builder.createAdd(Type::getInt32Ty(), 0, 1);
     builder.createRet(sum);
     return mod;
 }
@@ -62,8 +62,8 @@ TEST(IntegrationTest, FullPipeline_SimpleAdd) {
 }
 
 TEST(IntegrationTest, AIRBuilderToMachineIR) {
-    auto module = buildAddModule();
-    auto tm = TargetMachine::createX86_64();
+    const auto module = buildAddModule();
+    const auto tm = TargetMachine::createX86_64();
 
     for (auto& fn : module->getFunctions()) {
         MachineFunction mf(*fn, *tm);
@@ -80,8 +80,8 @@ TEST(IntegrationTest, AIRBuilderToMachineIR) {
 }
 
 TEST(IntegrationTest, MultipleBlocksFunction) {
-    auto mod = std::make_unique<Module>("multi_block");
-    SmallVector<Type*, 8> params = {Type::getInt32Ty()};
+    const auto mod = std::make_unique<Module>("multi_block");
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     auto* fn = mod->createFunction(fnTy, "branchy");
 
@@ -91,7 +91,7 @@ TEST(IntegrationTest, MultipleBlocksFunction) {
     auto* merge = fn->createBasicBlock("L.merge");
 
     AIRBuilder builder(entry);
-    unsigned cmp = builder.createICmp(ICmpCond::SGT, 0, 0); // dummy compare
+    const unsigned cmp = builder.createICmp(ICmpCond::SGT, 0, 0); // dummy compare
     builder.createCondBr(cmp, bbTrue, bbFalse);
 
     builder.setInsertPoint(bbTrue);
@@ -103,13 +103,13 @@ TEST(IntegrationTest, MultipleBlocksFunction) {
     builder.createBr(merge);
 
     builder.setInsertPoint(merge);
-    SmallVector<std::pair<BasicBlock*, unsigned>, 4> incomings = {{bbTrue, v1}, {bbFalse, v2}};
-    unsigned phi = builder.createPhi(Type::getInt32Ty(), incomings);
+    const SmallVector<std::pair<BasicBlock*, unsigned>, 4> incomings = {{bbTrue, v1}, {bbFalse, v2}};
+    const unsigned phi = builder.createPhi(Type::getInt32Ty(), incomings);
     builder.createRet(phi);
 
     EXPECT_EQ(fn->getBlocks().size(), 4u);
 
-    auto tm = TargetMachine::createX86_64();
+    const auto tm = TargetMachine::createX86_64();
     MachineFunction mf(*fn, *tm);
     PassManager pm;
     CodeGenContext::addStandardPasses(pm, *tm);

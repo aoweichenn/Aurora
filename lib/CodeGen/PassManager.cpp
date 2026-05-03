@@ -12,7 +12,7 @@ void PassManager::addPass(std::unique_ptr<CodeGenPass> pass) {
 }
 
 void PassManager::run(MachineFunction& mf) {
-    for (auto& pass : passes_)
+    for (const auto& pass : passes_)
         pass->run(mf);
 }
 
@@ -22,16 +22,16 @@ class AIRToMachineIRPass : public CodeGenPass {
 public:
     void run(MachineFunction& mf) override {
         // Translate AIR basic blocks to MachineBasicBlocks
-        auto& airFunc = mf.getAIRFunction();
+        const auto& airFunc = mf.getAIRFunction();
         for (auto& airBB : airFunc.getBlocks()) {
             auto* mbb = mf.createBasicBlock(airBB->getName());
             // Copy AIR instructions to machine instructions
-            AIRInstruction* inst = airBB->getFirst();
+            const AIRInstruction* inst = airBB->getFirst();
             while (inst) {
-                uint16_t opcode = static_cast<uint16_t>(inst->getOpcode());
+                const uint16_t opcode = static_cast<uint16_t>(inst->getOpcode());
                 auto* mi = new MachineInstr(opcode);
                 for (unsigned i = 0; i < inst->getNumOperands(); ++i) {
-                    unsigned vreg = inst->getOperand(i);
+                    const unsigned vreg = inst->getOperand(i);
                     if (vreg != ~0U)
                         mi->addOperand(MachineOperand::createVReg(vreg));
                 }
@@ -47,7 +47,7 @@ public:
         auto& airBlocks = airFunc.getBlocks();
         auto& mbbList = mf.getBlocks();
         for (size_t i = 0; i < airBlocks.size(); ++i) {
-            for (auto* succ : airBlocks[i]->getSuccessors()) {
+            for (const auto* succ : airBlocks[i]->getSuccessors()) {
                 // Find corresponding MBB
                 for (size_t j = 0; j < airBlocks.size(); ++j) {
                     if (airBlocks[j].get() == succ) {

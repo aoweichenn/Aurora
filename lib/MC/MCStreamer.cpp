@@ -24,7 +24,7 @@ void AsmTextStreamer::emitGlobalSymbol(const std::string& name) {
     os_ << ".globl " << name << "\n";
 }
 
-void AsmTextStreamer::emitAlignment(unsigned bytes) {
+void AsmTextStreamer::emitAlignment(const unsigned bytes) {
     os_ << ".align " << bytes << "\n";
 }
 

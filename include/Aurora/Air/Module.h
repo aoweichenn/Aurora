@@ -12,9 +12,9 @@ class DataLayout {
 public:
     DataLayout() = default;
     bool isLittleEndian() const noexcept { return littleEndian_; }
-    void setLittleEndian(bool v) noexcept { littleEndian_ = v; }
+    void setLittleEndian(const bool v) noexcept { littleEndian_ = v; }
     unsigned getPointerSize() const noexcept { return ptrSize_; }
-    void setPointerSize(unsigned v) noexcept { ptrSize_ = v; }
+    void setPointerSize(const unsigned v) noexcept { ptrSize_ = v; }
 private:
     bool littleEndian_ = true;
     unsigned ptrSize_ = 64;

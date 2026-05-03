@@ -202,12 +202,12 @@ void SmallVector<T, N>::clear() noexcept {
 }
 
 template <typename T, unsigned N>
-void SmallVector<T, N>::reserve(size_type n) {
+void SmallVector<T, N>::reserve(const size_type n) {
     if (static_cast<size_type>(capacity_ - begin_) < n) grow(n);
 }
 
 template <typename T, unsigned N>
-void SmallVector<T, N>::resize(size_type n) {
+void SmallVector<T, N>::resize(const size_type n) {
     while (size() > n) pop_back();
     while (size() < n) push_back(T());
 }
@@ -228,8 +228,8 @@ typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator first, it
 }
 
 template <typename T, unsigned N>
-void SmallVector<T, N>::grow(size_type minSize) {
-    size_type oldCap = static_cast<size_type>(capacity_ - begin_);
+void SmallVector<T, N>::grow(const size_type minSize) {
+    const size_type oldCap = static_cast<size_type>(capacity_ - begin_);
     size_type newCap;
     if (oldCap > static_cast<size_type>(-1) / 2)
         newCap = static_cast<size_type>(-1);

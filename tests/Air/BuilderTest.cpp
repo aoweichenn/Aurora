@@ -7,33 +7,33 @@
 using namespace aurora;
 
 TEST(BuilderTest, CreateAdd) {
-    SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     Module mod("test");
     auto* fn = mod.createFunction(fnTy, "add");
     BasicBlock* bb = fn->createBasicBlock("entry");
     AIRBuilder builder(bb);
 
-    unsigned result = builder.createAdd(Type::getInt32Ty(), 0, 1);
+    const unsigned result = builder.createAdd(Type::getInt32Ty(), 0, 1);
     EXPECT_EQ(result, 2u); // First 2 vregs are params, so result is #2
 }
 
 TEST(BuilderTest, BuildSimpleFunction) {
-    SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     Module mod("test");
-    auto* fn = mod.createFunction(fnTy, "square");
+    const auto* fn = mod.createFunction(fnTy, "square");
 
     AIRBuilder builder(fn->getEntryBlock());
     // %2 = mul i32 %0, %0  (square the first argument)
-    unsigned result = builder.createMul(Type::getInt32Ty(), 0, 0);
+    const unsigned result = builder.createMul(Type::getInt32Ty(), 0, 0);
     builder.createRet(result);
 
     EXPECT_EQ(fn->getNumVRegs(), 3u);
 }
 
 TEST(BuilderTest, BuildFunctionWithControlFlow) {
-    SmallVector<Type*, 8> params = {Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     Module mod("test");
     auto* fn = mod.createFunction(fnTy, "abs");
@@ -43,9 +43,9 @@ TEST(BuilderTest, BuildFunctionWithControlFlow) {
     auto* merge  = fn->createBasicBlock("merge");
 
     AIRBuilder builder(entry);
-    unsigned constZero = fn->nextVReg();
+    const unsigned constZero = fn->nextVReg();
     // This test demonstrates basic IR building
-    unsigned cmp = builder.createICmp(ICmpCond::SLT, 0, constZero);
+    const unsigned cmp = builder.createICmp(ICmpCond::SLT, 0, constZero);
     builder.createCondBr(cmp, ltZero, merge);
 
     builder.setInsertPoint(ltZero);
@@ -56,56 +56,56 @@ TEST(BuilderTest, BuildFunctionWithControlFlow) {
     SmallVector<std::pair<BasicBlock*, unsigned>, 4> incomings;
     incomings.push_back({entry, 0});
     incomings.push_back({ltZero, neg});
-    unsigned phi = builder.createPhi(Type::getInt32Ty(), incomings);
+    const unsigned phi = builder.createPhi(Type::getInt32Ty(), incomings);
     builder.createRet(phi);
 
     EXPECT_EQ(fn->getBlocks().size(), 3u);
 }
 
 TEST(BuilderTest, CreateLoadAndStore) {
-    SmallVector<Type*, 8> params;
+    const SmallVector<Type*, 8> params;
     auto* fnTy = new FunctionType(Type::getVoidTy(), params);
     Module mod("test");
-    auto* fn = mod.createFunction(fnTy, "memtest");
+    const auto* fn = mod.createFunction(fnTy, "memtest");
 
     AIRBuilder builder(fn->getEntryBlock());
-    unsigned alloca = builder.createAlloca(Type::getInt32Ty());
+    const unsigned alloca = builder.createAlloca(Type::getInt32Ty());
     builder.createStore(0, alloca);
-    unsigned loaded = builder.createLoad(Type::getInt32Ty(), alloca);
+    const unsigned loaded = builder.createLoad(Type::getInt32Ty(), alloca);
     EXPECT_NE(loaded, alloca);
 
-    unsigned add = builder.createAdd(Type::getInt32Ty(), loaded, loaded);
+    const unsigned add = builder.createAdd(Type::getInt32Ty(), loaded, loaded);
     builder.createRet(add);
 }
 
 TEST(BuilderTest, CreateCall) {
-    SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
     auto* calleeTy = new FunctionType(Type::getInt32Ty(), params);
 
     Module mod("test");
     auto* callee = mod.createFunction(calleeTy, "helper");
 
-    SmallVector<Type*, 8> callerParams;
+    const SmallVector<Type*, 8> callerParams;
     auto* callerTy = new FunctionType(Type::getInt32Ty(), callerParams);
-    auto* fn = mod.createFunction(callerTy, "caller");
+    const auto* fn = mod.createFunction(callerTy, "caller");
 
     AIRBuilder builder(fn->getEntryBlock());
-    SmallVector<unsigned, 8> args = {0, 1};
-    unsigned result = builder.createCall(callee, args);
+    const SmallVector<unsigned, 8> args = {0, 1};
+    const unsigned result = builder.createCall(callee, args);
     builder.createRet(result);
 
     EXPECT_GT(fn->getNumVRegs(), 0u);
 }
 
 TEST(BuilderTest, CreateShiftOps) {
-    SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     Module mod("test");
-    auto* fn = mod.createFunction(fnTy, "shifts");
+    const auto* fn = mod.createFunction(fnTy, "shifts");
 
     AIRBuilder builder(fn->getEntryBlock());
-    unsigned shl = builder.createShl(Type::getInt32Ty(), 0, 1);
-    unsigned lshr = builder.createLShr(Type::getInt32Ty(), shl, 0);
+    const unsigned shl = builder.createShl(Type::getInt32Ty(), 0, 1);
+    const unsigned lshr = builder.createLShr(Type::getInt32Ty(), shl, 0);
     builder.createRet(lshr);
 
     EXPECT_GT(fn->getNumVRegs(), 2u);

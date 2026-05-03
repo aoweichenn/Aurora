@@ -7,7 +7,7 @@ using namespace aurora;
 
 TEST(InstructionTest, CreateAdd) {
     auto* ty = Type::getInt32Ty();
-    auto* inst = AIRInstruction::createAdd(ty, 0, 1);
+    const auto* inst = AIRInstruction::createAdd(ty, 0, 1);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Add);
     EXPECT_EQ(inst->getType(), ty);
     EXPECT_TRUE(inst->hasResult());
@@ -15,7 +15,7 @@ TEST(InstructionTest, CreateAdd) {
 }
 
 TEST(InstructionTest, CreateSub) {
-    auto* inst = AIRInstruction::createSub(Type::getInt64Ty(), 2, 3);
+    const auto* inst = AIRInstruction::createSub(Type::getInt64Ty(), 2, 3);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Sub);
     EXPECT_EQ(inst->getNumOperands(), 2u);
 }
@@ -31,21 +31,21 @@ TEST(InstructionTest, CreateBinaryOps) {
 }
 
 TEST(InstructionTest, CreateRet) {
-    auto* inst = AIRInstruction::createRet(5);
+    const auto* inst = AIRInstruction::createRet(5);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Ret);
     EXPECT_FALSE(inst->hasResult());
     EXPECT_EQ(inst->getNumOperands(), 1u);
 }
 
 TEST(InstructionTest, CreateRetVoid) {
-    auto* inst = AIRInstruction::createRet(~0U);
+    const auto* inst = AIRInstruction::createRet(~0U);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Ret);
     EXPECT_EQ(inst->getNumOperands(), 0u);
 }
 
 TEST(InstructionTest, CreateBr) {
     BasicBlock bb("target");
-    auto* inst = AIRInstruction::createBr(&bb);
+    const auto* inst = AIRInstruction::createBr(&bb);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Br);
     EXPECT_FALSE(inst->hasResult());
     EXPECT_EQ(inst->getOperandBlock(0), &bb);
@@ -53,7 +53,7 @@ TEST(InstructionTest, CreateBr) {
 
 TEST(InstructionTest, CreateCondBr) {
     BasicBlock trueBB("true"), falseBB("false");
-    auto* inst = AIRInstruction::createCondBr(0, &trueBB, &falseBB);
+    const auto* inst = AIRInstruction::createCondBr(0, &trueBB, &falseBB);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::CondBr);
     EXPECT_EQ(inst->getNumOperands(), 1u);
     EXPECT_EQ(inst->getOperandBlock(0), &trueBB);
@@ -61,33 +61,33 @@ TEST(InstructionTest, CreateCondBr) {
 }
 
 TEST(InstructionTest, CreateICmp) {
-    auto* inst = AIRInstruction::createICmp(Type::getInt1Ty(), ICmpCond::EQ, 0, 1);
+    const auto* inst = AIRInstruction::createICmp(Type::getInt1Ty(), ICmpCond::EQ, 0, 1);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::ICmp);
     EXPECT_EQ(inst->getICmpCondition(), ICmpCond::EQ);
 }
 
 TEST(InstructionTest, IcmpConditions) {
     for (auto c : {ICmpCond::EQ, ICmpCond::NE, ICmpCond::UGT, ICmpCond::SGT, ICmpCond::SLE}) {
-        auto* inst = AIRInstruction::createICmp(Type::getInt1Ty(), c, 0, 0);
+        const auto* inst = AIRInstruction::createICmp(Type::getInt1Ty(), c, 0, 0);
         EXPECT_EQ(inst->getICmpCondition(), c);
     }
 }
 
 TEST(InstructionTest, CreateAlloca) {
-    auto* inst = AIRInstruction::createAlloca(Type::getInt32Ty());
+    const auto* inst = AIRInstruction::createAlloca(Type::getInt32Ty());
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Alloca);
     EXPECT_TRUE(inst->hasResult());
 }
 
 TEST(InstructionTest, CreateLoad) {
-    auto* inst = AIRInstruction::createLoad(Type::getInt32Ty(), 1);
+    const auto* inst = AIRInstruction::createLoad(Type::getInt32Ty(), 1);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Load);
     EXPECT_TRUE(inst->hasResult());
     EXPECT_EQ(inst->getNumOperands(), 1u);
 }
 
 TEST(InstructionTest, CreateStore) {
-    auto* inst = AIRInstruction::createStore(0, 1);
+    const auto* inst = AIRInstruction::createStore(0, 1);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Store);
     EXPECT_FALSE(inst->hasResult());
 }
@@ -97,7 +97,7 @@ TEST(InstructionTest, CreatePhi) {
     SmallVector<std::pair<BasicBlock*, unsigned>, 4> incomings;
     incomings.push_back({&bb1, 0});
     incomings.push_back({&bb2, 1});
-    auto* inst = AIRInstruction::createPhi(Type::getInt32Ty(), incomings);
+    const auto* inst = AIRInstruction::createPhi(Type::getInt32Ty(), incomings);
     EXPECT_EQ(inst->getOpcode(), AIROpcode::Phi);
     EXPECT_EQ(inst->getPhiIncomings().size(), 2u);
 }

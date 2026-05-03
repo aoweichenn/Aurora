@@ -53,23 +53,23 @@ void initTypes() {
 }
 } // anonymous namespace
 
-Type::Type(TypeKind kind, unsigned size, unsigned align)
+Type::Type(const TypeKind kind, const unsigned size, const unsigned align)
     : kind_(kind), sizeInBits_(size), alignInBits_(align),
       elemType_(nullptr), numElements_(0) {}
 
-Type::Type(TypeKind kind, Type* elem, unsigned size, unsigned align)
+Type::Type(const TypeKind kind, Type* elem, const unsigned size, const unsigned align)
     : kind_(kind), sizeInBits_(size), alignInBits_(align),
       elemType_(elem), numElements_(0) {}
 
-Type::Type(TypeKind kind, Type* elem, unsigned num, unsigned size, unsigned align)
+Type::Type(const TypeKind kind, Type* elem, const unsigned num, const unsigned size, const unsigned align)
     : kind_(kind), sizeInBits_(size), alignInBits_(align),
       elemType_(elem), numElements_(num) {}
 
-Type::Type(TypeKind kind, SmallVector<Type*, 8> members)
+Type::Type(const TypeKind kind, SmallVector<Type*, 8> members)
     : kind_(kind), elemType_(nullptr), numElements_(0), members_(std::move(members)) {
     sizeInBits_ = 0;
     alignInBits_ = 0;
-    for (auto* m : members_) {
+    for (const auto* m : members_) {
         sizeInBits_ += m->getSizeInBits();
         if (m->getAlignInBits() > alignInBits_)
             alignInBits_ = m->getAlignInBits();
@@ -90,20 +90,20 @@ Type* Type::getDoubleTy(){ initTypes(); return g_doubleTy; }
 
 Type* Type::getPointerTy(Type* elemType) {
     std::lock_guard<std::mutex> lock(g_typeMutex);
-    TypeKey key{TypeKind::Pointer, elemType, 0};
-    auto it = g_ptrTypes.find(key);
+    const TypeKey key{TypeKind::Pointer, elemType, 0};
+    const auto it = g_ptrTypes.find(key);
     if (it != g_ptrTypes.end()) return it->second;
-    Type* t = new Type(TypeKind::Pointer, elemType, 64, 64);
+    auto t = new Type(TypeKind::Pointer, elemType, 64, 64);
     g_ptrTypes[key] = t;
     return t;
 }
 
-Type* Type::getArrayTy(Type* elemType, unsigned numElements) {
+Type* Type::getArrayTy(Type* elemType, const unsigned numElements) {
     std::lock_guard<std::mutex> lock(g_typeMutex);
-    TypeKey key{TypeKind::Array, elemType, numElements};
-    auto it = g_arrTypes.find(key);
+    const TypeKey key{TypeKind::Array, elemType, numElements};
+    const auto it = g_arrTypes.find(key);
     if (it != g_arrTypes.end()) return it->second;
-    Type* t = new Type(TypeKind::Array, elemType, numElements,
+    auto t = new Type(TypeKind::Array, elemType, numElements,
                         elemType->getSizeInBits() * numElements, elemType->getAlignInBits());
     g_arrTypes[key] = t;
     return t;
@@ -114,7 +114,7 @@ Type* Type::getStructTy(SmallVector<Type*, 8> members) {
 }
 
 Type* Type::getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes) {
-    Type* t = new Type(TypeKind::Function, returnType, 0, 0);
+    auto t = new Type(TypeKind::Function, returnType, 0, 0);
     t->paramTypes_ = std::move(paramTypes);
     return t;
 }

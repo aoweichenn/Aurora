@@ -11,7 +11,7 @@ using namespace aurora;
 
 static std::unique_ptr<Module> makeTestModule() {
     auto mod = std::make_unique<Module>("test");
-    SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
+    const SmallVector<Type*, 8> params = {Type::getInt32Ty(), Type::getInt32Ty()};
     auto* fnTy = new FunctionType(Type::getInt32Ty(), params);
     auto* fn = mod->createFunction(fnTy, "add");
     auto* entry = fn->createBasicBlock("entry");
@@ -35,8 +35,8 @@ TEST(PassManagerTest, AddAndRunPasses) {
 
     pm.addPass(std::make_unique<TestPass>(passRan));
 
-    auto tm = TargetMachine::createX86_64();
-    auto mod = makeTestModule();
+    const auto tm = TargetMachine::createX86_64();
+    const auto mod = makeTestModule();
     for (auto& fn : mod->getFunctions()) {
         MachineFunction mf(*fn, *tm);
         pm.run(mf);
@@ -45,8 +45,8 @@ TEST(PassManagerTest, AddAndRunPasses) {
 }
 
 TEST(CodeGenContextTest, StandardPasses) {
-    auto tm = TargetMachine::createX86_64();
-    auto mod = makeTestModule();
+    const auto tm = TargetMachine::createX86_64();
+    const auto mod = makeTestModule();
     CodeGenContext cgc(*tm, *mod);
     cgc.run(); // Should run all standard passes without crashing
     SUCCEED();
@@ -54,8 +54,8 @@ TEST(CodeGenContextTest, StandardPasses) {
 
 TEST(PassManagerTest, EmptyPassManager) {
     PassManager pm;
-    auto tm = TargetMachine::createX86_64();
-    auto mod = makeTestModule();
+    const auto tm = TargetMachine::createX86_64();
+    const auto mod = makeTestModule();
     for (auto& fn : mod->getFunctions()) {
         MachineFunction mf(*fn, *tm);
         pm.run(mf); // Should do nothing, not crash

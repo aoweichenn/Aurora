@@ -31,7 +31,7 @@ BasicBlock* Function::createBasicBlock(const std::string& name) {
     return ptr;
 }
 
-void Function::recordVRegType(unsigned vreg, Type* ty) {
+void Function::recordVRegType(const unsigned vreg, Type* ty) {
     while (vregTypes_.size() <= vreg) {
         vregTypes_.push_back(nullptr);
     }

@@ -2,7 +2,6 @@
 #define AURORA_ADT_ALLOCATOR_H
 
 #include <cstddef>
-#include <cstdint>
 #include <utility>
 
 namespace aurora {
@@ -23,7 +22,7 @@ public:
     T* create(Args&&... args);
 
     void reset();
-    size_t totalSize() const noexcept { return totalSize_; }
+    [[nodiscard]] size_t totalSize() const noexcept { return totalSize_; }
 
 private:
     struct Slab {

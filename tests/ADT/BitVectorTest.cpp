@@ -4,13 +4,13 @@
 using namespace aurora;
 
 TEST(BitVectorTest, DefaultConstruction) {
-    BitVector bv;
+    const BitVector bv;
     EXPECT_EQ(bv.size(), 0u);
     EXPECT_TRUE(bv.none());
 }
 
 TEST(BitVectorTest, SizedConstruction) {
-    BitVector bv(128);
+    const BitVector bv(128);
     EXPECT_EQ(bv.size(), 128u);
     EXPECT_TRUE(bv.none());
 }
@@ -132,7 +132,7 @@ TEST(BitVectorTest, FindNext) {
 TEST(BitVectorTest, CopyConstructor) {
     BitVector a(64);
     a.set(10); a.set(20);
-    BitVector b(a);
+    const BitVector b(a);
     EXPECT_EQ(b.size(), 64u);
     EXPECT_TRUE(b.test(10));
     EXPECT_TRUE(b.test(20));
@@ -141,7 +141,7 @@ TEST(BitVectorTest, CopyConstructor) {
 TEST(BitVectorTest, MoveConstructor) {
     BitVector a(64);
     a.set(10);
-    BitVector b(std::move(a));
+    const BitVector b(std::move(a));
     EXPECT_TRUE(b.test(10));
     EXPECT_EQ(a.size(), 0u);
 }

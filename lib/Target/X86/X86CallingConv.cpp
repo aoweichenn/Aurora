@@ -5,7 +5,7 @@
 namespace aurora {
 
 SmallVector<CCValAssign, 8> X86CallingConv::analyzeArguments(
-    Type** argTypes, unsigned numArgs) const {
+    Type** argTypes, const unsigned numArgs) const {
     SmallVector<CCValAssign, 8> result;
     unsigned gprIdx = 0, xmmIdx = 0;
     unsigned stackOff = 8; // skip return address
@@ -22,8 +22,8 @@ SmallVector<CCValAssign, 8> X86CallingConv::analyzeArguments(
     };
 
     for (unsigned i = 0; i < numArgs; ++i) {
-        Type* ty = argTypes[i];
-        unsigned size = ty->getSizeInBits() / 8;
+        const Type* ty = argTypes[i];
+        const unsigned size = ty->getSizeInBits() / 8;
 
         if (ty->isInteger() || ty->isPointer()) {
             if (gprIdx < 6) {

@@ -13,7 +13,7 @@ static FunctionType* makeTestFnType() {
 
 TEST(FunctionTest, Construction) {
     auto* fnTy = makeTestFnType();
-    Function fn(fnTy, "test_func");
+    const Function fn(fnTy, "test_func");
     EXPECT_EQ(fn.getName(), "test_func");
     EXPECT_EQ(fn.getNumArgs(), 2u);
 }
@@ -48,7 +48,7 @@ TEST(FunctionTest, NextVReg) {
 
 TEST(FunctionTest, FunctionTypeAccess) {
     auto* fnTy = makeTestFnType();
-    Function fn(fnTy, "test");
+    const Function fn(fnTy, "test");
     EXPECT_EQ(fn.getFunctionType(), fnTy);
     EXPECT_EQ(fn.getFunctionType()->getReturnType(), Type::getInt32Ty());
 }

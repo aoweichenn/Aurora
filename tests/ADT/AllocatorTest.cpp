@@ -20,8 +20,8 @@ TEST(AllocatorTest, AllocatedMemoryIsWritable) {
 
 TEST(AllocatorTest, MultipleAllocations) {
     BumpPtrAllocator alloc;
-    char* a = static_cast<char*>(alloc.allocate(50));
-    char* b = static_cast<char*>(alloc.allocate(50));
+    auto a = static_cast<char*>(alloc.allocate(50));
+    auto b = static_cast<char*>(alloc.allocate(50));
     EXPECT_NE(a, b);
     // Allocations should be different and non-overlapping
     EXPECT_GE(b - a, 50LL);

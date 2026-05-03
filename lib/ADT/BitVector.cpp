@@ -6,7 +6,7 @@ namespace aurora {
 
 BitVector::BitVector() : words_(nullptr), numWords_(0), numBits_(0) {}
 
-BitVector::BitVector(unsigned size) : numWords_(0), numBits_(size) {
+BitVector::BitVector(const unsigned size) : numWords_(0), numBits_(size) {
     numWords_ = (size + BITS_PER_WORD - 1) / BITS_PER_WORD;
     if (numWords_ > 0) {
         words_ = new word_type[numWords_]();
@@ -63,29 +63,29 @@ BitVector& BitVector::operator=(BitVector&& other) noexcept {
     return *this;
 }
 
-bool BitVector::operator[](unsigned idx) const {
+bool BitVector::operator[](const unsigned idx) const {
     return test(idx);
 }
 
-void BitVector::set(unsigned idx, bool val) {
+void BitVector::set(const unsigned idx, const bool val) {
     if (idx >= numBits_) resize(std::max(idx + 1, numBits_ * 2 > 0 ? numBits_ * 2 : 8U));
-    unsigned wordIdx = idx / BITS_PER_WORD;
-    unsigned bitIdx = idx % BITS_PER_WORD;
+    const unsigned wordIdx = idx / BITS_PER_WORD;
+    const unsigned bitIdx = idx % BITS_PER_WORD;
     if (val) words_[wordIdx] |= (static_cast<word_type>(1) << bitIdx);
     else     words_[wordIdx] &= ~(static_cast<word_type>(1) << bitIdx);
 }
 
-void BitVector::reset(unsigned idx) {
+void BitVector::reset(const unsigned idx) {
     if (idx >= numBits_) return;
-    unsigned wordIdx = idx / BITS_PER_WORD;
-    unsigned bitIdx = idx % BITS_PER_WORD;
+    const unsigned wordIdx = idx / BITS_PER_WORD;
+    const unsigned bitIdx = idx % BITS_PER_WORD;
     words_[wordIdx] &= ~(static_cast<word_type>(1) << bitIdx);
 }
 
-bool BitVector::test(unsigned idx) const noexcept {
+bool BitVector::test(const unsigned idx) const noexcept {
     if (idx >= numBits_) return false;
-    unsigned wordIdx = idx / BITS_PER_WORD;
-    unsigned bitIdx = idx % BITS_PER_WORD;
+    const unsigned wordIdx = idx / BITS_PER_WORD;
+    const unsigned bitIdx = idx % BITS_PER_WORD;
     return (words_[wordIdx] >> bitIdx) & 1;
 }
 
@@ -107,26 +107,26 @@ bool BitVector::any() const noexcept {
 bool BitVector::none() const noexcept { return !any(); }
 
 bool BitVector::all() const noexcept {
-    unsigned fullWords = numBits_ / BITS_PER_WORD;
-    unsigned remBits = numBits_ % BITS_PER_WORD;
+    const unsigned fullWords = numBits_ / BITS_PER_WORD;
+    const unsigned remBits = numBits_ % BITS_PER_WORD;
     for (unsigned i = 0; i < fullWords; ++i)
         if (words_[i] != ~static_cast<word_type>(0)) return false;
     if (remBits) {
-        word_type mask = (static_cast<word_type>(1) << remBits) - 1;
+        const word_type mask = (static_cast<word_type>(1) << remBits) - 1;
         if ((words_[fullWords] & mask) != mask) return false;
     }
     return true;
 }
 
 BitVector& BitVector::operator|=(const BitVector& rhs) {
-    unsigned common = std::min(numWords_, rhs.numWords_);
+    const unsigned common = std::min(numWords_, rhs.numWords_);
     for (unsigned i = 0; i < common; ++i)
         words_[i] |= rhs.words_[i];
     return *this;
 }
 
 BitVector& BitVector::operator&=(const BitVector& rhs) {
-    unsigned common = std::min(numWords_, rhs.numWords_);
+    const unsigned common = std::min(numWords_, rhs.numWords_);
     for (unsigned i = 0; i < common; ++i)
         words_[i] &= rhs.words_[i];
     for (unsigned i = common; i < numWords_; ++i)
@@ -135,7 +135,7 @@ BitVector& BitVector::operator&=(const BitVector& rhs) {
 }
 
 BitVector& BitVector::operator^=(const BitVector& rhs) {
-    unsigned common = std::min(numWords_, rhs.numWords_);
+    const unsigned common = std::min(numWords_, rhs.numWords_);
     for (unsigned i = 0; i < common; ++i)
         words_[i] ^= rhs.words_[i];
     return *this;
@@ -145,7 +145,7 @@ void BitVector::flip() {
     for (unsigned i = 0; i < numWords_; ++i)
         words_[i] = ~words_[i];
     if (numBits_ % BITS_PER_WORD) {
-        word_type mask = (static_cast<word_type>(1) << (numBits_ % BITS_PER_WORD)) - 1;
+        const word_type mask = (static_cast<word_type>(1) << (numBits_ % BITS_PER_WORD)) - 1;
         words_[numWords_ - 1] &= mask;
     }
 }
@@ -158,8 +158,8 @@ void BitVector::clear() noexcept {
 int BitVector::find_first() const {
     for (unsigned i = 0; i < numWords_; ++i) {
         if (words_[i]) {
-            int bit = __builtin_ctzll(words_[i]);
-            int result = static_cast<int>(i * BITS_PER_WORD + bit);
+            const int bit = __builtin_ctzll(words_[i]);
+            const int result = static_cast<int>(i * BITS_PER_WORD + bit);
             return result < static_cast<int>(numBits_) ? result : -1;
         }
     }
@@ -172,8 +172,8 @@ int BitVector::find_next(unsigned idx) const {
     word_type word = words_[wordIdx] & (~static_cast<word_type>(0) << (idx % BITS_PER_WORD));
     while (true) {
         if (word) {
-            int bit = __builtin_ctzll(word);
-            int result = static_cast<int>(wordIdx * BITS_PER_WORD + bit);
+            const int bit = __builtin_ctzll(word);
+            const int result = static_cast<int>(wordIdx * BITS_PER_WORD + bit);
             return result < static_cast<int>(numBits_) ? result : -1;
         }
         if (++wordIdx >= numWords_) return -1;
@@ -181,11 +181,11 @@ int BitVector::find_next(unsigned idx) const {
     }
 }
 
-void BitVector::resize(unsigned n) {
+void BitVector::resize(const unsigned n) {
     if (n <= numBits_) return;
-    unsigned newWords = (n + BITS_PER_WORD - 1) / BITS_PER_WORD;
+    const unsigned newWords = (n + BITS_PER_WORD - 1) / BITS_PER_WORD;
     if (newWords > numWords_) {
-        word_type* newWordsArr = new word_type[newWords]();
+        auto newWordsArr = new word_type[newWords]();
         if (words_) {
             std::memcpy(newWordsArr, words_, numWords_ * sizeof(word_type));
             delete[] words_;

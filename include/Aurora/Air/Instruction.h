@@ -107,7 +107,7 @@ public:
     void setNext(AIRInstruction* n) noexcept { next_ = n; }
     void setPrev(AIRInstruction* p) noexcept { prev_ = p; }
 
-    void setDestVReg(unsigned vreg) noexcept { destVReg_ = vreg; }
+    void setDestVReg(const unsigned vreg) noexcept { destVReg_ = vreg; }
     void replaceUse(unsigned oldVReg, unsigned newVReg);
 
     std::string toString() const;

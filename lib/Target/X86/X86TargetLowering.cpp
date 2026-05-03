@@ -14,7 +14,7 @@ void X86TargetLowering::initActions() {
     memset(typeLegal_, 0, sizeof(typeLegal_));
 
     // Types legal on x86-64
-    for (unsigned b : {8u, 16u, 32u, 64u, 128u, 256u}) {
+    for (const unsigned b : {8u, 16u, 32u, 64u, 128u, 256u}) {
         if (b < sizeof(typeLegal_))
             typeLegal_[b] = true;
     }
@@ -35,7 +35,7 @@ void X86TargetLowering::initActions() {
         static_cast<unsigned>(AIROpcode::Shl), static_cast<unsigned>(AIROpcode::LShr),
         static_cast<unsigned>(AIROpcode::AShr),
     };
-    for (auto op : promoteOps) {
+    for (const auto op : promoteOps) {
         actionMap_[op][8] = static_cast<uint8_t>(LegalizeAction::Promote);
         actionMap_[op][16] = static_cast<uint8_t>(LegalizeAction::Promote);
     }
@@ -45,20 +45,20 @@ void X86TargetLowering::initActions() {
     typeLegal_[16] = true;
 }
 
-LegalizeAction X86TargetLowering::getOperationAction(AIROpcode op, unsigned vtSize) const {
-    unsigned opIdx = static_cast<unsigned>(op);
+LegalizeAction X86TargetLowering::getOperationAction(AIROpcode op, const unsigned vtSize) const {
+    const unsigned opIdx = static_cast<unsigned>(op);
     if (opIdx >= 64 || vtSize >= 32) return LegalizeAction::Legal;
     return static_cast<LegalizeAction>(actionMap_[opIdx][vtSize]);
 }
 
-bool X86TargetLowering::isTypeLegal(unsigned typeSize) const {
+bool X86TargetLowering::isTypeLegal(const unsigned typeSize) const {
     if (typeSize >= sizeof(typeLegal_)) return false;
     return typeLegal_[typeSize];
 }
 
 unsigned X86TargetLowering::getRegisterSizeForType(Type* ty) const {
     if (!ty) return 64;
-    unsigned bits = ty->getSizeInBits();
+    const unsigned bits = ty->getSizeInBits();
     if (bits <= 8)  return 8;
     if (bits <= 16) return 16;
     if (bits <= 32) return 32;

@@ -14,9 +14,9 @@ BumpPtrAllocator::BumpPtrAllocator()
 }
 
 BumpPtrAllocator::~BumpPtrAllocator() {
-    Slab* slab = currentSlab_;
+    const Slab* slab = currentSlab_;
     while (slab) {
-        Slab* next = slab->next;
+        const Slab* next = slab->next;
         delete[] slab->data;
         delete slab;
         slab = next;
@@ -24,12 +24,12 @@ BumpPtrAllocator::~BumpPtrAllocator() {
 }
 
 void* BumpPtrAllocator::allocate(size_t size, size_t alignment) {
-    unsigned char* aligned = reinterpret_cast<unsigned char*>(
+    auto aligned = reinterpret_cast<unsigned char*>(
         (reinterpret_cast<uintptr_t>(currentPtr_) + alignment - 1) & ~(alignment - 1));
 
     if (aligned + size > currentEnd_) {
-        size_t newSlabSize = (size + alignment > SLAB_SIZE) ? (size + alignment) : SLAB_SIZE;
-        Slab* newSlab = new Slab;
+        const size_t newSlabSize = (size + alignment > SLAB_SIZE) ? (size + alignment) : SLAB_SIZE;
+        auto newSlab = new Slab;
         newSlab->data = new unsigned char[newSlabSize];
         newSlab->size = newSlabSize;
         newSlab->next = currentSlab_;

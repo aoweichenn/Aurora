@@ -29,21 +29,21 @@ static std::unique_ptr<Module> buildSampleModule() {
     AIRBuilder builder(entry);
 
     // %0 = alloca i32 (for a)
-    unsigned allocaA = builder.createAlloca(Type::getInt32Ty());
+    const unsigned allocaA = builder.createAlloca(Type::getInt32Ty());
     // %1 = alloca i32 (for b)
-    unsigned allocaB = builder.createAlloca(Type::getInt32Ty());
+    const unsigned allocaB = builder.createAlloca(Type::getInt32Ty());
 
     // store args to allocas (args are vregs 0 and 1)
     builder.createStore(0, allocaA);  // parameter a
     builder.createStore(1, allocaB);  // parameter b
 
     // %2 = load i32, i32* %0
-    unsigned loadA = builder.createLoad(Type::getInt32Ty(), allocaA);
+    const unsigned loadA = builder.createLoad(Type::getInt32Ty(), allocaA);
     // %3 = load i32, i32* %1
-    unsigned loadB = builder.createLoad(Type::getInt32Ty(), allocaB);
+    const unsigned loadB = builder.createLoad(Type::getInt32Ty(), allocaB);
 
     // %4 = add i32 %2, %3
-    unsigned sum = builder.createAdd(Type::getInt32Ty(), loadA, loadB);
+    const unsigned sum = builder.createAdd(Type::getInt32Ty(), loadA, loadB);
 
     // ret i32 %4
     builder.createRet(sum);
@@ -57,7 +57,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Stage 1: Build AIR IR
     std::cout << "[1] Building AIR IR...\n";
-    auto module = buildSampleModule();
+    const auto module = buildSampleModule();
     std::cout << "    Module: " << module->getName() << "\n";
     std::cout << "    Functions: " << module->getFunctions().size() << "\n";
 
@@ -66,7 +66,7 @@ int main(int /*argc*/, char** /*argv*/) {
         std::cout << fn->getBlocks().size() << " blocks)\n";
         for (auto& bb : fn->getBlocks()) {
             std::cout << "      Block: " << bb->getName() << "\n";
-            AIRInstruction* inst = bb->getFirst();
+            const AIRInstruction* inst = bb->getFirst();
             while (inst) {
                 std::cout << "        " << inst->toString() << "\n";
                 inst = inst->getNext();
@@ -76,7 +76,7 @@ int main(int /*argc*/, char** /*argv*/) {
 
     // Stage 2: Create target machine
     std::cout << "\n[2] Creating x86-64 target machine...\n";
-    auto tm = TargetMachine::createX86_64();
+    const auto tm = TargetMachine::createX86_64();
     std::cout << "    Target: " << tm->getTargetTriple() << "\n";
 
     // Stage 3: Run codegen passes

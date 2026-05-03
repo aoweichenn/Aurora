@@ -6,9 +6,9 @@ MachineBasicBlock::MachineBasicBlock(const std::string& name)
     : name_(name), parent_(nullptr), first_(nullptr), last_(nullptr) {}
 
 MachineBasicBlock::~MachineBasicBlock() {
-    MachineInstr* mi = first_;
+    const MachineInstr* mi = first_;
     while (mi) {
-        MachineInstr* next = mi->getNext();
+        const MachineInstr* next = mi->getNext();
         delete mi;
         mi = next;
     }

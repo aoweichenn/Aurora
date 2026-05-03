@@ -2,7 +2,6 @@
 #define AURORA_X86_X86ISELPATTERNS_H
 
 #include "Aurora/Air/Instruction.h"
-#include "Aurora/Target/X86/X86InstrInfo.h"
 #include <vector>
 
 namespace aurora {

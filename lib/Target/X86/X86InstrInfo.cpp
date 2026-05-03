@@ -11,8 +11,8 @@ X86InstrInfo::X86InstrInfo(const X86RegisterInfo& regInfo) : regInfo_(regInfo) {
 void X86InstrInfo::buildOpcodeTable() {
     memset(opcodeTable_, 0, sizeof(opcodeTable_));
 
-    auto setDesc = [this](X86::Opcode op, const char* asmStr, unsigned numOps,
-                          bool term, bool branch, bool call, bool ret, bool move, bool cmp, bool side) {
+    auto setDesc = [this](const X86::Opcode op, const char* asmStr, const unsigned numOps,
+                          const bool term, const bool branch, const bool call, const bool ret, const bool move, const bool cmp, const bool side) {
         auto& d = opcodeTable_[op];
         d.opcode = op;
         d.asmString = asmStr;
@@ -128,7 +128,7 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::DIVSDrr, "divsd\t$src, $dst", 2, false, false, false, false, false, false, false);
 }
 
-const MachineOpcodeDesc& X86InstrInfo::get(unsigned opcode) const {
+const MachineOpcodeDesc& X86InstrInfo::get(const unsigned opcode) const {
     return opcodeTable_[opcode];
 }
 
@@ -150,14 +150,14 @@ void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr
                                          const Register& /*dst*/, int /*frameIdx*/) const {
 }
 
-unsigned X86InstrInfo::getMoveOpcode(unsigned srcSize, unsigned dstSize) const {
-    unsigned size = std::max(srcSize, dstSize);
+unsigned X86InstrInfo::getMoveOpcode(const unsigned srcSize, const unsigned dstSize) const {
+    const unsigned size = std::max(srcSize, dstSize);
     if (size == 64) return X86::MOV64rr;
     if (size == 32) return X86::MOV32rr;
     return X86::MOV32rr; // default
 }
 
-unsigned X86InstrInfo::getArithOpcode(unsigned opType, unsigned size, bool isImm) const {
+unsigned X86InstrInfo::getArithOpcode(const unsigned opType, const unsigned size, const bool isImm) const {
     // opType: 0=add,1=sub,2=and,3=or,4=xor
     if (size == 64) {
         const unsigned ops[5][2] = {

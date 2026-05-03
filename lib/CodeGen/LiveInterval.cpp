@@ -2,10 +2,10 @@
 
 namespace aurora {
 
-LiveInterval::LiveInterval(unsigned vreg, Type* ty)
+LiveInterval::LiveInterval(const unsigned vreg, Type* ty)
     : vreg_(vreg), type_(ty), assignedReg_(~0U), spillSlot_(-1), spillWeight_(0.0f) {}
 
-void LiveInterval::addRange(unsigned start, unsigned end) {
+void LiveInterval::addRange(const unsigned start, const unsigned end) {
     if (!ranges_.empty() && ranges_.back().end + 1 >= start) {
         ranges_.back().end = std::max(ranges_.back().end, end);
     } else {
@@ -27,7 +27,7 @@ bool LiveInterval::overlaps(const LiveInterval& other) const {
     return false;
 }
 
-bool LiveInterval::liveAt(unsigned slot) const {
+bool LiveInterval::liveAt(const unsigned slot) const {
     for (const auto& r : ranges_) {
         if (slot >= r.start && slot <= r.end) return true;
     }
