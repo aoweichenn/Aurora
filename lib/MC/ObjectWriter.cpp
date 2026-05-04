@@ -169,7 +169,7 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     };
     auto getReg = [&](unsigned idx) -> uint8_t {
         if (idx < numOps && mi.getOperand(idx).isReg())
-            return mi.getOperand(idx).getReg() & 7;
+            return mi.getOperand(idx).getReg();
         return 0;
     };
     auto getImm = [&](unsigned idx) -> int64_t {
@@ -177,82 +177,111 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
             return mi.getOperand(idx).getImm();
         return 0;
     };
+    auto needREX = [&](unsigned idx) -> bool {
+        if (idx < numOps && mi.getOperand(idx).isReg())
+            return mi.getOperand(idx).getReg() >= 8;
+        return false;
+    };
+    // Check if any register operand needs REX.B (bit 0) or REX.R (bit 2)
+    bool rexB = needREX(0) || needREX(1);
+    bool rexR = (numOps >= 2 && getReg(0) >= 8); // reg field uses REX.R
+    uint8_t rexPrefix = 0x48; // REX.W=1
+    if (rexB) rexPrefix |= 1;
+    if (rexR) rexPrefix |= 4;
 
     switch (opc) {
-    // MOV64rr
+    // MOV64rr: REX.W + 0x89 /r
     case X86::MOV64rr:
-        out.push_back(0x48); out.push_back(0x89);
-        emitModRM(3, getReg(0), getReg(1));
+        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        out.push_back(0x89);
+        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
     // MOV64ri32
     case X86::MOV64ri32:
         out.push_back(0x48); out.push_back(0xC7);
-        emitModRM(3, 0, getReg(1));
+        emitModRM(3, 0, getReg(1) & 7);
         emitImm32(getImm(0));
         break;
     // ADD64rr
     case X86::ADD64rr:
-        out.push_back(0x48); out.push_back(0x01);
-        emitModRM(3, getReg(0), getReg(1));
+        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        out.push_back(0x01);
+        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
-    // ADD64ri32
     case X86::ADD64ri32:
         out.push_back(0x48); out.push_back(0x81);
-        emitModRM(3, 0, getReg(1));
+        emitModRM(3, 0, getReg(1) & 7);
         emitImm32(getImm(0));
         break;
-    // SUB64rr
     case X86::SUB64rr:
-        out.push_back(0x48); out.push_back(0x29);
-        emitModRM(3, getReg(0), getReg(1));
+        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        out.push_back(0x29);
+        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
-    // SUB64ri32
     case X86::SUB64ri32:
         out.push_back(0x48); out.push_back(0x81);
-        emitModRM(3, 5, getReg(1));
+        emitModRM(3, 5, getReg(1) & 7);
         emitImm32(getImm(0));
         break;
-    // IMUL64rr
     case X86::IMUL64rr:
-        out.push_back(0x48); out.push_back(0x0F); out.push_back(0xAF);
-        emitModRM(3, getReg(1), getReg(0));
+        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        out.push_back(0x0F); out.push_back(0xAF);
+        emitModRM(3, getReg(1) & 7, getReg(0) & 7);
         break;
-    // AND64rr / OR64rr / XOR64rr
-    case X86::AND64rr: out.push_back(0x48); out.push_back(0x21); emitModRM(3, getReg(0), getReg(1)); break;
-    case X86::OR64rr:  out.push_back(0x48); out.push_back(0x09); emitModRM(3, getReg(0), getReg(1)); break;
-    case X86::XOR64rr: out.push_back(0x48); out.push_back(0x31); emitModRM(3, getReg(0), getReg(1)); break;
-    case X86::XOR32rr: out.push_back(0x31); emitModRM(3, getReg(0), getReg(1)); break;
-    // AND64ri32 / OR64ri32 / XOR64ri32
-    case X86::AND64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 4, getReg(1)); emitImm32(getImm(0)); break;
-    case X86::OR64ri32:  out.push_back(0x48); out.push_back(0x81); emitModRM(3, 1, getReg(1)); emitImm32(getImm(0)); break;
-    case X86::XOR64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 6, getReg(1)); emitImm32(getImm(0)); break;
-    // CMP64rr / CMP64ri32
-    case X86::CMP64rr:   out.push_back(0x48); out.push_back(0x39); emitModRM(3, getReg(0), getReg(1)); break;
-    case X86::CMP64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 7, getReg(1)); emitImm32(getImm(0)); break;
-    // RET
+    case X86::AND64rr: case X86::OR64rr: case X86::XOR64rr: {
+        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        uint8_t op = (opc == X86::AND64rr) ? 0x21 : (opc == X86::OR64rr) ? 0x09 : 0x31;
+        out.push_back(op);
+        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
+        break;
+    }
+    case X86::XOR32rr: out.push_back(0x31); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::AND64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::OR64ri32:  out.push_back(0x48); out.push_back(0x81); emitModRM(3, 1, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::XOR64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 6, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::CMP64rr:   out.push_back(0x48); out.push_back(0x39); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::CMP64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 7, getReg(1) & 7); emitImm32(getImm(0)); break;
     case X86::RETQ: out.push_back(0xC3); break;
-    // PUSH64r / POP64r
-    case X86::PUSH64r: out.push_back(0x50 + getReg(0)); break;
-    case X86::POP64r:  out.push_back(0x58 + getReg(0)); break;
-    // JMP rel8 / JE rel8
-    case X86::JMP_1: out.push_back(0xEB); out.push_back(0x00); break; // placeholder
+    case X86::PUSH64r: out.push_back(0x50 + (getReg(0) & 7)); break;
+    case X86::POP64r:  out.push_back(0x58 + (getReg(0) & 7)); break;
+    case X86::SHL64ri: out.push_back(0x48); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::SHL64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 4, getReg(0) & 7); break;
+    case X86::SHR64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 5, getReg(0) & 7); break;
+    case X86::SAR64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 7, getReg(0) & 7); break;
+    case X86::MOV32rr:  out.push_back(0x89); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::NOP: out.push_back(0x90); break;
+    case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
+    case X86::MOVSX64rr32: out.push_back(0x48); out.push_back(0x63); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::MOV64rm: out.push_back(0x48); out.push_back(0x8B); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::MOV64mr: out.push_back(0x48); out.push_back(0x89); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::IDIV64r: out.push_back(0x48); out.push_back(0xF7); emitModRM(3, 7, getReg(0) & 7); break;
+    // Float ops
+    case X86::ADDSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x58); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::SUBSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5C); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::MULSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x59); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::DIVSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5E); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::UCOMISDrr: out.push_back(0x66); out.push_back(0x0F); out.push_back(0x2E); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::CVTSI2SDrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x2A); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::CVTTSD2SIrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x2C); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    // SETcc
+    case X86::SETEr:  out.push_back(0x0F); out.push_back(0x94); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETNEr: out.push_back(0x0F); out.push_back(0x95); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETLr:  out.push_back(0x0F); out.push_back(0x9C); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETGr:  out.push_back(0x0F); out.push_back(0x9F); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETLEr: out.push_back(0x0F); out.push_back(0x9E); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETGEr: out.push_back(0x0F); out.push_back(0x9D); emitModRM(3, 0, getReg(0) & 7); break;
+    // Jcc/JMP rel8 with 0 displacement (fixup needed for real branching)
+    case X86::JMP_1: out.push_back(0xEB); out.push_back(0x00); break;
     case X86::JE_1:  out.push_back(0x74); out.push_back(0x00); break;
     case X86::JNE_1: out.push_back(0x75); out.push_back(0x00); break;
     case X86::JL_1:  out.push_back(0x7C); out.push_back(0x00); break;
     case X86::JG_1:  out.push_back(0x7F); out.push_back(0x00); break;
     case X86::JLE_1: out.push_back(0x7E); out.push_back(0x00); break;
     case X86::JGE_1: out.push_back(0x7D); out.push_back(0x00); break;
-    // SHL64ri / NOP
-    case X86::SHL64ri: out.push_back(0x48); out.push_back(0xC1); emitModRM(3, 4, getReg(1)); emitImm32(getImm(0)); break;
-    case X86::NOP: out.push_back(0x90); break;
-    case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
-    // MOVSX64rr32
-    case X86::MOVSX64rr32: out.push_back(0x48); out.push_back(0x63); emitModRM(3, getReg(1), getReg(0)); break;
-    // MOV64rm / MOV64mr
-    case X86::MOV64rm: out.push_back(0x48); out.push_back(0x8B); emitModRM(3, getReg(0), getReg(1)); break;
-    case X86::MOV64mr: out.push_back(0x48); out.push_back(0x89); emitModRM(3, getReg(1), getReg(0)); break;
-    // IDIV64r
-    case X86::IDIV64r: out.push_back(0x48); out.push_back(0xF7); emitModRM(3, 7, getReg(0)); break;
+    case X86::JAE_1: out.push_back(0x73); out.push_back(0x00); break;
+    case X86::JBE_1: out.push_back(0x76); out.push_back(0x00); break;
+    case X86::JA_1:  out.push_back(0x77); out.push_back(0x00); break;
+    case X86::JB_1:  out.push_back(0x72); out.push_back(0x00); break;
     default:
         out.push_back(0x90); // NOP placeholder for unknown
         break;

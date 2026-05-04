@@ -306,6 +306,15 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
         case X86::CVTTSD2SIrr:
             if (mi.getNumOperands() >= 2) { oss << "cvttsd2si\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
             break;
+        case X86::XOR32rr:
+            if (mi.getNumOperands() >= 2) { oss << "xorl\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::NOP: oss << "nop"; break;
+        case X86::SETNEr: if (mi.getNumOperands() >= 1) { oss << "setne\t"; printOperand(mi.getOperand(0), oss); } break;
+        case X86::SETLr:  if (mi.getNumOperands() >= 1) { oss << "setl\t"; printOperand(mi.getOperand(0), oss); } break;
+        case X86::SETGr:  if (mi.getNumOperands() >= 1) { oss << "setg\t"; printOperand(mi.getOperand(0), oss); } break;
+        case X86::SETLEr: if (mi.getNumOperands() >= 1) { oss << "setle\t"; printOperand(mi.getOperand(0), oss); } break;
+        case X86::SETGEr: if (mi.getNumOperands() >= 1) { oss << "setge\t"; printOperand(mi.getOperand(0), oss); } break;
         default:
             oss << "# unknown opcode " << opcode << " (0x" << std::hex << opcode << std::dec << ")";
             break;

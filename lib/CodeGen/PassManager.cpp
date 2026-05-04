@@ -333,10 +333,33 @@ private:
         }
         replaceMI(mbb, mi, cmpMI);
 
-        // SETcc (using default condition; real condition lookup not possible here)
-        auto* setMI = new MachineInstr(X86::SETEr);
-        if (resultVReg != ~0U)
-            setMI->addOperand(MachineOperand::createVReg(resultVReg));
+        // SETcc using actual condition from AIR
+        ICmpCond actualCond = ICmpCond::EQ;
+        const auto& af = mbb.getParent()->getAIRFunction();
+        for (auto& bb : af.getBlocks()) {
+            const AIRInstruction* ii = bb->getFirst();
+            while (ii) {
+                if (ii->getOpcode() == AIROpcode::ICmp && ii->hasResult() && ii->getDestVReg() == resultVReg) {
+                    actualCond = ii->getICmpCondition(); break;
+                }
+                ii = ii->getNext();
+            }
+        }
+        uint16_t setOp = X86::SETEr;
+        switch (actualCond) {
+        case ICmpCond::EQ:  setOp = X86::SETEr; break;
+        case ICmpCond::NE:  setOp = X86::SETNEr; break;
+        case ICmpCond::SLT: setOp = X86::SETLr; break;
+        case ICmpCond::SLE: setOp = X86::SETLEr; break;
+        case ICmpCond::SGT: setOp = X86::SETGr; break;
+        case ICmpCond::SGE: setOp = X86::SETGEr; break;
+        case ICmpCond::ULT: setOp = X86::SETAr; break;
+        case ICmpCond::ULE: setOp = X86::SETBEr; break;
+        case ICmpCond::UGT: setOp = X86::SETAr; break;
+        case ICmpCond::UGE: setOp = X86::SETAEr; break;
+        }
+        auto* setMI = new MachineInstr(setOp);
+        setMI->addOperand(MachineOperand::createVReg(resultVReg));
         mbb.pushBack(setMI);
     }
 
@@ -568,23 +591,22 @@ private:
     }
 
     void iselZExt(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // Zero-extend: MOV + AND with mask
+        // Zero-extend: MOV32rr (x86-64 implicitly zero-extends 32-bit ops to 64 bits)
         unsigned srcVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
-        // MOV src → result, then AND with mask
-        auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
-        movMI->addOperand(MachineOperand::createVReg(srcVReg));
-        replaceMI(mbb, mi, movMI);
+        auto* newMI = new MachineInstr(X86::MOV32rr);
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
+        newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        replaceMI(mbb, mi, newMI);
     }
 
     void iselTrunc(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // Truncate: just MOV (upper bits ignored)
+        // Truncate: MOV32rr (x86-64 zeroes upper 32 bits of destination)
         unsigned srcVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
-        auto* newMI = new MachineInstr(X86::MOV64rr);
+        auto* newMI = new MachineInstr(X86::MOV32rr);
         newMI->addOperand(MachineOperand::createVReg(resultVReg));
         newMI->addOperand(MachineOperand::createVReg(srcVReg));
         replaceMI(mbb, mi, newMI);
