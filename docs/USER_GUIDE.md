@@ -67,7 +67,7 @@ target_link_libraries(your_compiler PRIVATE
 #include "Aurora/Target/TargetMachine.h"
 #include "Aurora/CodeGen/PassManager.h"
 #include "Aurora/MC/MCStreamer.h"
-#include "Aurora/MC/X86AsmPrinter.h"
+#include "Aurora/MC/X86/X86AsmPrinter.h"
 ```
 
 ---

@@ -62,6 +62,9 @@ private:
 
     void encodeInstruction(const MachineInstr& mi, std::vector<uint8_t>& out);
     void addRelocation(uint64_t offset, uint64_t symIdx, uint32_t type, int64_t addend);
+    size_t getOrCreateUndefinedSymbol(const std::string& name);
+    size_t defineSymbol(const std::string& name, uint64_t value, uint64_t size,
+                        uint8_t type, uint8_t bind, uint16_t shndx);
     bool writeELF(const std::string& path);
 };
 

@@ -1,11 +1,12 @@
 #include <gtest/gtest.h>
-#include "Aurora/MC/X86ObjectEncoder.h"
+#include "Aurora/MC/X86/X86ObjectEncoder.h"
 #include "Aurora/MC/ObjectWriter.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 
 #include <string>
+#include <stdexcept>
 
 using namespace aurora;
 
@@ -82,6 +83,8 @@ TEST(X86ObjectEncoderTest, EncodesRemainingRegisterIntegerOps) {
               (std::vector<uint8_t>{0x48, 0x31, 0xC1}));
     EXPECT_EQ(encode(makeRegReg(X86::CMP64rr, X86RegisterInfo::RAX, X86RegisterInfo::RCX)),
               (std::vector<uint8_t>{0x48, 0x39, 0xC1}));
+    EXPECT_EQ(encode(makeRegReg(X86::TEST64rr, X86RegisterInfo::RAX, X86RegisterInfo::RCX)),
+              (std::vector<uint8_t>{0x48, 0x85, 0xC1}));
 }
 
 TEST(X86ObjectEncoderTest, EncodesExtendedRegistersWithRexBits) {
@@ -177,7 +180,11 @@ TEST(X86ObjectEncoderTest, EncodesUnaryAndConversionOps) {
               (std::vector<uint8_t>{0x48, 0xF7, 0xF8}));
     EXPECT_EQ(encode(makeRegReg(X86::MOVSX32rr8_op, X86RegisterInfo::RAX, X86RegisterInfo::RCX)),
               (std::vector<uint8_t>{0x0F, 0xBE, 0xC8}));
-    EXPECT_EQ(encode(MachineInstr(0xFFFF)), (std::vector<uint8_t>{0x90}));
+    EXPECT_EQ(encode(makeRegReg(X86::MOVZX32rr8_op, X86RegisterInfo::RAX, X86RegisterInfo::RCX)),
+              (std::vector<uint8_t>{0x0F, 0xB6, 0xC8}));
+    EXPECT_EQ(encode(makeReg(X86::CALL64pcrel32, X86RegisterInfo::RAX)),
+              (std::vector<uint8_t>{0x48, 0xFF, 0xD0}));
+    EXPECT_THROW(encode(MachineInstr(0xFFFF)), std::runtime_error);
 }
 
 TEST(X86ObjectEncoderTest, EncodesFloatingPointOps) {
@@ -225,4 +232,33 @@ TEST(X86ObjectEncoderTest, EmitsRelocationForGlobalImmediate) {
     EXPECT_TRUE(resolved);
     EXPECT_TRUE(relocated);
     EXPECT_EQ(bytes, (std::vector<uint8_t>{0x48, 0xC7, 0xC0, 0x00, 0x00, 0x00, 0x00}));
+}
+
+TEST(X86ObjectEncoderTest, EmitsRelocationForGlobalCall) {
+    X86ObjectEncoder encoder;
+    MachineInstr mi(X86::CALL64pcrel32);
+    mi.addOperand(MachineOperand::createGlobalSym("callee"));
+
+    bool resolved = false;
+    bool relocated = false;
+    std::vector<uint8_t> bytes;
+    encoder.encode(
+        mi,
+        bytes,
+        32,
+        [&](const char* name) -> size_t {
+            resolved = std::string(name) == "callee";
+            return 7;
+        },
+        [&](uint64_t offset, size_t symIdx, uint32_t type, int64_t addend) {
+            relocated = true;
+            EXPECT_EQ(offset, 33u);
+            EXPECT_EQ(symIdx, 7u);
+            EXPECT_EQ(type, R_X86_64_PLT32);
+            EXPECT_EQ(addend, -4);
+        });
+
+    EXPECT_TRUE(resolved);
+    EXPECT_TRUE(relocated);
+    EXPECT_EQ(bytes, (std::vector<uint8_t>{0xE8, 0x00, 0x00, 0x00, 0x00}));
 }

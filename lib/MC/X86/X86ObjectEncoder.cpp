@@ -1,8 +1,10 @@
-#include "Aurora/MC/X86ObjectEncoder.h"
+#include "Aurora/MC/X86/X86ObjectEncoder.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/MC/ObjectWriter.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
+#include <stdexcept>
+#include <string>
 
 namespace aurora {
 
@@ -48,6 +50,24 @@ void X86ObjectEncoder::encode(const MachineInstr& mi,
             rex |= 1;
         out.push_back(rex);
     };
+    auto emitOptionalREX32 = [&](unsigned regFieldIdx, unsigned rmFieldIdx) {
+        uint8_t rex = 0x40;
+        bool needed = false;
+        if (regFieldIdx < numOps && mi.getOperand(regFieldIdx).isReg() && mi.getOperand(regFieldIdx).getReg() >= 8) {
+            rex |= 4;
+            needed = true;
+        }
+        if (rmFieldIdx < numOps && mi.getOperand(rmFieldIdx).isReg()) {
+            const unsigned rmReg = mi.getOperand(rmFieldIdx).getReg();
+            if (rmReg >= 8) {
+                rex |= 1;
+                needed = true;
+            } else if (rmReg >= X86RegisterInfo::RSP && rmReg <= X86RegisterInfo::RDI) {
+                needed = true;
+            }
+        }
+        if (needed) out.push_back(rex);
+    };
     auto emitDisp32 = [&](int disp) {
         for (int i = 0; i < 4; ++i)
             out.push_back(static_cast<uint8_t>((disp >> (i * 8)) & 0xFF));
@@ -80,7 +100,20 @@ void X86ObjectEncoder::encode(const MachineInstr& mi,
     case X86::XOR64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 6, getReg(1)); emitImm32(getImm(0)); break;
     case X86::CMP64rr: emitREX(0, 1); out.push_back(0x39); emitModRM(3, getReg(0), getReg(1)); break;
     case X86::CMP64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 7, getReg(1)); emitImm32(getImm(0)); break;
+    case X86::TEST64rr: emitREX(0, 1); out.push_back(0x85); emitModRM(3, getReg(0), getReg(1)); break;
     case X86::RETQ: out.push_back(0xC3); break;
+    case X86::CALL64pcrel32:
+        if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym && resolveSymbol && addRelocation) {
+            const size_t symIdx = resolveSymbol(mi.getOperand(0).getGlobalSym());
+            out.push_back(0xE8);
+            emitImm32(0);
+            addRelocation(textBaseOffset + out.size() - 4, symIdx, R_X86_64_PLT32, -4);
+        } else if (numOps >= 1 && mi.getOperand(0).isReg()) {
+            emitREXForRM(0); out.push_back(0xFF); emitModRM(3, 2, getReg(0));
+        } else {
+            throw std::runtime_error("unsupported CALL64pcrel32 operand");
+        }
+        break;
     case X86::PUSH64r: {
         const uint8_t reg = getReg(0);
         if (reg >= 8) out.push_back(0x41);
@@ -149,10 +182,12 @@ void X86ObjectEncoder::encode(const MachineInstr& mi,
     case X86::JB_1: out.push_back(0x72); out.push_back(0x00); break;
     case X86::SHL64ri: emitREXForRM(1); out.push_back(0xC1); emitModRM(3, 4, getReg(1)); emitImm8(getImm(0)); break;
     case X86::MOVSX32rr8_op: out.push_back(0x0F); out.push_back(0xBE); emitModRM(3, getReg(1), getReg(0)); break;
+    case X86::MOVZX32rr8:
+    case X86::MOVZX32rr8_op: emitOptionalREX32(1, 0); out.push_back(0x0F); out.push_back(0xB6); emitModRM(3, getReg(1), getReg(0)); break;
     case X86::SETAEr: out.push_back(0x0F); out.push_back(0x93); emitModRM(3, 0, getReg(0)); break;
     case X86::SETAr: out.push_back(0x0F); out.push_back(0x97); emitModRM(3, 0, getReg(0)); break;
     case X86::SETBEr: out.push_back(0x0F); out.push_back(0x96); emitModRM(3, 0, getReg(0)); break;
-    default: out.push_back(0x90); break;
+    default: throw std::runtime_error("unsupported x86 opcode: " + std::to_string(opc));
     }
 }
 

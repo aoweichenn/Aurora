@@ -6,7 +6,7 @@
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/Target/X86/X86CallingConv.h"
 #include "Aurora/MC/MCStreamer.h"
-#include "Aurora/MC/X86AsmPrinter.h"
+#include "Aurora/MC/X86/X86AsmPrinter.h"
 #include "Aurora/MC/AsmPrinter.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include <sstream>

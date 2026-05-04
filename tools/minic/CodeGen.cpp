@@ -22,6 +22,7 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
 
         // Set up variable mapping: parameter names -> vreg indices
         varMap_.clear();
+        ifCounter_ = 0;
         for (size_t i = 0; i < fn.params.size(); ++i)
             varMap_[fn.params[i]] = static_cast<unsigned>(i);
 
@@ -102,9 +103,10 @@ unsigned CodeGen::genIfExpr(const IfExpr& ie) {
     // 5. In merge_bb: phi of true_val and false_val, return phi result
 
     auto* fn = builder_->getInsertBlock()->getParent();
-    auto* trueBB = fn->createBasicBlock("if.true");
-    auto* falseBB = fn->createBasicBlock("if.false");
-    auto* mergeBB = fn->createBasicBlock("if.merge");
+    const unsigned ifId = ifCounter_++;
+    auto* trueBB = fn->createBasicBlock("if.true." + std::to_string(ifId));
+    auto* falseBB = fn->createBasicBlock("if.false." + std::to_string(ifId));
+    auto* mergeBB = fn->createBasicBlock("if.merge." + std::to_string(ifId));
 
     // 1. Evaluate condition and branch
     unsigned condVReg = genExpr(*ie.cond);

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "Aurora/MC/MCStreamer.h"
-#include "Aurora/MC/X86AsmPrinter.h"
+#include "Aurora/MC/X86/X86AsmPrinter.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"

@@ -1,5 +1,5 @@
 #include "Aurora/MC/ObjectWriter.h"
-#include "Aurora/MC/X86ObjectEncoder.h"
+#include "Aurora/MC/X86/X86ObjectEncoder.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
@@ -8,6 +8,7 @@
 #include "Aurora/Air/Constant.h"
 #include <fstream>
 #include <cstring>
+#include <stdexcept>
 
 namespace aurora {
 
@@ -48,6 +49,30 @@ ObjectWriter::ObjectWriter() : functionCount_(0) {
     symbols_.push_back({"", 0, 0, 0, 0, 0});
 }
 
+size_t ObjectWriter::getOrCreateUndefinedSymbol(const std::string& name) {
+    auto it = symbolIndexMap_.find(name);
+    if (it != symbolIndexMap_.end()) return it->second;
+
+    symbols_.push_back({name, 0, 0, 0, STB_GLOBAL, 0});
+    const size_t symIdx = symbols_.size() - 1;
+    symbolIndexMap_[name] = symIdx;
+    return symIdx;
+}
+
+size_t ObjectWriter::defineSymbol(const std::string& name, uint64_t value, uint64_t size,
+                                  uint8_t type, uint8_t bind, uint16_t shndx) {
+    auto it = symbolIndexMap_.find(name);
+    if (it != symbolIndexMap_.end()) {
+        symbols_[it->second] = {name, value, size, type, bind, shndx};
+        return it->second;
+    }
+
+    symbols_.push_back({name, value, size, type, bind, shndx});
+    const size_t symIdx = symbols_.size() - 1;
+    symbolIndexMap_[name] = symIdx;
+    return symIdx;
+}
+
 void ObjectWriter::addFunction(MachineFunction& mf) {
     const auto& name = mf.getAIRFunction().getName();
     std::vector<uint8_t> funcBytes;
@@ -67,13 +92,7 @@ void ObjectWriter::addFunction(MachineFunction& mf) {
             if (opc == X86::CALL64pcrel32 && mi->getNumOperands() >= 1 && mi->getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym) {
                 const char* callee = mi->getOperand(0).getGlobalSym();
                 if (callee) {
-                    size_t symIdx = 0;
-                    auto it = symbolIndexMap_.find(callee);
-                    if (it == symbolIndexMap_.end()) {
-                        symbols_.push_back({callee, 0, 0, 0, STB_GLOBAL, 0});
-                        symIdx = symbols_.size() - 1;
-                        symbolIndexMap_[callee] = symIdx;
-                    } else { symIdx = it->second; }
+                    const size_t symIdx = getOrCreateUndefinedSymbol(callee);
                     funcBytes.push_back(0xE8);
                     size_t relocOff = funcBytes.size();
                     for (int i = 0; i < 4; i++) funcBytes.push_back(0);
@@ -110,10 +129,11 @@ void ObjectWriter::addFunction(MachineFunction& mf) {
         int64_t rel = static_cast<int64_t>(it->second) - static_cast<int64_t>(off + 1);
         if (rel >= -128 && rel <= 127)
             funcBytes[off] = static_cast<uint8_t>(rel);
+        else
+            throw std::runtime_error("short branch target out of range");
     }
 
-    symbols_.push_back({name, textBytes_.size(), funcBytes.size(), STT_FUNC, STB_GLOBAL, 1});
-    symbolIndexMap_[name] = symbols_.size() - 1;
+    defineSymbol(name, textBytes_.size(), funcBytes.size(), STT_FUNC, STB_GLOBAL, 1);
     textBytes_.insert(textBytes_.end(), funcBytes.begin(), funcBytes.end());
     functionCount_++;
 }
@@ -129,31 +149,17 @@ void ObjectWriter::addGlobal(const GlobalVariable& gv) {
         dataBytes_.push_back(static_cast<uint8_t>(val & 0xFF));
         val >>= 8;
     }
-    symbols_.push_back({gv.getName(), off, gv.getType()->getSizeInBits() / 8, STT_OBJECT, STB_GLOBAL, 2});
-    symbolIndexMap_[gv.getName()] = symbols_.size() - 1;
+    defineSymbol(gv.getName(), off, gv.getType()->getSizeInBits() / 8, STT_OBJECT, STB_GLOBAL, 2);
 }
 
 void ObjectWriter::addExternSymbol(const std::string& name) {
-    auto it = symbolIndexMap_.find(name);
-    if (it == symbolIndexMap_.end()) {
-        symbols_.push_back({name, 0, 0, 0, STB_GLOBAL, 0});
-        symbolIndexMap_[name] = symbols_.size() - 1;
-    }
+    getOrCreateUndefinedSymbol(name);
 }
 
 void ObjectWriter::encodeInstruction(const MachineInstr& mi, std::vector<uint8_t>& out) {
     X86ObjectEncoder encoder;
     auto resolveSymbol = [this](const char* sym) -> size_t {
-        size_t symIdx = 0;
-        auto it = symbolIndexMap_.find(sym);
-        if (it == symbolIndexMap_.end()) {
-            symbols_.push_back({sym, 0, 0, 0, STB_GLOBAL, 0});
-            symIdx = symbols_.size() - 1;
-            symbolIndexMap_[sym] = symIdx;
-        } else {
-            symIdx = it->second;
-        }
-        return symIdx;
+        return getOrCreateUndefinedSymbol(sym);
     };
     auto addReloc = [this](uint64_t offset, size_t symIdx, uint32_t type, int64_t addend) {
         addRelocation(offset, symIdx, type, addend);
@@ -207,12 +213,16 @@ bool ObjectWriter::writeELF(const std::string& path) {
     uint16_t shdrCount = 7;
     uint64_t shdrTotalSize = shdrCount * shdrEntrySize;
 
-    uint64_t textOff = shdrOff + shdrTotalSize;
-    uint64_t dataOff = textOff + textBytes_.size();
-    uint64_t symtabOff = dataOff + dataBytes_.size();
+    auto alignTo = [](uint64_t value, uint64_t alignment) -> uint64_t {
+        return alignment == 0 ? value : ((value + alignment - 1) / alignment) * alignment;
+    };
+
+    uint64_t textOff = alignTo(shdrOff + shdrTotalSize, 16);
+    uint64_t dataOff = alignTo(textOff + textBytes_.size(), 8);
+    uint64_t symtabOff = alignTo(dataOff + dataBytes_.size(), 8);
     uint64_t symtabSize = symbols_.size() * 24;
     uint64_t strtabOff = symtabOff + symtabSize;
-    uint64_t relatextOff = strtabOff + strtab.size();
+    uint64_t relatextOff = alignTo(strtabOff + strtab.size(), 8);
     uint64_t relatextSize = relocs_.size() * 24;
     uint64_t shstrtabOff = relatextOff + relatextSize;
 
@@ -263,14 +273,25 @@ bool ObjectWriter::writeELF(const std::string& path) {
     for (int i = 0; i < shdrCount; i++)
         file.write(reinterpret_cast<const char*>(&shdrs[i]), sizeof(Elf64_Shdr));
 
+    auto padTo = [&](uint64_t offset) {
+        auto current = static_cast<uint64_t>(file.tellp());
+        while (current < offset) {
+            file.put('\0');
+            ++current;
+        }
+    };
+
     // ---- .text section ----
+    padTo(textOff);
     file.write(reinterpret_cast<const char*>(textBytes_.data()), static_cast<std::streamsize>(textBytes_.size()));
 
 
     // ---- .data section ----
+    padTo(dataOff);
     file.write(reinterpret_cast<const char*>(dataBytes_.data()), static_cast<std::streamsize>(dataBytes_.size()));
 
     // ---- .symtab section ----
+    padTo(symtabOff);
     for (size_t i = 0; i < symbols_.size(); i++) {
         Elf64_Sym sym = {};
         sym.name = symNameOffs[i];
@@ -283,10 +304,12 @@ bool ObjectWriter::writeELF(const std::string& path) {
     }
 
     // ---- .strtab section ----
+    padTo(strtabOff);
     file.write(strtab.data(), static_cast<std::streamsize>(strtab.size()));
 
 
     // ---- .rela.text section ----
+    padTo(relatextOff);
     for (auto& r : relocs_) {
         Elf64_Rela rela = {};
         rela.offset = r.offset;
@@ -296,6 +319,7 @@ bool ObjectWriter::writeELF(const std::string& path) {
     }
 
     // ---- .shstrtab section ----
+    padTo(shstrtabOff);
     file.write(shstrtab.data(), static_cast<std::streamsize>(shstrtab.size()));
     return file.good();
 }

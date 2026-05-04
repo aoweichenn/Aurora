@@ -317,7 +317,7 @@ private:
     }
 
     void iselICmp(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // ICmp: convert to CMP op1, op2
+        // ICmp: x86 cmp src, dst computes dst - src, so emit rhs, lhs.
         // The result vreg will be handled by:
         // - If CondBr follows: CMP fused into branch, result unused
         // - Otherwise: CMP + SETcc + MOVZX (not needed for mini-lang)
@@ -328,8 +328,8 @@ private:
             // Emit CMP and leave it for CondBr to fuse
             auto* cmpMI = new MachineInstr(X86::CMP64rr);
             if (mi->getNumOperands() >= 2) {
-                cmpMI->addOperand(mi->getOperand(0)); // lhs
-                cmpMI->addOperand(mi->getOperand(1)); // rhs
+                cmpMI->addOperand(mi->getOperand(1));
+                cmpMI->addOperand(mi->getOperand(0));
             }
             replaceMI(mbb, mi, cmpMI);
             return;
@@ -339,8 +339,8 @@ private:
         auto* cmpMI = new MachineInstr(X86::CMP64rr);
         const unsigned resultVReg = mi->getNumOperands() > 2 ? mi->getOperand(2).getVirtualReg() : ~0U;
         if (mi->getNumOperands() >= 2) {
-            cmpMI->addOperand(mi->getOperand(0));
             cmpMI->addOperand(mi->getOperand(1));
+            cmpMI->addOperand(mi->getOperand(0));
         }
         replaceMI(mbb, mi, cmpMI);
 
@@ -369,9 +369,16 @@ private:
         case ICmpCond::UGT: setOp = X86::SETAr; break;
         case ICmpCond::UGE: setOp = X86::SETAEr; break;
         }
-        auto* setMI = new MachineInstr(setOp);
-        setMI->addOperand(MachineOperand::createVReg(resultVReg));
-        mbb.pushBack(setMI);
+        if (resultVReg != ~0U) {
+            auto* setMI = new MachineInstr(setOp);
+            setMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.insertAfter(cmpMI, setMI);
+
+            auto* movzxMI = new MachineInstr(X86::MOVZX32rr8_op);
+            movzxMI->addOperand(MachineOperand::createVReg(resultVReg));
+            movzxMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.insertAfter(setMI, movzxMI);
+        }
     }
 
     void iselFCmp(MachineBasicBlock& mbb, MachineInstr* mi) {
@@ -494,37 +501,38 @@ private:
         bool isSigned = (airOp == AIROpcode::SDiv || airOp == AIROpcode::SRem);
         bool isRemainder = (airOp == AIROpcode::SRem || airOp == AIROpcode::URem);
 
-        // MOV lhs → RAX (use resultVReg which RA will map to RAX)
+        // MOV lhs → RAX; IDIV implicitly consumes RDX:RAX and writes RAX/RDX.
         auto* movLHS = new MachineInstr(X86::MOV64rr);
         movLHS->addOperand(MachineOperand::createVReg(lhsVReg));
-        movLHS->addOperand(MachineOperand::createVReg(resultVReg));
+        movLHS->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
 
         replaceMI(mbb, mi, movLHS);
+        MachineInstr* cursor = movLHS;
 
         if (isSigned) {
             // CQO: sign-extend RAX into RDX:RAX
             auto* cqo = new MachineInstr(X86::CQO);
-            mbb.pushBack(cqo);
+            mbb.insertAfter(cursor, cqo);
+            cursor = cqo;
         } else {
             // XOR RDX,RDX: zero RDX for unsigned division
             auto* xorRDX = new MachineInstr(X86::XOR32rr);
             xorRDX->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
             xorRDX->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
-            mbb.pushBack(xorRDX);
+            mbb.insertAfter(cursor, xorRDX);
+            cursor = xorRDX;
         }
 
         // IDIV divisor (quotient in RAX, remainder in RDX)
         auto* idiv = new MachineInstr(X86::IDIV64r);
         idiv->addOperand(MachineOperand::createVReg(rhsVReg));
-        mbb.pushBack(idiv);
+        mbb.insertAfter(cursor, idiv);
+        cursor = idiv;
 
-        // For remainder ops: move RDX → result
-        if (isRemainder) {
-            auto* movRem = new MachineInstr(X86::MOV64rr);
-            movRem->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
-            movRem->addOperand(MachineOperand::createVReg(resultVReg));
-            mbb.pushBack(movRem);
-        }
+        auto* movResult = new MachineInstr(X86::MOV64rr);
+        movResult->addOperand(MachineOperand::createReg(isRemainder ? X86RegisterInfo::RDX : X86RegisterInfo::RAX));
+        movResult->addOperand(MachineOperand::createVReg(resultVReg));
+        mbb.insertAfter(cursor, movResult);
     }
 
     void iselAlloca(MachineFunction& mf, MachineBasicBlock& mbb, MachineInstr* mi) {
@@ -969,8 +977,8 @@ private:
 
     void collectPhi(MachineFunction&, const Function& airFunc, MachineBasicBlock& mbb, MachineInstr* mi) {
         unsigned resultVReg = ~0U;
-        for (unsigned i = 0; i < mi->getNumOperands(); ++i)
-            if (mi->getOperand(i).isVReg()) { resultVReg = mi->getOperand(i).getVirtualReg(); break; }
+        if (mi->getNumOperands() > 0 && mi->getOperand(mi->getNumOperands() - 1).isVReg())
+            resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
         for (auto& airBB : airFunc.getBlocks()) {
             const AIRInstruction* airInst = airBB->getFirst();
             while (airInst) {

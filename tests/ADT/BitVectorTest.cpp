@@ -57,6 +57,21 @@ TEST(BitVectorTest, AutoResize) {
     EXPECT_TRUE(bv.test(100));
 }
 
+TEST(BitVectorTest, ResizeShrinkDropsOutOfRangeBits) {
+    BitVector bv(130);
+    bv.set(5);
+    bv.set(65);
+    bv.set(129);
+
+    bv.resize(64);
+
+    EXPECT_EQ(bv.size(), 64u);
+    EXPECT_TRUE(bv.test(5));
+    EXPECT_FALSE(bv.test(65));
+    EXPECT_FALSE(bv.test(129));
+    EXPECT_EQ(bv.count(), 1u);
+}
+
 TEST(BitVectorTest, BitwiseOr) {
     BitVector a(64), b(64);
     a.set(0); a.set(2);

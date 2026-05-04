@@ -152,7 +152,7 @@ private:
 2. 在 `Instruction.h/cpp` 中添加工厂方法和操作数访问
 3. 在 `Builder.h/cpp` 中添加 Builder 包装
 4. 在 `X86ISelPatterns.cpp` 中添加匹配模式
-5. 在 `X86AsmPrinter.cpp` 中添加汇编输出
+5. 在 `lib/MC/X86/X86AsmPrinter.cpp` 中添加汇编输出
 6. 在测试中添加对应单元测试
 
 ### 3.2 添加新的 x86 指令
@@ -160,7 +160,7 @@ private:
 1. 在 `X86InstrInfo.h` 的 `X86::Opcode` 枚举中添加新值
 2. 在 `X86InstrInfo.cpp` 的 `buildOpcodeTable()` 中添加指令描述
 3. 在 `X86InstrEncode.cpp` 的 `X86EncodeTable` 中添加编码信息
-4. 在 `X86AsmPrinter.cpp` 的 `emitInstruction()` 中添加汇编格式
+4. 在 `lib/MC/X86/X86AsmPrinter.cpp` 的 `emitInstruction()` 中添加汇编格式
 
 ### 3.3 添加新的 CodeGen Pass
 

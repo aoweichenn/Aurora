@@ -1,11 +1,14 @@
 #include <gtest/gtest.h>
 #include "Aurora/CodeGen/PassManager.h"
+#include "Aurora/CodeGen/Passes/PassFactories.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Builder.h"
 #include "Aurora/Air/Type.h"
 #include "Aurora/Target/TargetMachine.h"
+#include "Aurora/Target/X86/X86InstrInfo.h"
 
 using namespace aurora;
 
@@ -118,6 +121,49 @@ TEST(ISelPipeline2Test, PhiMerge) {
     b.createPhi(Type::getInt64Ty(), inc);
     b.createRet(one);
     runModule(*m);
+}
+
+TEST(ISelPipeline2Test, PhiLoweringUsesPhiResultVReg) {
+    auto m = std::make_unique<Module>("phisel");
+    SmallVector<Type*,8> args = {Type::getInt64Ty()};
+    auto* f = m->createFunction(new FunctionType(Type::getInt64Ty(), args), "f");
+    auto* entry = f->getEntryBlock();
+    auto* trueBB = f->createBasicBlock("t");
+    auto* falseBB = f->createBasicBlock("f");
+    auto* mergeBB = f->createBasicBlock("m");
+
+    AIRBuilder b(entry);
+    b.createCondBr(0, trueBB, falseBB);
+    b.setInsertPoint(trueBB);
+    unsigned one = b.createConstantInt(1);
+    b.createBr(mergeBB);
+    b.setInsertPoint(falseBB);
+    unsigned zero = b.createConstantInt(0);
+    b.createBr(mergeBB);
+    b.setInsertPoint(mergeBB);
+    SmallVector<std::pair<BasicBlock*, unsigned>,4> incomings = {{trueBB, one}, {falseBB, zero}};
+    unsigned phi = b.createPhi(Type::getInt64Ty(), incomings);
+    b.createRet(phi);
+
+    auto tm = TargetMachine::createX86_64();
+    MachineFunction mf(*f, *tm);
+    PassManager pm;
+    pm.addPass(createAIRToMachineIRPass());
+    pm.addPass(createInstructionSelectionPass());
+    pm.run(mf);
+
+    unsigned phiMoves = 0;
+    for (auto& mbb : mf.getBlocks()) {
+        MachineInstr* mi = mbb->getFirst();
+        while (mi) {
+            if (mi->getOpcode() == X86::MOV64rr && mi->getNumOperands() >= 2 &&
+                mi->getOperand(1).isVReg() && mi->getOperand(1).getVirtualReg() == phi) {
+                ++phiMoves;
+            }
+            mi = mi->getNext();
+        }
+    }
+    EXPECT_EQ(phiMoves, 2u);
 }
 
 TEST(ISelPipeline2Test, FloatAdd) {

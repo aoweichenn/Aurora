@@ -1,4 +1,4 @@
-#include "Aurora/MC/X86AsmPrinter.h"
+#include "Aurora/MC/X86/X86AsmPrinter.h"
 #include "Aurora/MC/MCStreamer.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineInstr.h"
@@ -153,6 +153,15 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             if (mi.getNumOperands() >= 2) {
                 oss << "movslq\t";
                 printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
+        case X86::MOVZX32rr8:
+        case X86::MOVZX32rr8_op:
+            if (mi.getNumOperands() >= 2) {
+                oss << "movzbl\t";
+                print8BitOperand(mi.getOperand(0), oss);
                 oss << ", ";
                 printOperand(mi.getOperand(1), oss);
             }

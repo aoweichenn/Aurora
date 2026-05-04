@@ -18,6 +18,7 @@ private:
     std::unique_ptr<aurora::Module> module_;
     aurora::AIRBuilder* builder_;
     std::unordered_map<std::string, unsigned> varMap_;
+    unsigned ifCounter_ = 0;
 
     unsigned genExpr(const ASTNode& node, aurora::BasicBlock* trueBB, aurora::BasicBlock* falseBB);
     unsigned genExpr(const ASTNode& node);

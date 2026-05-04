@@ -188,8 +188,20 @@ int BitVector::find_next(unsigned idx) const {
 }
 
 void BitVector::resize(const unsigned n) {
-    if (n <= numBits_) return;
     const unsigned newWords = (n + BITS_PER_WORD - 1) / BITS_PER_WORD;
+    if (n <= numBits_) {
+        if (newWords < numWords_) {
+            word_type* newWordsArr = newWords > 0 ? new word_type[newWords] : nullptr;
+            if (newWordsArr)
+                std::memcpy(newWordsArr, words_, newWords * sizeof(word_type));
+            delete[] words_;
+            words_ = newWordsArr;
+            numWords_ = newWords;
+        }
+        numBits_ = n;
+        clearUnusedBits(words_, numWords_, numBits_);
+        return;
+    }
     if (newWords > numWords_) {
         auto newWordsArr = new word_type[newWords]();
         if (words_) {
