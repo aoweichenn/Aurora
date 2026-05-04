@@ -2,8 +2,8 @@
 
 namespace aurora {
 
-FunctionType::FunctionType(Type* retTy, const SmallVector<Type*, 8>& params)
-    : retTy_(retTy), params_(params) {}
+FunctionType::FunctionType(Type* retTy, const SmallVector<Type*, 8>& params, bool isVarArg)
+    : retTy_(retTy), params_(params), isVarArg_(isVarArg) {}
 
 Function::Function(FunctionType* ty, const std::string& name, Module* parent)
     : Constant(Type::getFunctionTy(ty->getReturnType(), ty->getParamTypes())),

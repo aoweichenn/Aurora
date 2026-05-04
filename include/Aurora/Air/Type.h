@@ -49,6 +49,7 @@ public:
     [[nodiscard]] static Type* getArrayTy(Type* elemType, unsigned numElements);
     [[nodiscard]] static Type* getStructTy(SmallVector<Type*, 8> members);
     [[nodiscard]] static Type* getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes);
+    [[nodiscard]] static Type* getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes, bool isVarArg);
 
     // Accessor for derived types
     [[nodiscard]] Type* getElementType() const noexcept { return elemType_; }
@@ -57,6 +58,7 @@ public:
     [[nodiscard]] unsigned getMemberOffset(unsigned idx) const;
     [[nodiscard]] Type* getReturnType() const noexcept { return elemType_; }
     [[nodiscard]] const SmallVector<Type*, 8>& getParamTypes() const;
+    [[nodiscard]] bool isVarArg() const noexcept { return isVarArg_; }
 
     [[nodiscard]] std::string toString() const;
 
@@ -73,6 +75,7 @@ public:
     SmallVector<Type*, 8> members_;
     SmallVector<unsigned, 8> memberOffsets_;
     SmallVector<Type*, 8> paramTypes_;
+    bool isVarArg_ = false;
 };
 
 } // namespace aurora

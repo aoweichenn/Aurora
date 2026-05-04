@@ -12,13 +12,15 @@ class Module;
 
 class FunctionType {
 public:
-    FunctionType(Type* retTy, const SmallVector<Type*, 8>& params);
+    FunctionType(Type* retTy, const SmallVector<Type*, 8>& params, bool isVarArg = false);
     [[nodiscard]] Type* getReturnType() const noexcept { return retTy_; }
     [[nodiscard]] const SmallVector<Type*, 8>& getParamTypes() const noexcept { return params_; }
     [[nodiscard]] unsigned getNumParams() const noexcept { return static_cast<unsigned>(params_.size()); }
+    [[nodiscard]] bool isVarArg() const noexcept { return isVarArg_; }
 private:
     Type* retTy_;
     SmallVector<Type*, 8> params_;
+    bool isVarArg_ = false;
 };
 
 class Function : public Constant {

@@ -95,6 +95,12 @@ Type* Type::getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes) {
     t->paramTypes_ = std::move(paramTypes);
     return t;
 }
+Type* Type::getFunctionTy(Type* returnType, SmallVector<Type*, 8> paramTypes, bool isVarArg) {
+    auto t = new Type(TypeKind::Function, returnType, 0, 0);
+    t->paramTypes_ = std::move(paramTypes);
+    t->isVarArg_ = isVarArg;
+    return t;
+}
 
 const SmallVector<Type*, 8>& Type::getStructMembers() const {
     if (kind_ == TypeKind::Struct) return members_;

@@ -696,6 +696,28 @@ private:
             mbb.insertBefore(mi, movArg);
         }
 
+        // Varargs: set AL = number of XMM regs used (0 for integer-only calls)
+        if (!indirect && calleeName) {
+            auto* fnType = [&]() -> FunctionType* {
+                const auto& af = mbb.getParent()->getAIRFunction();
+                for (auto& bb : af.getBlocks()) {
+                    const AIRInstruction* i = bb->getFirst();
+                    while (i) {
+                        if (i->getOpcode() == AIROpcode::Call && i->getCalledFunction())
+                            return i->getCalledFunction()->getFunctionType();
+                        i = i->getNext();
+                    }
+                }
+                return nullptr;
+            }();
+            if (fnType && fnType->isVarArg()) {
+                auto* xorAX = new MachineInstr(X86::XOR32rr);
+                xorAX->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+                xorAX->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+                mbb.insertBefore(mi, xorAX);
+            }
+        }
+
         // CALL
         auto* callMI = new MachineInstr(X86::CALL64pcrel32);
         if (indirect) {

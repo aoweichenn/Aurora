@@ -80,6 +80,9 @@ add_subdirectory(tools/aurorac)
 # ---- Mini Language Compiler ----
 add_subdirectory(tools/minic)
 
+# ---- ELF Object Writer ----
+add_subdirectory(tools/aurora-obj)
+
 # ---- Tests ----
 if(AURORA_BUILD_TESTS)
     enable_testing()
