@@ -1,4 +1,5 @@
 #include "Aurora/Target/X86/X86InstrEncode.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
 
 namespace aurora {
@@ -7,16 +8,54 @@ namespace aurora {
 // Format per entry:
 // {opcode, {prefixes}, numPrefixes, {baseOpcode}, opcodeSize, hasModRM, hasSIB, hasREX, immSize, dispSize}
 
-void X86InstEncoder::encode(const MachineInstr& /*mi*/, SmallVector<uint8_t, 32>& out) {
-    const X86EncodeEntry* entry = findEntry(0);
+void X86InstEncoder::encode(const MachineInstr& mi, SmallVector<uint8_t, 32>& out) {
+    const X86EncodeEntry* entry = findEntry(mi.getOpcode());
     if (!entry) return;
-    emitPrefixes(entry, out);
-    emitOpcode(entry, out);
-    if (entry->hasModRM) {
-        emitModRM(0, 0, 0, out);
-    }
-    if (entry->immSize > 0) {
-        emitImm(0, entry->immSize, out);
+
+    auto getReg = [&](unsigned idx) -> uint8_t {
+        if (idx < mi.getNumOperands() && mi.getOperand(idx).isReg())
+            return static_cast<uint8_t>(mi.getOperand(idx).getReg());
+        return 0;
+    };
+    auto getImm = [&](unsigned idx) -> int64_t {
+        if (idx < mi.getNumOperands() && mi.getOperand(idx).isImm())
+            return mi.getOperand(idx).getImm();
+        return 0;
+    };
+
+    switch (mi.getOpcode()) {
+    case X86::MOV64rr:
+        out.push_back(static_cast<uint8_t>(0x48 | ((getReg(0) >= 8) ? 4 : 0) | ((getReg(1) >= 8) ? 1 : 0)));
+        out.push_back(0x89);
+        emitModRM(3, getReg(0), getReg(1), out);
+        return;
+    case X86::ADD64rr:
+        out.push_back(static_cast<uint8_t>(0x48 | ((getReg(0) >= 8) ? 4 : 0) | ((getReg(1) >= 8) ? 1 : 0)));
+        out.push_back(0x01);
+        emitModRM(3, getReg(0), getReg(1), out);
+        return;
+    case X86::SUB64rr:
+        out.push_back(static_cast<uint8_t>(0x48 | ((getReg(0) >= 8) ? 4 : 0) | ((getReg(1) >= 8) ? 1 : 0)));
+        out.push_back(0x29);
+        emitModRM(3, getReg(0), getReg(1), out);
+        return;
+    case X86::MOV64ri32:
+        out.push_back(static_cast<uint8_t>(0x48 | ((getReg(1) >= 8) ? 1 : 0)));
+        out.push_back(0xC7);
+        emitModRM(3, 0, getReg(1), out);
+        emitImm(static_cast<uint64_t>(getImm(0)), 4, out);
+        return;
+    case X86::RETQ:
+        out.push_back(0xC3);
+        return;
+    default:
+        emitPrefixes(entry, out);
+        emitOpcode(entry, out);
+        if (entry->hasModRM)
+            emitModRM(0, 0, 0, out);
+        if (entry->immSize > 0)
+            emitImm(0, entry->immSize, out);
+        return;
     }
 }
 

@@ -9,6 +9,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Eof:    return "EOF";
     case TokenKind::Ident:  return "Identifier";
     case TokenKind::IntLit: return "Integer";
+    case TokenKind::Invalid:return "Invalid";
     case TokenKind::Fn:     return "fn";
     case TokenKind::If:     return "if";
     case TokenKind::Then:   return "then";
@@ -111,7 +112,7 @@ Token Lexer::next() {
         return {TokenKind::Gt, ">", 0};
     case ',': return {TokenKind::Comma, ",", 0};
     }
-    return {TokenKind::Eof, "", 0};
+    return {TokenKind::Invalid, std::string(1, c), 0};
 }
 
 } // namespace minic

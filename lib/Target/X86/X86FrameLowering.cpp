@@ -18,7 +18,11 @@ void X86FrameLowering::emitPrologue(MachineFunction& mf, MachineBasicBlock& entr
     // Calculate stack adjustment (16-byte aligned)
     int totalStack = 0;
     for (auto& so : mf.getStackObjects()) totalStack += static_cast<int>(so.size);
-    int adjStack = (totalStack + 15) & ~15;
+    constexpr int calleeSavedBytes = 5 * 8;
+    int adjStack = totalStack;
+    const int alignRem = (calleeSavedBytes + adjStack) & 15;
+    if (alignRem != 0)
+        adjStack += 16 - alignRem;
 
     MachineInstr* first = entry.getFirst();
 
@@ -63,7 +67,11 @@ void X86FrameLowering::emitEpilogue(MachineFunction& mf, MachineBasicBlock& ret)
     // Calculate stack adjustment
     int totalStack = 0;
     for (auto& so : mf.getStackObjects()) totalStack += static_cast<int>(so.size);
-    int adjStack = (totalStack + 15) & ~15;
+    constexpr int calleeSavedBytes = 5 * 8;
+    int adjStack = totalStack;
+    const int alignRem = (calleeSavedBytes + adjStack) & 15;
+    if (alignRem != 0)
+        adjStack += 16 - alignRem;
 
     // Epilogue (before return), in execution order:
     // add $N, rsp

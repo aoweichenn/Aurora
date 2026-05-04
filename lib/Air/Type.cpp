@@ -185,6 +185,8 @@ Type::Type(const TypeKind kind, SmallVector<Type*, 8> members)
         if (m->getAlignInBits() > alignInBits_)
             alignInBits_ = m->getAlignInBits();
     }
+    if (alignInBits_ > 0)
+        offset = (offset + alignInBits_ - 1) / alignInBits_ * alignInBits_;
     sizeInBits_ = offset;
 }
 

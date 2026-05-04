@@ -23,7 +23,36 @@ TEST(X86InstrEncodeTest, EncodeMOV64rr) {
     mi.addOperand(MachineOperand::createReg(0));
     mi.addOperand(MachineOperand::createReg(1));
     enc.encode(mi, out);
-    EXPECT_GT(out.size(), 0u);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0], 0x48);
+    EXPECT_EQ(out[1], 0x89);
+    EXPECT_EQ(out[2], 0xC1);
+}
+
+TEST(X86InstrEncodeTest, EncodeMOV64rrHighSourceReg) {
+    SmallVector<uint8_t, 32> out;
+    X86InstEncoder enc;
+    MachineInstr mi(X86::MOV64rr);
+    mi.addOperand(MachineOperand::createReg(8));
+    mi.addOperand(MachineOperand::createReg(0));
+    enc.encode(mi, out);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0], 0x4C);
+    EXPECT_EQ(out[1], 0x89);
+    EXPECT_EQ(out[2], 0xC0);
+}
+
+TEST(X86InstrEncodeTest, EncodeMOV64rrHighDestReg) {
+    SmallVector<uint8_t, 32> out;
+    X86InstEncoder enc;
+    MachineInstr mi(X86::MOV64rr);
+    mi.addOperand(MachineOperand::createReg(0));
+    mi.addOperand(MachineOperand::createReg(8));
+    enc.encode(mi, out);
+    ASSERT_EQ(out.size(), 3u);
+    EXPECT_EQ(out[0], 0x49);
+    EXPECT_EQ(out[1], 0x89);
+    EXPECT_EQ(out[2], 0xC0);
 }
 
 TEST(X86InstrEncodeTest, EncodeRETQ) {
@@ -31,7 +60,8 @@ TEST(X86InstrEncodeTest, EncodeRETQ) {
     X86InstEncoder enc;
     MachineInstr mi(X86::RETQ);
     enc.encode(mi, out);
-    EXPECT_GT(out.size(), 0u);
+    ASSERT_EQ(out.size(), 1u);
+    EXPECT_EQ(out[0], 0xC3);
 }
 
 TEST(X86InstrEncodeTest, EncodeTableSize) {

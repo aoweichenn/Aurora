@@ -54,6 +54,17 @@ TEST(TypeTest, ArrayType) {
     EXPECT_EQ(arr->getSizeInBits(), 320u);
 }
 
+TEST(TypeTest, StructSizeRoundsUpToAlignment) {
+    SmallVector<Type*, 8> members;
+    members.push_back(Type::getInt32Ty());
+    members.push_back(Type::getInt8Ty());
+    const auto* structTy = Type::getStructTy(std::move(members));
+    EXPECT_EQ(structTy->getAlignInBits(), 32u);
+    EXPECT_EQ(structTy->getMemberOffset(0), 0u);
+    EXPECT_EQ(structTy->getMemberOffset(1), 32u);
+    EXPECT_EQ(structTy->getSizeInBits(), 64u);
+}
+
 TEST(TypeTest, FunctionType) {
     SmallVector<Type*, 8> params;
     params.push_back(Type::getInt32Ty());

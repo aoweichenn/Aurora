@@ -152,6 +152,9 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     auto emitImm32 = [&](int64_t v) {
         for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((v >> (i*8)) & 0xFF));
     };
+    auto emitImm8 = [&](int64_t v) {
+        out.push_back(static_cast<uint8_t>(v & 0xFF));
+    };
     auto getReg = [&](unsigned idx) -> uint8_t {
         if (idx < numOps && mi.getOperand(idx).isReg())
             return static_cast<uint8_t>(mi.getOperand(idx).getReg());
@@ -162,28 +165,31 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
             return mi.getOperand(idx).getImm();
         return 0;
     };
-    auto needREX = [&](unsigned idx) -> bool {
-        if (idx < numOps && mi.getOperand(idx).isReg())
-            return mi.getOperand(idx).getReg() >= 8;
-        return false;
+    auto emitREX = [&](unsigned regFieldIdx, unsigned rmFieldIdx) {
+        uint8_t rex = 0x48;
+        if (regFieldIdx < numOps && mi.getOperand(regFieldIdx).isReg() && mi.getOperand(regFieldIdx).getReg() >= 8)
+            rex |= 4;
+        if (rmFieldIdx < numOps && mi.getOperand(rmFieldIdx).isReg() && mi.getOperand(rmFieldIdx).getReg() >= 8)
+            rex |= 1;
+        out.push_back(rex);
     };
-    // Check if any register operand needs REX.B (bit 0) or REX.R (bit 2)
-    bool rexB = needREX(0) || needREX(1);
-    bool rexR = (numOps >= 2 && getReg(0) >= 8); // reg field uses REX.R
-    uint8_t rexPrefix = 0x48; // REX.W=1
-    if (rexB) rexPrefix |= 1;
-    if (rexR) rexPrefix |= 4;
+    auto emitREXForRM = [&](unsigned rmFieldIdx) {
+        uint8_t rex = 0x48;
+        if (rmFieldIdx < numOps && mi.getOperand(rmFieldIdx).isReg() && mi.getOperand(rmFieldIdx).getReg() >= 8)
+            rex |= 1;
+        out.push_back(rex);
+    };
 
     switch (opc) {
     // MOV64rr: REX.W + 0x89 /r
     case X86::MOV64rr:
-        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        emitREX(0, 1);
         out.push_back(0x89);
         emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
     // MOV64ri32
     case X86::MOV64ri32:
-        out.push_back(0x48); out.push_back(0xC7);
+        emitREXForRM(1); out.push_back(0xC7);
         emitModRM(3, 0, getReg(1) & 7);
         if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym) {
             const char* sym = mi.getOperand(0).getGlobalSym();
@@ -202,43 +208,43 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
         break;
     // ADD64rr
     case X86::ADD64rr:
-        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        emitREX(0, 1);
         out.push_back(0x01);
         emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
     case X86::ADD64ri32:
-        out.push_back(0x48); out.push_back(0x81);
+        emitREXForRM(1); out.push_back(0x81);
         emitModRM(3, 0, getReg(1) & 7);
         emitImm32(getImm(0));
         break;
     case X86::SUB64rr:
-        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        emitREX(0, 1);
         out.push_back(0x29);
         emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
     case X86::SUB64ri32:
-        out.push_back(0x48); out.push_back(0x81);
+        emitREXForRM(1); out.push_back(0x81);
         emitModRM(3, 5, getReg(1) & 7);
         emitImm32(getImm(0));
         break;
     case X86::IMUL64rr:
-        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        emitREX(1, 0);
         out.push_back(0x0F); out.push_back(0xAF);
         emitModRM(3, getReg(1) & 7, getReg(0) & 7);
         break;
     case X86::AND64rr: case X86::OR64rr: case X86::XOR64rr: {
-        if (rexB || rexR) out.push_back(rexPrefix); else out.push_back(0x48);
+        emitREX(0, 1);
         uint8_t op = (opc == X86::AND64rr) ? 0x21 : (opc == X86::OR64rr) ? 0x09 : 0x31;
         out.push_back(op);
         emitModRM(3, getReg(0) & 7, getReg(1) & 7);
         break;
     }
     case X86::XOR32rr: out.push_back(0x31); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::AND64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::OR64ri32:  out.push_back(0x48); out.push_back(0x81); emitModRM(3, 1, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::XOR64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 6, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::CMP64rr:   out.push_back(0x48); out.push_back(0x39); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::CMP64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 7, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::AND64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::OR64ri32:  emitREXForRM(1); out.push_back(0x81); emitModRM(3, 1, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::XOR64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 6, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::CMP64rr:   emitREX(0, 1); out.push_back(0x39); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
+    case X86::CMP64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 7, getReg(1) & 7); emitImm32(getImm(0)); break;
     case X86::RETQ: out.push_back(0xC3); break;
     case X86::PUSH64r: {
         uint8_t reg = getReg(0);
@@ -253,11 +259,11 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
         break;
     }
     case X86::MOV64rm: {
-        out.push_back(0x48); out.push_back(0x8B);
+        emitREX(0, 1); out.push_back(0x8B);
         uint8_t dst = getReg(0) & 7;
         if (numOps >= 2 && mi.getOperand(1).getKind() == MachineOperandKind::MO_FrameIndex) {
             int fi = mi.getOperand(1).getFrameIndex();
-            int disp = -(fi + 1) * 8;
+            int disp = -(fi + 6) * 8;
             uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
             emitModRM(mod, dst, 5); // rm=5=RBP
             if (mod == 1) out.push_back(static_cast<uint8_t>(disp));
@@ -268,10 +274,10 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
         break;
     }
     case X86::MOV64mr: {
-        out.push_back(0x48); out.push_back(0x89);
+        emitREX(1, 0); out.push_back(0x89);
         if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_FrameIndex) {
             int fi = mi.getOperand(0).getFrameIndex();
-            int disp = -(fi + 1) * 8;
+            int disp = -(fi + 6) * 8;
             uint8_t src = (numOps >= 2) ? (getReg(1) & 7) : 0;
             uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
             emitModRM(mod, src, 5);
@@ -285,8 +291,8 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     case X86::MOV32rr:  out.push_back(0x89); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
     case X86::NOP: out.push_back(0x90); break;
     case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
-    case X86::MOVSX64rr32: out.push_back(0x48); out.push_back(0x63); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::IDIV64r: out.push_back(0x48); out.push_back(0xF7); emitModRM(3, 7, getReg(0) & 7); break;
+    case X86::MOVSX64rr32: emitREX(1, 0); out.push_back(0x63); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    case X86::IDIV64r: emitREXForRM(0); out.push_back(0xF7); emitModRM(3, 7, getReg(0) & 7); break;
     // Float ops
     case X86::ADDSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x58); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
     case X86::SUBSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5C); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
@@ -315,7 +321,7 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     case X86::JA_1:  out.push_back(0x77); out.push_back(0x00); break;
     case X86::JB_1:  out.push_back(0x72); out.push_back(0x00); break;
     // SHL by immediate
-    case X86::SHL64ri: out.push_back(0x48); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
+    case X86::SHL64ri: emitREXForRM(1); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm8(getImm(0)); break;
     // MOVSX r8 → r32
     case X86::MOVSX32rr8_op: out.push_back(0x0F); out.push_back(0xBE); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
     // SETAEr (SETcc for unsigned above-equal)
@@ -334,13 +340,12 @@ void ObjectWriter::addRelocation(uint64_t offset, uint64_t symIdx, uint32_t type
 }
 
 bool ObjectWriter::write(const std::string& path) {
-    writeELF(path);
-    return true;
+    return writeELF(path);
 }
 
-void ObjectWriter::writeELF(const std::string& path) {
+bool ObjectWriter::writeELF(const std::string& path) {
     std::ofstream file(path, std::ios::binary);
-    if (!file) return;
+    if (!file) return false;
 
     // Build section header string table
     std::string shstrtab;
@@ -466,6 +471,7 @@ void ObjectWriter::writeELF(const std::string& path) {
 
     // ---- .shstrtab section ----
     file.write(shstrtab.data(), static_cast<std::streamsize>(shstrtab.size()));
+    return file.good();
 }
 
 } // namespace aurora

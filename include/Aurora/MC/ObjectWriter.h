@@ -61,7 +61,7 @@ private:
 
     void encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out);
     void addRelocation(uint64_t offset, uint64_t symIdx, uint32_t type, int64_t addend);
-    void writeELF(const std::string& path);
+    bool writeELF(const std::string& path);
 };
 
 } // namespace aurora

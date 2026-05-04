@@ -8,6 +8,7 @@ namespace minic {
 
 enum class TokenKind {
     Eof, Ident, IntLit,
+    Invalid,
     Fn, If, Then, Else,
     LParen, RParen, Assign,
     Plus, Minus, Star, Slash,

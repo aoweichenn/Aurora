@@ -221,6 +221,7 @@ typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator pos) {
 template <typename T, unsigned N>
 typename SmallVector<T, N>::iterator SmallVector<T, N>::erase(iterator first, iterator last) {
     auto n = static_cast<size_type>(last - first);
+    if (n == 0) return first;
     for (iterator p = first; p != last; ++p) p->~T();
     for (iterator p = first; p + n != end_; ++p) { new (p) T(std::move(*(p + n))); (p + n)->~T(); }
     end_ -= n; return first;
@@ -244,4 +245,3 @@ void SmallVector<T, N>::grow(const size_type minSize) {
 }
 
 } // namespace aurora
-

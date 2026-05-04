@@ -88,6 +88,17 @@ TEST(SmallVectorTest, RangeErase) {
     EXPECT_EQ(v[1], 4);
 }
 
+TEST(SmallVectorTest, EmptyRangeErasePreservesContents) {
+    SmallVector<int, 8> v;
+    v.push_back(1); v.push_back(2); v.push_back(3);
+    auto it = v.erase(v.begin() + 1, v.begin() + 1);
+    EXPECT_EQ(it, v.begin() + 1);
+    EXPECT_EQ(v.size(), 3u);
+    EXPECT_EQ(v[0], 1);
+    EXPECT_EQ(v[1], 2);
+    EXPECT_EQ(v[2], 3);
+}
+
 TEST(SmallVectorTest, AssignmentOperator) {
     SmallVector<int, 4> a;
     a.push_back(1); a.push_back(2);

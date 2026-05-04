@@ -4,6 +4,16 @@
 
 namespace aurora {
 
+namespace {
+void clearUnusedBits(BitVector::word_type* words, unsigned numWords, unsigned numBits) noexcept {
+    if (numWords == 0) return;
+    const unsigned usedBits = numBits % BitVector::BITS_PER_WORD;
+    if (usedBits == 0) return;
+    const auto mask = (static_cast<BitVector::word_type>(1) << usedBits) - 1;
+    words[numWords - 1] &= mask;
+}
+}
+
 BitVector::BitVector() : words_(nullptr), numWords_(0), numBits_(0) {}
 
 BitVector::BitVector(const unsigned size) : numWords_(0), numBits_(size) {
@@ -123,6 +133,7 @@ BitVector& BitVector::operator|=(const BitVector& rhs) {
     const unsigned common = std::min(numWords_, rhs.numWords_);
     for (unsigned i = 0; i < common; ++i)
         words_[i] |= rhs.words_[i];
+    clearUnusedBits(words_, numWords_, numBits_);
     return *this;
 }
 
@@ -139,6 +150,7 @@ BitVector& BitVector::operator^=(const BitVector& rhs) {
     const unsigned common = std::min(numWords_, rhs.numWords_);
     for (unsigned i = 0; i < common; ++i)
         words_[i] ^= rhs.words_[i];
+    clearUnusedBits(words_, numWords_, numBits_);
     return *this;
 }
 
@@ -146,10 +158,7 @@ void BitVector::flip()
 {
     for (unsigned i = 0; i < numWords_; ++i)
         words_[i] = ~words_[i];
-    if (numBits_ % BITS_PER_WORD) {
-        const word_type mask = (static_cast<word_type>(1) << (numBits_ % BITS_PER_WORD)) - 1;
-        words_[numWords_ - 1] &= mask;
-    }
+    clearUnusedBits(words_, numWords_, numBits_);
 }
 
 int BitVector::find_first() const {

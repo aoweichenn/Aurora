@@ -52,3 +52,12 @@ TEST(FunctionTest, FunctionTypeAccess) {
     EXPECT_EQ(fn.getFunctionType(), fnTy);
     EXPECT_EQ(fn.getFunctionType()->getReturnType(), Type::getInt32Ty());
 }
+
+TEST(FunctionTest, ConstantTypePreservesVarArg) {
+    SmallVector<Type*, 8> params;
+    params.push_back(Type::getInt32Ty());
+    auto* fnTy = new FunctionType(Type::getInt32Ty(), params, true);
+    const Function fn(fnTy, "printf_like");
+    EXPECT_TRUE(fn.getFunctionType()->isVarArg());
+    EXPECT_TRUE(fn.getType()->isVarArg());
+}

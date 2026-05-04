@@ -38,6 +38,11 @@ TEST(ObjectWriterTest, WriteEmptyFile) {
     std::remove("/tmp/aurora_empty.o");
 }
 
+TEST(ObjectWriterTest, WriteReturnsFalseForInvalidPath) {
+    ObjectWriter w;
+    EXPECT_FALSE(w.write("/tmp/aurora_missing_dir/out.o"));
+}
+
 TEST(ObjectWriterTest, WriteWithGlobalOnly) {
     ObjectWriter w;
     auto* gv = new GlobalVariable(Type::getInt64Ty(), "count", ConstantInt::getInt64(99));

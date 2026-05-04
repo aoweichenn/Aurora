@@ -68,6 +68,14 @@ TEST(BitVectorTest, BitwiseOr) {
     EXPECT_EQ(a.count(), 3u);
 }
 
+TEST(BitVectorTest, BitwiseOrMasksUnusedBits) {
+    BitVector a(65), b(128);
+    b.set(100);
+    a |= b;
+    EXPECT_FALSE(a.test(100));
+    EXPECT_EQ(a.count(), 0u);
+}
+
 TEST(BitVectorTest, BitwiseAnd) {
     BitVector a(64), b(64);
     a.set(0); a.set(2);
@@ -87,6 +95,14 @@ TEST(BitVectorTest, BitwiseXor) {
     EXPECT_TRUE(a.test(0));
     EXPECT_FALSE(a.test(2));
     EXPECT_TRUE(a.test(4));
+}
+
+TEST(BitVectorTest, BitwiseXorMasksUnusedBits) {
+    BitVector a(65), b(128);
+    b.set(100);
+    a ^= b;
+    EXPECT_FALSE(a.test(100));
+    EXPECT_EQ(a.count(), 0u);
 }
 
 TEST(BitVectorTest, Flip) {

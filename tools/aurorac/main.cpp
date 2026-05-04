@@ -34,42 +34,42 @@ static std::unique_ptr<Module> buildSampleModule() {
 }
 
 int main(int /*argc*/, char** /*argv*/) {
-    std::cout << "Aurora Compiler Backend v0.1.0\n";
-    std::cout << "================================\n\n";
+    std::cerr << "Aurora Compiler Backend v0.1.0\n";
+    std::cerr << "================================\n\n";
 
     // Stage 1: Build AIR IR
-    std::cout << "[1] Building AIR IR...\n";
+    std::cerr << "[1] Building AIR IR...\n";
     const auto module = buildSampleModule();
-    std::cout << "    Module: " << module->getName() << "\n";
-    std::cout << "    Functions: " << module->getFunctions().size() << "\n";
+    std::cerr << "    Module: " << module->getName() << "\n";
+    std::cerr << "    Functions: " << module->getFunctions().size() << "\n";
 
     for (auto& fn : module->getFunctions()) {
-        std::cout << "    Function: " << fn->getName() << " (";
-        std::cout << fn->getBlocks().size() << " blocks)\n";
+        std::cerr << "    Function: " << fn->getName() << " (";
+        std::cerr << fn->getBlocks().size() << " blocks)\n";
         for (auto& bb : fn->getBlocks()) {
-            std::cout << "      Block: " << bb->getName() << "\n";
+            std::cerr << "      Block: " << bb->getName() << "\n";
             const AIRInstruction* inst = bb->getFirst();
             while (inst) {
-                std::cout << "        " << inst->toString() << "\n";
+                std::cerr << "        " << inst->toString() << "\n";
                 inst = inst->getNext();
             }
         }
     }
 
     // Stage 2: Create target machine
-    std::cout << "\n[2] Creating x86-64 target machine...\n";
+    std::cerr << "\n[2] Creating x86-64 target machine...\n";
     const auto tm = TargetMachine::createX86_64();
-    std::cout << "    Target: " << tm->getTargetTriple() << "\n";
+    std::cerr << "    Target: " << tm->getTargetTriple() << "\n";
 
     // Stage 3: Run codegen passes
-    std::cout << "\n[3] Running code generation passes...\n";
+    std::cerr << "\n[3] Running code generation passes...\n";
     CodeGenContext cgc(*tm, *module);
     cgc.run();
-    std::cout << "    Code generation complete.\n";
+    std::cerr << "    Code generation complete.\n";
 
     // Stage 4: Emit assembly
-    std::cout << "\n[4] Emitting x86-64 assembly:\n";
-    std::cout << "--------------------------------\n";
+    std::cerr << "\n[4] Emitting x86-64 assembly:\n";
+    std::cerr << "--------------------------------\n";
 
     AsmTextStreamer streamer(std::cout);
     const auto& x86RegInfo = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
@@ -86,6 +86,6 @@ int main(int /*argc*/, char** /*argv*/) {
         printer.emitFunction(mf);
     }
 
-    std::cout << "\nDone.\n";
+    std::cerr << "\nDone.\n";
     return 0;
 }
