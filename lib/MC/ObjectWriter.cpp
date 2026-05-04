@@ -43,7 +43,7 @@ struct Elf64_Rela {
 };
 #pragma pack(pop)
 
-ObjectWriter::ObjectWriter() : functionCount_(0), funcOffset_(0) {
+ObjectWriter::ObjectWriter() : functionCount_(0) {
     // Add the null symbol (index 0)
     symbols_.push_back({"", 0, 0, 0, 0, 0});
 }
@@ -106,10 +106,10 @@ void ObjectWriter::addFunction(MachineFunction& mf) {
     // Apply branch fixups
     for (auto& [off, target] : branchFixups) {
         auto it = labelOffsets.find(target);
-        if (it == labelOffsets.end() || it->second == (size_t)-1) continue;
-        int64_t rel = (int64_t)it->second - (int64_t)(off + 1); // offset from instruction end
+        if (it == labelOffsets.end() || it->second == static_cast<size_t>(-1)) continue;
+        int64_t rel = static_cast<int64_t>(it->second) - static_cast<int64_t>(off + 1);
         if (rel >= -128 && rel <= 127)
-            funcBytes[off] = (uint8_t)rel;
+            funcBytes[off] = static_cast<uint8_t>(rel);
     }
 
     symbols_.push_back({name, textBytes_.size(), funcBytes.size(), STT_FUNC, STB_GLOBAL, 1});
@@ -125,7 +125,7 @@ void ObjectWriter::addGlobal(const GlobalVariable& gv) {
             val = ci->getZExtValue();
     }
     size_t off = dataBytes_.size();
-    for (int i = 0; i < (gv.getType()->getSizeInBits() / 8); i++) {
+    for (unsigned i = 0; i < (gv.getType()->getSizeInBits() / 8); i++) {
         dataBytes_.push_back(static_cast<uint8_t>(val & 0xFF));
         val >>= 8;
     }
@@ -147,17 +147,14 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
 
     // x86 opcode lookup table — simplified for common instructions
     auto emitModRM = [&](uint8_t mod, uint8_t reg, uint8_t rm) {
-        out.push_back((mod << 6) | ((reg & 7) << 3) | (rm & 7));
+        out.push_back(static_cast<uint8_t>((mod << 6) | ((reg & 7) << 3) | (rm & 7)));
     };
     auto emitImm32 = [&](int64_t v) {
         for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((v >> (i*8)) & 0xFF));
     };
-    auto emitImm64 = [&](int64_t v) {
-        for (int i = 0; i < 8; i++) out.push_back(static_cast<uint8_t>((v >> (i*8)) & 0xFF));
-    };
     auto getReg = [&](unsigned idx) -> uint8_t {
         if (idx < numOps && mi.getOperand(idx).isReg())
-            return mi.getOperand(idx).getReg();
+            return static_cast<uint8_t>(mi.getOperand(idx).getReg());
         return 0;
     };
     auto getImm = [&](unsigned idx) -> int64_t {
@@ -250,8 +247,8 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
             int disp = -(fi + 1) * 8;
             uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
             emitModRM(mod, dst, 5); // rm=5=RBP
-            if (mod == 1) out.push_back((uint8_t)disp);
-            else { for (int i = 0; i < 4; i++) out.push_back((uint8_t)((disp >> (i*8)) & 0xFF)); }
+            if (mod == 1) out.push_back(static_cast<uint8_t>(disp));
+            else { for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((disp >> (i*8)) & 0xFF)); }
         } else {
             emitModRM(3, dst, getReg(1) & 7);
         }
@@ -265,8 +262,8 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
             uint8_t src = (numOps >= 2) ? (getReg(1) & 7) : 0;
             uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
             emitModRM(mod, src, 5);
-            if (mod == 1) out.push_back((uint8_t)disp);
-            else { for (int i = 0; i < 4; i++) out.push_back((uint8_t)((disp >> (i*8)) & 0xFF)); }
+            if (mod == 1) out.push_back(static_cast<uint8_t>(disp));
+            else { for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((disp >> (i*8)) & 0xFF)); }
         } else {
             emitModRM(3, (numOps >= 2 ? getReg(1) & 7 : 0), getReg(0) & 7);
         }
@@ -326,7 +323,7 @@ void ObjectWriter::writeELF(const std::string& path) {
     // Build section header string table
     std::string shstrtab;
     auto addShStr = [&](const std::string& s) -> uint32_t {
-        uint32_t off = shstrtab.size();
+        uint32_t off = static_cast<uint32_t>(shstrtab.size());
         shstrtab += s + '\0';
         return off;
     };
@@ -341,7 +338,7 @@ void ObjectWriter::writeELF(const std::string& path) {
     // Build string table for symbols
     std::string strtab;
     auto addStr = [&](const std::string& s) -> uint32_t {
-        uint32_t off = strtab.size();
+        uint32_t off = static_cast<uint32_t>(strtab.size());
         strtab += s + '\0';
         return off;
     };
@@ -351,7 +348,6 @@ void ObjectWriter::writeELF(const std::string& path) {
         symNameOffs.push_back(addStr(symbols_[i].name));
 
     // Compute sizes and offsets
-    uint64_t elfHdrOff = 0;
     uint64_t elfHdrSize = 64;
     uint64_t shdrOff = elfHdrSize;
     uint64_t shdrEntrySize = 64;
@@ -415,16 +411,17 @@ void ObjectWriter::writeELF(const std::string& path) {
         file.write(reinterpret_cast<const char*>(&shdrs[i]), sizeof(Elf64_Shdr));
 
     // ---- .text section ----
-    file.write(reinterpret_cast<const char*>(textBytes_.data()), textBytes_.size());
+    file.write(reinterpret_cast<const char*>(textBytes_.data()), static_cast<std::streamsize>(textBytes_.size()));
+
 
     // ---- .data section ----
-    file.write(reinterpret_cast<const char*>(dataBytes_.data()), dataBytes_.size());
+    file.write(reinterpret_cast<const char*>(dataBytes_.data()), static_cast<std::streamsize>(dataBytes_.size()));
 
     // ---- .symtab section ----
     for (size_t i = 0; i < symbols_.size(); i++) {
         Elf64_Sym sym = {};
         sym.name = symNameOffs[i];
-        sym.info = (symbols_[i].bind << 4) | (symbols_[i].type & 0xF);
+        sym.info = static_cast<uint8_t>((symbols_[i].bind << 4) | (symbols_[i].type & 0xF));
         sym.other = STV_DEFAULT;
         sym.shndx = symbols_[i].shndx;
         sym.value = symbols_[i].value;
@@ -433,7 +430,8 @@ void ObjectWriter::writeELF(const std::string& path) {
     }
 
     // ---- .strtab section ----
-    file.write(strtab.data(), strtab.size());
+    file.write(strtab.data(), static_cast<std::streamsize>(strtab.size()));
+
 
     // ---- .rela.text section ----
     for (auto& r : relocs_) {
@@ -445,7 +443,7 @@ void ObjectWriter::writeELF(const std::string& path) {
     }
 
     // ---- .shstrtab section ----
-    file.write(shstrtab.data(), shstrtab.size());
+    file.write(shstrtab.data(), static_cast<std::streamsize>(shstrtab.size()));
 }
 
 } // namespace aurora

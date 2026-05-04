@@ -52,7 +52,6 @@ private:
     std::vector<std::string> externSymbols_;
 
     size_t functionCount_ = 0;
-    uint64_t funcOffset_ = 0;
 
     static constexpr uint8_t STT_FUNC = 2;
     static constexpr uint8_t STT_OBJECT = 1;

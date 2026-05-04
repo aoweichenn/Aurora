@@ -599,7 +599,7 @@ private:
                     airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
                     auto& indices = airInst->getIndices();
                     for (size_t i = 0; i < indices.size(); ++i)
-                        totalOffset += (int64_t)indices[i] * 8;
+                        totalOffset += static_cast<int64_t>(indices[i]) * 8;
                     break;
                 }
                 airInst = airInst->getNext();
@@ -859,8 +859,8 @@ private:
     void iselInsertValue(MachineBasicBlock& mbb, MachineInstr* mi) {
         // InsertValue: set a field in an aggregate
         // layout: [VReg(agg), VReg(val), VReg(result)]
-        unsigned aggVReg = ~0U, valVReg = ~0U, resultVReg = ~0U;
-        if (mi->getNumOperands() >= 1) aggVReg = mi->getOperand(0).getVirtualReg();
+        unsigned valVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) (void)mi->getOperand(0).getVirtualReg(); // aggVReg unused in simplified lowering
         if (mi->getNumOperands() >= 2) valVReg = mi->getOperand(1).getVirtualReg();
         if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
         // Simplified: MOV val → result
