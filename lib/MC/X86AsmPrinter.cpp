@@ -250,6 +250,27 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(0), oss);
             }
             break;
+        case X86::ADDSDrr:
+            if (mi.getNumOperands() >= 2) { oss << "addsd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::SUBSDrr:
+            if (mi.getNumOperands() >= 2) { oss << "subsd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::MULSDrr:
+            if (mi.getNumOperands() >= 2) { oss << "mulsd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::DIVSDrr:
+            if (mi.getNumOperands() >= 2) { oss << "divsd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::UCOMISDrr:
+            if (mi.getNumOperands() >= 2) { oss << "ucomisd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::CVTSI2SDrr:
+            if (mi.getNumOperands() >= 2) { oss << "cvtsi2sd\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::CVTTSD2SIrr:
+            if (mi.getNumOperands() >= 2) { oss << "cvttsd2si\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
         default:
             oss << "# unknown opcode " << opcode << " (0x" << std::hex << opcode << std::dec << ")";
             break;

@@ -48,7 +48,14 @@ enum class AIROpcode : uint16_t {
     Call,
 
     // Constant
-    ConstantInt
+    ConstantInt,
+
+    // Switch
+    Switch,
+
+    // Struct
+    ExtractValue,
+    InsertValue
 };
 
 enum class ICmpCond : uint8_t {
@@ -86,6 +93,9 @@ public:
     [[nodiscard]] static AIRInstruction* createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
     [[nodiscard]] static AIRInstruction* createCall(Type* retTy, Function* callee, const SmallVector<unsigned, 8>& args);
     [[nodiscard]] static AIRInstruction* createConstantInt(Type* ty, int64_t val);
+    [[nodiscard]] static AIRInstruction* createSwitch(Type* ty, unsigned cond, BasicBlock* defaultBB, const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& cases);
+    [[nodiscard]] static AIRInstruction* createExtractValue(Type* ty, unsigned agg, const SmallVector<unsigned, 4>& indices);
+    [[nodiscard]] static AIRInstruction* createInsertValue(Type* ty, unsigned agg, unsigned val, const SmallVector<unsigned, 4>& indices);
 
     [[nodiscard]] AIROpcode getOpcode() const noexcept { return opcode_; }
     [[nodiscard]] Type* getType() const noexcept { return type_; }
@@ -99,6 +109,9 @@ public:
     [[nodiscard]] Function* getCalledFunction() const noexcept;
     [[nodiscard]] ICmpCond getICmpCondition() const noexcept;
     [[nodiscard]] int64_t getConstantValue() const noexcept { return constantVal_; }
+    [[nodiscard]] const SmallVector<unsigned, 4>& getStructIndices() const { return gepIndices_; }
+    [[nodiscard]] BasicBlock* getSwitchDefault() const noexcept;
+    [[nodiscard]] const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& getSwitchCases() const;
 
     [[nodiscard]] const SmallVector<unsigned, 4>& getIndices() const;
     [[nodiscard]] const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& getPhiIncomings() const;
@@ -133,6 +146,7 @@ private:
     Function* callee_;
     SmallVector<unsigned, 4> gepIndices_;
     SmallVector<std::pair<BasicBlock*, unsigned>, 4> phiIncomings_;
+    SmallVector<std::pair<int64_t, BasicBlock*>, 8> switchCases_;
     int64_t constantVal_ = 0;
 };
 

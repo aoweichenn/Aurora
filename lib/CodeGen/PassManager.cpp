@@ -167,6 +167,21 @@ public:
                 case AIROpcode::Select:
                     iselSelect(*mbb, mi, mf, airFunc);
                     break;
+                case AIROpcode::Switch:
+                    iselSwitch(mf, airFunc, *mbb, mi);
+                    break;
+                case AIROpcode::ExtractValue:
+                    iselExtractValue(*mbb, mi);
+                    break;
+                case AIROpcode::InsertValue:
+                    iselInsertValue(*mbb, mi);
+                    break;
+                case AIROpcode::FpToSi:
+                    iselFpToSi(*mbb, mi);
+                    break;
+                case AIROpcode::SiToFp:
+                    iselSiToFp(*mbb, mi);
+                    break;
                 default:
                     // Leave unknown opcodes as-is (they'll print as "# unknown opcode")
                     break;
@@ -311,14 +326,17 @@ private:
     }
 
     void iselBinOp(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
-        // x86 two-address: dst must be one of the source operands
-        // AIR: %result = op %lhs, %rhs
-        // x86: MOV lhs → result; OP rhs, result
         unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) lhsVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) rhsVReg = mi->getOperand(1).getVirtualReg();
         if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
         if (lhsVReg == ~0U || resultVReg == ~0U) return;
+
+        // Determine if this is a float operation by looking at the AIR type
+        bool isFloat = false;
+        Type* airTy = getAIRType(mbb, resultVReg);
+        if (airTy && (airTy->isFloat() || airTy->getKind() == TypeKind::Float))
+            isFloat = true;
 
         auto lhsConstIt = constantMap_.find(lhsVReg);
         auto rhsConstIt = constantMap_.find(rhsVReg);
@@ -329,7 +347,7 @@ private:
         if (lhsVReg != resultVReg) {
             auto* movMI = new MachineInstr(X86::MOV64rr);
             if (lhsIsConst) {
-                movMI = new MachineInstr(X86::MOV64ri32);
+                movMI = new MachineInstr(isFloat ? X86::MOV64ri32 : X86::MOV64ri32);
                 movMI->addOperand(MachineOperand::createImm(lhsConstIt->second));
             } else {
                 movMI->addOperand(MachineOperand::createVReg(lhsVReg));
@@ -340,7 +358,16 @@ private:
 
         // Step 2: OP rhs, result
         uint16_t x86Op;
-        if (rhsIsConst) {
+        if (isFloat) {
+            switch (airOp) {
+            case AIROpcode::Add: x86Op = X86::ADDSDrr; break;
+            case AIROpcode::Sub: x86Op = X86::SUBSDrr; break;
+            case AIROpcode::Mul: x86Op = X86::MULSDrr; break;
+            case AIROpcode::SDiv: x86Op = X86::DIVSDrr; break;
+            default: x86Op = 0; break;
+            }
+        }
+        else if (rhsIsConst) {
             switch (airOp) {
             case AIROpcode::Add: x86Op = X86::ADD64ri32; break;
             case AIROpcode::Sub: x86Op = X86::SUB64ri32; break;
@@ -526,7 +553,7 @@ private:
         replaceMI(mbb, mi, newMI);
     }
 
-    void iselSelect(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction&, const Function& airFunc) {
+    void iselSelect(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction&, const Function&) {
         // Select: %result = select %cond, %tval, %fval
         // layout: [VReg(cond), VReg(tval), VReg(fval), VReg(result)]
         // Lower to: CMP cond, 0; CMOVNE tval, result; CMOVE fval, result
@@ -627,6 +654,109 @@ private:
         }
 
         (void)mf;
+    }
+
+    void iselSwitch(MachineFunction& mf, const Function& airFunc, MachineBasicBlock& entryMBB, MachineInstr* mi) {
+        // Switch: expand to CMP + JE chain
+        unsigned condVReg = mi->getNumOperands() >= 1 ? mi->getOperand(0).getVirtualReg() : ~0U;
+        auto* fn = const_cast<Function*>(&airFunc);
+
+        // Find the AIR switch to get cases
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::Switch) {
+                    auto* defaultBB = airInst->getSwitchDefault();
+                    auto& cases = airInst->getSwitchCases();
+
+                    MachineInstr* insertPt = mi;
+                    for (auto& kv : cases) {
+                        auto* caseBB = fn->createBasicBlock("switch.case");
+                        // CMP cond, val
+                        auto* cmpMI = new MachineInstr(X86::CMP64ri32);
+                        cmpMI->addOperand(MachineOperand::createImm(kv.first));
+                        cmpMI->addOperand(MachineOperand::createVReg(condVReg));
+                        entryMBB.insertBefore(insertPt, cmpMI);
+                        // JE caseBB
+                        auto* jeMI = new MachineInstr(X86::JE_1);
+                        auto* tmpMBB = mf.createBasicBlock(kv.second->getName());
+                        jeMI->addOperand(MachineOperand::createMBB(tmpMBB));
+                        entryMBB.insertBefore(insertPt, jeMI);
+                    }
+                    // JMP default
+                    auto* jmpMI = new MachineInstr(X86::JMP_1);
+                    auto* defMBB = mf.createBasicBlock(defaultBB->getName());
+                    jmpMI->addOperand(MachineOperand::createMBB(defMBB));
+                    entryMBB.insertBefore(insertPt, jmpMI);
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+        entryMBB.remove(mi); delete mi;
+        (void)mf;
+    }
+
+    void iselExtractValue(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // ExtractValue: get a field from an aggregate
+        // layout: [VReg(agg), VReg(result)]
+        unsigned aggVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) aggVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        // Simplified: MOV agg → result (whole aggregate copy)
+        auto* movMI = new MachineInstr(X86::MOV64rr);
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        movMI->addOperand(MachineOperand::createVReg(aggVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
+    void iselInsertValue(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // InsertValue: set a field in an aggregate
+        // layout: [VReg(agg), VReg(val), VReg(result)]
+        unsigned aggVReg = ~0U, valVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) aggVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) valVReg = mi->getOperand(1).getVirtualReg();
+        if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
+        // Simplified: MOV val → result
+        auto* movMI = new MachineInstr(X86::MOV64rr);
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        movMI->addOperand(MachineOperand::createVReg(valVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
+    void iselFpToSi(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Float → Int: CVTTSD2SI
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        auto* newMI = new MachineInstr(X86::CVTTSD2SIrr);
+        newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, newMI);
+    }
+
+    void iselSiToFp(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Int → Float: CVTSI2SD
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        auto* newMI = new MachineInstr(X86::CVTSI2SDrr);
+        newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, newMI);
+    }
+
+    Type* getAIRType(MachineBasicBlock& mbb, unsigned vreg) {
+        const auto& airFunc = mbb.getParent()->getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->hasResult() && airInst->getDestVReg() == vreg)
+                    return airInst->getType();
+                airInst = airInst->getNext();
+            }
+        }
+        return nullptr;
     }
 
     void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT

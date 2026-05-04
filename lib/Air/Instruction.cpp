@@ -169,6 +169,33 @@ AIRInstruction* AIRInstruction::createConstantInt(Type* ty, const int64_t val) {
     i->constantVal_ = val;
     return i;
 }
+AIRInstruction* AIRInstruction::createSwitch(Type* ty, const unsigned cond, BasicBlock* defaultBB,
+                                              const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& cases) {
+    auto* i = new AIRInstruction(AIROpcode::Switch, ty);
+    i->operands_.push_back(cond);
+    i->blockOperands_.push_back(defaultBB);
+    i->switchCases_ = cases;
+    return i;
+}
+AIRInstruction* AIRInstruction::createExtractValue(Type* ty, const unsigned agg, const SmallVector<unsigned, 4>& indices) {
+    auto* i = new AIRInstruction(AIROpcode::ExtractValue, ty);
+    i->operands_.push_back(agg);
+    i->gepIndices_ = indices;
+    return i;
+}
+AIRInstruction* AIRInstruction::createInsertValue(Type* ty, const unsigned agg, const unsigned val, const SmallVector<unsigned, 4>& indices) {
+    auto* i = new AIRInstruction(AIROpcode::InsertValue, ty);
+    i->operands_.push_back(agg);
+    i->operands_.push_back(val);
+    i->gepIndices_ = indices;
+    return i;
+}
+BasicBlock* AIRInstruction::getSwitchDefault() const noexcept {
+    return blockOperands_.empty() ? nullptr : blockOperands_[0];
+}
+const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& AIRInstruction::getSwitchCases() const {
+    return switchCases_;
+}
 bool AIRInstruction::hasResult() const noexcept {
     switch (opcode_) {
         case AIROpcode::Ret: case AIROpcode::Br: case AIROpcode::CondBr:
@@ -197,6 +224,9 @@ unsigned AIRInstruction::getNumOperands() const noexcept {
         case AIROpcode::Load:     return 1;
         case AIROpcode::Alloca:   return 0;
         case AIROpcode::ConstantInt: return 0;
+        case AIROpcode::Switch:   return 1;
+        case AIROpcode::ExtractValue: return 1;
+        case AIROpcode::InsertValue:  return 2;
         case AIROpcode::Phi:      return static_cast<unsigned>(phiIncomings_.size() * 2);
         case AIROpcode::Call:     return static_cast<unsigned>(operands_.size());
         case AIROpcode::Store:    return 2;
@@ -327,6 +357,9 @@ const char* opcodeName(const AIROpcode op) {
         case AIROpcode::Select:       return "select";
         case AIROpcode::Call:         return "call";
         case AIROpcode::ConstantInt:  return "const";
+        case AIROpcode::Switch:       return "switch";
+        case AIROpcode::ExtractValue: return "extractvalue";
+        case AIROpcode::InsertValue:  return "insertvalue";
     }
     return "unknown";
 }
