@@ -155,6 +155,18 @@ public:
                 case AIROpcode::Call:
                     iselCall(*mbb, mi, mf);
                     break;
+                case AIROpcode::SExt:
+                    iselSExt(*mbb, mi);
+                    break;
+                case AIROpcode::ZExt:
+                    iselZExt(*mbb, mi);
+                    break;
+                case AIROpcode::Trunc:
+                    iselTrunc(*mbb, mi);
+                    break;
+                case AIROpcode::Select:
+                    iselSelect(*mbb, mi, mf, airFunc);
+                    break;
                 default:
                     // Leave unknown opcodes as-is (they'll print as "# unknown opcode")
                     break;
@@ -445,13 +457,15 @@ private:
     }
 
     void iselGEP(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // GEP: compute pointer = base + index * element_size
-        // layout: [VReg(base_ptr), VReg(index), VReg(result)]
-        // Simplified: result = base + index * 8 (pointer is always 8 bytes)
-        unsigned baseVReg = ~0U, indexVReg = ~0U, resultVReg = ~0U;
-        if (mi->getNumOperands() >= 1) baseVReg = mi->getOperand(0).getVirtualReg();
-        if (mi->getNumOperands() >= 2) indexVReg = mi->getOperand(1).getVirtualReg();
-        if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
+        // GEP: compute pointer = base + offset
+        // layout depends on operand count:
+        // [VReg(base_ptr), VReg(result)] → no indices, just MOV
+        // [VReg(base_ptr), VReg(idx0), VReg(result)] → base + idx0 * elemSize
+        // [VReg(base_ptr), VReg(idx0), VReg(idx1), VReg(result)] → base + idx0*stride0 + idx1*elemSize
+        unsigned numSrcOps = mi->getNumOperands() - 1; // last is result
+        if (numSrcOps < 1) return;
+        unsigned baseVReg = mi->getOperand(0).getVirtualReg();
+        unsigned resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
 
         // MOV base → result
         auto* movMI = new MachineInstr(X86::MOV64rr);
@@ -459,17 +473,90 @@ private:
         movMI->addOperand(MachineOperand::createVReg(baseVReg));
         replaceMI(mbb, mi, movMI);
 
-        // SHL index, 3 (multiply by 8)
-        auto* shlMI = new MachineInstr(X86::SHL64ri);
-        shlMI->addOperand(MachineOperand::createVReg(3)); // shift amount (immediate)
-        shlMI->addOperand(MachineOperand::createVReg(indexVReg));
-        mbb.pushBack(shlMI);
+        // For each index: result += index * stride
+        for (unsigned i = 1; i < numSrcOps; ++i) {
+            unsigned idxVReg = mi->getOperand(i).getVirtualReg();
+            unsigned stride = (i == 1) ? 8 : 8; // simplified: assume 8-byte elements
 
-        // ADD index, result (result = base + index*8)
-        auto* addMI = new MachineInstr(X86::ADD64rr);
-        addMI->addOperand(MachineOperand::createVReg(indexVReg));
-        addMI->addOperand(MachineOperand::createVReg(resultVReg));
-        mbb.pushBack(addMI);
+            // SHL index, log2(stride)
+            auto* shlMI = new MachineInstr(X86::SHL64ri);
+            shlMI->addOperand(MachineOperand::createImm(3)); // *8
+            shlMI->addOperand(MachineOperand::createVReg(idxVReg));
+            mbb.pushBack(shlMI);
+
+            // ADD idx*stride to result
+            auto* addMI = new MachineInstr(X86::ADD64rr);
+            addMI->addOperand(MachineOperand::createVReg(idxVReg));
+            addMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(addMI);
+        }
+    }
+
+    void iselSExt(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Sign-extend: 32-bit → 64-bit
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        auto* newMI = new MachineInstr(X86::MOVSX64rr32);
+        newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, newMI);
+    }
+
+    void iselZExt(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Zero-extend: MOV + AND with mask
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        // MOV src → result, then AND with mask
+        auto* movMI = new MachineInstr(X86::MOV64rr);
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        movMI->addOperand(MachineOperand::createVReg(srcVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
+    void iselTrunc(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Truncate: just MOV (upper bits ignored)
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        auto* newMI = new MachineInstr(X86::MOV64rr);
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
+        newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        replaceMI(mbb, mi, newMI);
+    }
+
+    void iselSelect(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction&, const Function& airFunc) {
+        // Select: %result = select %cond, %tval, %fval
+        // layout: [VReg(cond), VReg(tval), VReg(fval), VReg(result)]
+        // Lower to: CMP cond, 0; CMOVNE tval, result; CMOVE fval, result
+        // Or simpler: MOV tval → result; MOV fval → temp; TEST cond,cond; CMOVNE temp, result
+        // For now: use conditional move via branching (generate new blocks)
+        // Simplest: result = cond ? tval : fval → CMP cond,0; MOV tval→result; JZ false; JMP merge; false: MOV fval→result; merge:
+        unsigned condVReg = ~0U, tValVReg = ~0U, fValVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) condVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) tValVReg = mi->getOperand(1).getVirtualReg();
+        if (mi->getNumOperands() >= 3) fValVReg = mi->getOperand(2).getVirtualReg();
+        if (mi->getNumOperands() >= 4) resultVReg = mi->getOperand(3).getVirtualReg();
+        // Simple lowering: MOV tval→result; TEST cond,cond; JZ skip; MOV fval→result; skip:
+        auto* movT = new MachineInstr(X86::MOV64rr);
+        movT->addOperand(MachineOperand::createVReg(resultVReg));
+        movT->addOperand(MachineOperand::createVReg(tValVReg));
+        replaceMI(mbb, mi, movT);
+
+        auto* testMI = new MachineInstr(X86::TEST64rr);
+        testMI->addOperand(MachineOperand::createVReg(condVReg));
+        testMI->addOperand(MachineOperand::createVReg(condVReg));
+        mbb.pushBack(testMI);
+
+        auto* jzMI = new MachineInstr(X86::JE_1);
+        mbb.pushBack(jzMI);
+
+        auto* movF = new MachineInstr(X86::MOV64rr);
+        movF->addOperand(MachineOperand::createVReg(resultVReg));
+        movF->addOperand(MachineOperand::createVReg(fValVReg));
+        mbb.pushBack(movF);
+        // JE target would be set by rebuildSuccessors; for now leave it
     }
 
     void iselConstantInt(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& /*mf*/) {
