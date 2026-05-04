@@ -34,8 +34,9 @@ add_executable(Target_tests
     Target/X86InstrInfoTest.cpp
     Target/X86ISelPatternsTest.cpp
     Target/X86CallingConvTest.cpp
+    Target/X86InstrEncodeTest.cpp
 )
-target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraTestCommon)
+target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraCodeGen AuroraTestCommon)
 add_test(NAME Target_tests COMMAND Target_tests)
 
 add_executable(CodeGen_tests
@@ -46,6 +47,8 @@ add_executable(CodeGen_tests
     CodeGen/PassManagerTest.cpp
     CodeGen/LiveIntervalTest.cpp
     CodeGen/ISelCoverageTest.cpp
+    CodeGen/ISelPipeline2Test.cpp
+    CodeGen/FuncCoverTest.cpp
 )
 target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
@@ -55,6 +58,7 @@ add_executable(MC_tests
     MC/IntegrationTest.cpp
     MC/IntegrationFullTest.cpp
     MC/CoverageBoostTest.cpp
+    MC/ObjectWriterTest.cpp
 )
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)

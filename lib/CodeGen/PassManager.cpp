@@ -562,13 +562,16 @@ private:
     }
 
     void iselGEP(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // GEP: compute pointer = base + offset
         unsigned numSrcOps = mi->getNumOperands() - 1;
         if (numSrcOps < 1) return;
         unsigned baseVReg = mi->getOperand(0).getVirtualReg();
         unsigned resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
 
-        // Get the AIR GEP to compute proper field offsets
+        // Save index vregs before replaceMI deletes mi
+        SmallVector<unsigned, 4> idxVRegs;
+        for (unsigned i = 1; i < numSrcOps; ++i)
+            idxVRegs.push_back(mi->getOperand(i).getVirtualReg());
+
         int64_t totalOffset = 0;
         const auto& airFunc = mbb.getParent()->getAIRFunction();
         for (auto& airBB : airFunc.getBlocks()) {
@@ -576,13 +579,7 @@ private:
             while (airInst) {
                 if (airInst->getOpcode() == AIROpcode::GetElementPtr &&
                     airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
-                    // Compute byte offset from indices
-                    Type* baseTy = airInst->getType();
                     auto& indices = airInst->getIndices();
-                    // Walk the type chain: for each index, advance the offset
-                    // idx0: array index (multiply by element size)
-                    // idx1+: struct field index (look up field offset)
-                    // Simplified: each index adds its value * 8
                     for (size_t i = 0; i < indices.size(); ++i)
                         totalOffset += (int64_t)indices[i] * 8;
                     break;
@@ -591,13 +588,11 @@ private:
             }
         }
 
-        // MOV base → result
         auto* movMI = new MachineInstr(X86::MOV64rr);
         movMI->addOperand(MachineOperand::createVReg(resultVReg));
         movMI->addOperand(MachineOperand::createVReg(baseVReg));
         replaceMI(mbb, mi, movMI);
 
-        // Add total offset as immediate (if non-zero)
         if (totalOffset != 0) {
             auto* addMI = new MachineInstr(X86::ADD64ri32);
             addMI->addOperand(MachineOperand::createImm(totalOffset));
@@ -605,11 +600,9 @@ private:
             mbb.pushBack(addMI);
         }
 
-        // For each index operand, also add index * element_size
-        for (unsigned i = 1; i < numSrcOps; ++i) {
-            unsigned idxVReg = mi->getOperand(i).getVirtualReg();
+        for (auto idxVReg : idxVRegs) {
             auto* shlMI = new MachineInstr(X86::SHL64ri);
-            shlMI->addOperand(MachineOperand::createImm(3)); // *8
+            shlMI->addOperand(MachineOperand::createImm(3));
             shlMI->addOperand(MachineOperand::createVReg(idxVReg));
             mbb.pushBack(shlMI);
             auto* addIdxMI = new MachineInstr(X86::ADD64rr);

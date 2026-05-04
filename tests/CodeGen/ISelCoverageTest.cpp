@@ -139,8 +139,7 @@ TEST(ISelCoverageTest, GEPAccess) {
     unsigned gep = b.createGEP(Type::getPointerTy(Type::getInt64Ty()), 0, idx);
     unsigned val = b.createLoad(Type::getInt64Ty(), gep);
     b.createRet(val);
-    // Note: run individually only — GEP can hang in full suite
-    SUCCEED();
+    runPipeline(*mod);
 }
 
 // ---- Select ----
