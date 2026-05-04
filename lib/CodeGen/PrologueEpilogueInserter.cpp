@@ -4,7 +4,6 @@
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/TargetMachine.h"
 #include "Aurora/Target/TargetFrameLowering.h"
-#include "Aurora/Target/X86/X86RegisterInfo.h"
 
 namespace aurora {
 
@@ -19,7 +18,7 @@ void PrologueEpilogueInserter::run(MachineFunction& mf) const {
         // Find return blocks and emit epilogue
         MachineInstr* mi = mbb->getLast();
         while (mi) {
-            if (mi->getOpcode() == X86::RETQ) {
+            if (mi->isReturn()) {
                 frameLowering.emitEpilogue(mf, *mbb);
                 break;
             }

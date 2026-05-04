@@ -31,6 +31,7 @@ public:
 
     void addSuccessor(MachineBasicBlock* succ);
     [[nodiscard]] const SmallVector<MachineBasicBlock*, 4>& successors() const noexcept { return successors_; }
+    [[nodiscard]] SmallVector<MachineBasicBlock*, 4>& successors() noexcept { return successors_; }
     [[nodiscard]] const SmallVector<MachineBasicBlock*, 4>& predecessors() const noexcept { return predecessors_; }
     void addPredecessor(MachineBasicBlock* pred);
 

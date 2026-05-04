@@ -1144,7 +1144,42 @@ public:
 
 class BranchFoldingPass : public CodeGenPass {
 public:
-    void run(MachineFunction& /*mf*/) override {
+    void run(MachineFunction& mf) override {
+        auto& blocks = mf.getBlocks();
+        for (size_t i = 0; i < blocks.size(); ++i) {
+            auto* mbb = blocks[i].get();
+            MachineInstr* last = mbb->getLast();
+            if (!last || !last->isBranch()) continue;
+
+            // Case 1: Unconditional jump to next block (fall-through) - remove the jump
+            if (last->getOpcode() == X86::JMP_1 && i + 1 < blocks.size()) {
+                if (last->getNumOperands() >= 1 && last->getOperand(0).getKind() == MachineOperandKind::MO_MBB) {
+                    auto* target = last->getOperand(0).getMBB();
+                    if (target == blocks[i + 1].get()) {
+                        mbb->remove(last);
+                        delete last;
+                    }
+                }
+                continue;
+            }
+
+            // Case 2: Thread jump through empty intermediate blocks
+            // If MBB ends with JMP to B, and B contains only a JMP to C, retarget to C
+            if (last->getNumOperands() >= 1 && last->getOperand(0).getKind() == MachineOperandKind::MO_MBB) {
+                auto* target = last->getOperand(0).getMBB();
+                MachineInstr* tFirst = target->getFirst();
+                if (tFirst && tFirst->getOpcode() == X86::JMP_1 && tFirst == target->getLast()) {
+                    // Target block has exactly one instruction: an unconditional jump
+                    if (tFirst->getNumOperands() >= 1 && tFirst->getOperand(0).getKind() == MachineOperandKind::MO_MBB) {
+                        // Thread through: point our jump to the final target
+                        last->setOperand(0, tFirst->getOperand(0));
+                        // Remove the empty block from our successors
+                        mbb->successors().clear();
+                        mbb->addSuccessor(tFirst->getOperand(0).getMBB());
+                    }
+                }
+            }
+        }
     }
     const char* getName() const override { return "Branch Folder"; }
 };

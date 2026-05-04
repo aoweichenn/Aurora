@@ -1,4 +1,5 @@
 #include "Aurora/Target/X86/X86InstrInfo.h"
+#include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include <algorithm>

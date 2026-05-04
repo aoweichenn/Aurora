@@ -12,7 +12,7 @@ void X86FrameLowering::emitPrologue(MachineFunction& mf, MachineBasicBlock& entr
 
     // Calculate stack size (16-byte aligned)
     int totalStack = 0;
-    for (auto& so : mf.getStackObjects()) totalStack += (int)so.size;
+    for (auto& so : mf.getStackObjects()) totalStack += static_cast<int>(so.size);
     int pushedSize = 8 * 6; // rbp + 5 callee-saved (RBX, R12-R15)
     int adjStack = 0;
     if (totalStack > 0) {
@@ -56,7 +56,7 @@ void X86FrameLowering::emitEpilogue(MachineFunction& mf, MachineBasicBlock& ret)
 
     // Calculate stack size
     int totalStack = 0;
-    for (auto& so : mf.getStackObjects()) totalStack += (int)so.size;
+    for (auto& so : mf.getStackObjects()) totalStack += static_cast<int>(so.size);
     int pushedSize = 8 * 6;
     int adjStack = 0;
     if (totalStack > 0) {
