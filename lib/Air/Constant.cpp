@@ -35,7 +35,7 @@ ConstantFP::ConstantFP(Type* ty, const double val) : Constant(ty) {
     else value_.d = val;
 }
 
-GlobalVariable::GlobalVariable(Type* ty, const std::string& name)
-    : Constant(ty), name_(name) {}
+GlobalVariable::GlobalVariable(Type* ty, const std::string& name, Constant* init)
+    : Constant(ty), name_(name), init_(init) {}
 
 } // namespace aurora

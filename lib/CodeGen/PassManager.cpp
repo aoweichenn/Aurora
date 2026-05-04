@@ -656,10 +656,24 @@ private:
             X86RegisterInfo::RCX, X86RegisterInfo::R8,  X86RegisterInfo::R9
         };
         unsigned numArgs = mi->getNumOperands();
-        if (numArgs > 0) --numArgs;
         unsigned resultVReg = ~0U;
-        if (mi->getNumOperands() > 0)
-            resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
+        if (numArgs > 0) { resultVReg = mi->getOperand(numArgs - 1).getVirtualReg(); --numArgs; }
+
+        // Look up callee name from AIR
+        const char* calleeName = nullptr;
+        const auto& airFunc = mbb.getParent()->getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::Call && airInst->getCalledFunction()) {
+                    calleeName = airInst->getCalledFunction()->getName().c_str();
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+        bool indirect = (calleeName == nullptr);
+        unsigned stackArgBytes = 0;
 
         // Args beyond 6: push to stack (reverse order)
         for (unsigned i = numArgs; i > 6; --i) {
@@ -668,6 +682,7 @@ private:
             auto* pushMI = new MachineInstr(X86::PUSH64r);
             pushMI->addOperand(MachineOperand::createVReg(argVReg));
             mbb.insertBefore(mi, pushMI);
+            stackArgBytes += 8;
         }
 
         // Register args (0-5)
@@ -681,11 +696,25 @@ private:
             mbb.insertBefore(mi, movArg);
         }
 
-        // CALL — check for indirect (callee==nullptr) vs direct call
+        // CALL
         auto* callMI = new MachineInstr(X86::CALL64pcrel32);
-        callMI->addOperand(MachineOperand::createImm(0)); // placeholder; callee name resolved by driver
+        if (indirect) {
+            // indirect call: call *reg
+            callMI->addOperand(MachineOperand::createVReg(resultVReg));
+        } else {
+            callMI->addOperand(MachineOperand::createGlobalSym(calleeName));
+        }
         replaceMI(mbb, mi, callMI);
 
+        // Caller cleanup: restore stack for pushed args
+        if (stackArgBytes > 0) {
+            auto* addRSP = new MachineInstr(X86::ADD64ri32);
+            addRSP->addOperand(MachineOperand::createImm(stackArgBytes));
+            addRSP->addOperand(MachineOperand::createReg(X86RegisterInfo::RSP));
+            mbb.insertAfter(callMI, addRSP);
+        }
+
+        // Move RAX → result
         if (resultVReg != ~0U) {
             auto* movRet = new MachineInstr(X86::MOV64rr);
             movRet->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));

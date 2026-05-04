@@ -2,6 +2,7 @@
 
 namespace aurora {
 
+class Module;
 class MachineFunction;
 class MachineBasicBlock;
 class MachineInstr;
@@ -16,6 +17,7 @@ public:
     virtual void emitFunction(MachineFunction& mf);
     virtual void emitBasicBlock(MachineBasicBlock& mbb);
     virtual void emitInstruction(const MachineInstr& mi) = 0;
+    virtual void emitGlobals(Module& mod);
 
 protected:
     [[nodiscard]] MCStreamer& getStreamer() const noexcept { return streamer_; }

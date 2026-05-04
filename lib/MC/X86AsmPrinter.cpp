@@ -345,6 +345,9 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) con
         case MachineOperandKind::MO_FrameIndex:
             os << "-" << ((mo.getFrameIndex() + 1) * 8) << "(%rbp)";
             break;
+        case MachineOperandKind::MO_GlobalSym:
+            os << mo.getGlobalSym();
+            break;
         default:
             os << "?";
             break;

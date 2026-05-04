@@ -51,10 +51,13 @@ private:
 
 class GlobalVariable : public Constant {
 public:
-    explicit GlobalVariable(Type* ty, const std::string& name);
+    GlobalVariable(Type* ty, const std::string& name, Constant* init = nullptr);
     [[nodiscard]] const std::string& getName() const noexcept { return name_; }
+    [[nodiscard]] Constant* getInitializer() const noexcept { return init_; }
+    void setInitializer(Constant* init) noexcept { init_ = init; }
 private:
     std::string name_;
+    Constant* init_ = nullptr;
 };
 
 } // namespace aurora

@@ -13,7 +13,7 @@ enum class MachineOperandKind : uint8_t {
     MO_VirtualReg,
     MO_Immediate,
     MO_MBB,
-    MO_Global,
+    MO_GlobalSym,
     MO_FrameIndex,
     MO_None
 };
@@ -26,12 +26,14 @@ public:
     [[nodiscard]] static MachineOperand createImm(int64_t val);
     [[nodiscard]] static MachineOperand createMBB(MachineBasicBlock* mbb);
     [[nodiscard]] static MachineOperand createFrameIndex(int idx);
+    [[nodiscard]] static MachineOperand createGlobalSym(const char* sym);
 
     [[nodiscard]] MachineOperandKind getKind() const noexcept { return kind_; }
     [[nodiscard]] unsigned getReg() const noexcept;
     [[nodiscard]] unsigned getVirtualReg() const noexcept;
     [[nodiscard]] int64_t getImm() const noexcept;
     [[nodiscard]] MachineBasicBlock* getMBB() const noexcept;
+    [[nodiscard]] const char* getGlobalSym() const noexcept;
     [[nodiscard]] int getFrameIndex() const noexcept;
 
     [[nodiscard]] bool isReg() const noexcept;
@@ -45,6 +47,7 @@ private:
         unsigned vregId;
         int64_t immVal;
         MachineBasicBlock* mbb;
+        const char* globalSym;
         int frameIdx;
     };
 };

@@ -32,12 +32,19 @@ MachineOperand MachineOperand::createFrameIndex(const int idx) {
     mo.frameIdx = idx;
     return mo;
 }
+MachineOperand MachineOperand::createGlobalSym(const char* sym) {
+    MachineOperand mo;
+    mo.kind_ = MachineOperandKind::MO_GlobalSym;
+    mo.globalSym = sym;
+    return mo;
+}
 
 unsigned MachineOperand::getReg() const noexcept { return regId; }
 unsigned MachineOperand::getVirtualReg() const noexcept { return vregId; }
 int64_t MachineOperand::getImm() const noexcept { return immVal; }
 MachineBasicBlock* MachineOperand::getMBB() const noexcept { return mbb; }
 int MachineOperand::getFrameIndex() const noexcept { return frameIdx; }
+const char* MachineOperand::getGlobalSym() const noexcept { return globalSym; }
 bool MachineOperand::isReg() const noexcept { return kind_ == MachineOperandKind::MO_Register; }
 bool MachineOperand::isVReg() const noexcept { return kind_ == MachineOperandKind::MO_VirtualReg; }
 bool MachineOperand::isImm() const noexcept { return kind_ == MachineOperandKind::MO_Immediate; }
