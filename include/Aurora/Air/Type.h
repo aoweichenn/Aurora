@@ -54,6 +54,7 @@ public:
     [[nodiscard]] Type* getElementType() const noexcept { return elemType_; }
     [[nodiscard]] unsigned getNumElements() const noexcept { return numElements_; }
     [[nodiscard]] const SmallVector<Type*, 8>& getStructMembers() const;
+    [[nodiscard]] unsigned getMemberOffset(unsigned idx) const;
     [[nodiscard]] Type* getReturnType() const noexcept { return elemType_; }
     [[nodiscard]] const SmallVector<Type*, 8>& getParamTypes() const;
 
@@ -70,6 +71,7 @@ public:
     Type* elemType_;
     unsigned numElements_;
     SmallVector<Type*, 8> members_;
+    SmallVector<unsigned, 8> memberOffsets_;
     SmallVector<Type*, 8> paramTypes_;
 };
 

@@ -101,6 +101,10 @@ const SmallVector<Type*, 8>& Type::getStructMembers() const {
     return g_emptyMembers;
 }
 
+unsigned Type::getMemberOffset(const unsigned idx) const {
+    return (kind_ == TypeKind::Struct && idx < memberOffsets_.size()) ? memberOffsets_[idx] : 0;
+}
+
 const SmallVector<Type*, 8>& Type::getParamTypes() const {
     if (kind_ == TypeKind::Function) return paramTypes_;
     return g_emptyMembers;
@@ -166,11 +170,16 @@ Type::Type(const TypeKind kind, SmallVector<Type*, 8> members)
     : kind_(kind), elemType_(nullptr), numElements_(0), members_(std::move(members)) {
     sizeInBits_ = 0;
     alignInBits_ = 0;
+    unsigned offset = 0;
     for (const auto* m : members_) {
-        sizeInBits_ += m->getSizeInBits();
+        unsigned align = std::max(1u, m->getAlignInBits());
+        offset = (offset + align - 1) / align * align; // align up
+        memberOffsets_.push_back(offset);
+        offset += m->getSizeInBits();
         if (m->getAlignInBits() > alignInBits_)
             alignInBits_ = m->getAlignInBits();
     }
+    sizeInBits_ = offset;
 }
 
 } // namespace aurora

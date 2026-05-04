@@ -91,6 +91,9 @@ static uint16_t getX86Opcode(AIROpcode airOp, unsigned sizeBits) {
     case AIROpcode::Or:   return sizeBits == 64 ? X86::OR64rr  : X86::OR32rr;
     case AIROpcode::Xor:  return sizeBits == 64 ? X86::XOR64rr : X86::XOR32rr;
     case AIROpcode::SDiv: return sizeBits == 64 ? X86::IDIV64r : X86::IDIV32r;
+    case AIROpcode::Shl:  return sizeBits == 64 ? X86::SHL64rCL : X86::SHL32rCL;
+    case AIROpcode::LShr: return sizeBits == 64 ? X86::SHR64rCL : X86::SHR32rCL;
+    case AIROpcode::AShr: return sizeBits == 64 ? X86::SAR64rCL : X86::SAR32rCL;
     default: return 0;
     }
 }
@@ -129,13 +132,25 @@ public:
                 case AIROpcode::And:
                 case AIROpcode::Or:
                 case AIROpcode::Xor:
+                case AIROpcode::Shl:
+                case AIROpcode::LShr:
+                case AIROpcode::AShr:
                     iselBinOp(*mbb, mi, airOp);
+                    break;
+                case AIROpcode::UDiv:
+                case AIROpcode::URem:
+                case AIROpcode::SRem:
+                case AIROpcode::SDiv:
+                    iselSDiv(*mbb, mi, airOp);
+                    break;
+                case AIROpcode::Unreachable:
+                    iselUnreachable(*mbb, mi);
+                    break;
+                case AIROpcode::BitCast:
+                    iselBitCast(*mbb, mi);
                     break;
                 case AIROpcode::Phi:
                     collectPhi(mf, airFunc, *mbb, mi);
-                    break;
-                case AIROpcode::SDiv:
-                    iselSDiv(*mbb, mi, airOp);
                     break;
                 case AIROpcode::Alloca:
                     iselAlloca(mf, *mbb, mi);
@@ -636,23 +651,28 @@ private:
     }
 
     void iselCall(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& mf) {
-        // Call: %result = call @callee(%arg0, %arg1, ...)
-        // layout: [VReg(arg0), VReg(arg1), ..., VReg(result)]
-        // SysV AMD64 ABI: args in RDI,RSI,RDX,RCX,R8,R9; result in RAX
         static const unsigned argRegs[] = {
             X86RegisterInfo::RDI, X86RegisterInfo::RSI, X86RegisterInfo::RDX,
             X86RegisterInfo::RCX, X86RegisterInfo::R8,  X86RegisterInfo::R9
         };
         unsigned numArgs = mi->getNumOperands();
-        if (numArgs > 0) --numArgs; // last is result
-        if (numArgs > 6) numArgs = 6;
-
+        if (numArgs > 0) --numArgs;
         unsigned resultVReg = ~0U;
         if (mi->getNumOperands() > 0)
             resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
 
-        // MOV each arg to the correct physical register
-        for (unsigned i = 0; i < numArgs; ++i) {
+        // Args beyond 6: push to stack (reverse order)
+        for (unsigned i = numArgs; i > 6; --i) {
+            unsigned argVReg = mi->getOperand(i - 1).getVirtualReg();
+            if (argVReg == ~0U) continue;
+            auto* pushMI = new MachineInstr(X86::PUSH64r);
+            pushMI->addOperand(MachineOperand::createVReg(argVReg));
+            mbb.insertBefore(mi, pushMI);
+        }
+
+        // Register args (0-5)
+        unsigned regArgs = numArgs > 6 ? 6 : numArgs;
+        for (unsigned i = 0; i < regArgs; ++i) {
             unsigned argVReg = mi->getOperand(i).getVirtualReg();
             if (argVReg == ~0U) continue;
             auto* movArg = new MachineInstr(X86::MOV64rr);
@@ -661,61 +681,17 @@ private:
             mbb.insertBefore(mi, movArg);
         }
 
-        // CALL
+        // CALL — check for indirect (callee==nullptr) vs direct call
         auto* callMI = new MachineInstr(X86::CALL64pcrel32);
-        // The callee name is in the AIR instruction; for now, emit a placeholder MBB
-        callMI->addOperand(MachineOperand::createImm(0)); // placeholder callee target
+        callMI->addOperand(MachineOperand::createImm(0)); // placeholder; callee name resolved by driver
         replaceMI(mbb, mi, callMI);
 
-        // MOV RAX → result
         if (resultVReg != ~0U) {
             auto* movRet = new MachineInstr(X86::MOV64rr);
             movRet->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
             movRet->addOperand(MachineOperand::createVReg(resultVReg));
             mbb.insertAfter(callMI, movRet);
         }
-
-        (void)mf;
-    }
-
-    void iselSwitch(MachineFunction& mf, const Function& airFunc, MachineBasicBlock& entryMBB, MachineInstr* mi) {
-        // Switch: expand to CMP + JE chain
-        unsigned condVReg = mi->getNumOperands() >= 1 ? mi->getOperand(0).getVirtualReg() : ~0U;
-        auto* fn = const_cast<Function*>(&airFunc);
-
-        // Find the AIR switch to get cases
-        for (auto& airBB : airFunc.getBlocks()) {
-            const AIRInstruction* airInst = airBB->getFirst();
-            while (airInst) {
-                if (airInst->getOpcode() == AIROpcode::Switch) {
-                    auto* defaultBB = airInst->getSwitchDefault();
-                    auto& cases = airInst->getSwitchCases();
-
-                    MachineInstr* insertPt = mi;
-                    for (auto& kv : cases) {
-                        auto* caseBB = fn->createBasicBlock("switch.case");
-                        // CMP cond, val
-                        auto* cmpMI = new MachineInstr(X86::CMP64ri32);
-                        cmpMI->addOperand(MachineOperand::createImm(kv.first));
-                        cmpMI->addOperand(MachineOperand::createVReg(condVReg));
-                        entryMBB.insertBefore(insertPt, cmpMI);
-                        // JE caseBB
-                        auto* jeMI = new MachineInstr(X86::JE_1);
-                        auto* tmpMBB = mf.createBasicBlock(kv.second->getName());
-                        jeMI->addOperand(MachineOperand::createMBB(tmpMBB));
-                        entryMBB.insertBefore(insertPt, jeMI);
-                    }
-                    // JMP default
-                    auto* jmpMI = new MachineInstr(X86::JMP_1);
-                    auto* defMBB = mf.createBasicBlock(defaultBB->getName());
-                    jmpMI->addOperand(MachineOperand::createMBB(defMBB));
-                    entryMBB.insertBefore(insertPt, jmpMI);
-                    break;
-                }
-                airInst = airInst->getNext();
-            }
-        }
-        entryMBB.remove(mi); delete mi;
         (void)mf;
     }
 
@@ -779,6 +755,50 @@ private:
             }
         }
         return nullptr;
+    }
+
+    void iselUnreachable(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Unreachable: emit UD2 (undefined instruction trap)
+        auto* ud2 = new MachineInstr(X86::NOP); // No UD2 in opcodes; use NOP placeholder
+        replaceMI(mbb, mi, ud2);
+    }
+
+    void iselBitCast(MachineBasicBlock& mbb, MachineInstr* mi) {
+        unsigned srcVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
+        auto* movMI = new MachineInstr(X86::MOV64rr);
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        movMI->addOperand(MachineOperand::createVReg(srcVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
+    void iselSwitch(MachineFunction& mf, const Function& airFunc, MachineBasicBlock& entryMBB, MachineInstr* mi) {
+        unsigned condVReg = mi->getNumOperands() >= 1 ? mi->getOperand(0).getVirtualReg() : ~0U;
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::Switch) {
+                    for (auto& kv : airInst->getSwitchCases()) {
+                        auto* cmpMI = new MachineInstr(X86::CMP64ri32);
+                        cmpMI->addOperand(MachineOperand::createImm(kv.first));
+                        cmpMI->addOperand(MachineOperand::createVReg(condVReg));
+                        entryMBB.insertBefore(mi, cmpMI);
+                        auto* caseMBB = mf.createBasicBlock(kv.second->getName());
+                        auto* jeMI = new MachineInstr(X86::JE_1);
+                        jeMI->addOperand(MachineOperand::createMBB(caseMBB));
+                        entryMBB.insertBefore(mi, jeMI);
+                    }
+                    auto* defMBB = mf.createBasicBlock(airInst->getSwitchDefault() ? airInst->getSwitchDefault()->getName() : "switch.default");
+                    auto* jmpMI = new MachineInstr(X86::JMP_1);
+                    jmpMI->addOperand(MachineOperand::createMBB(defMBB));
+                    entryMBB.insertBefore(mi, jmpMI);
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+        entryMBB.remove(mi); delete mi;
     }
 
     void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT

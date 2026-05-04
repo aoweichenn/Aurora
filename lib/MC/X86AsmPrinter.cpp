@@ -151,8 +151,43 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(1), oss);
             }
             break;
+        case X86::MOVSX64rr32:
+            if (mi.getNumOperands() >= 2) {
+                oss << "movslq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
+        case X86::IDIV64r:
+            if (mi.getNumOperands() >= 1) {
+                oss << "idivq\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::AND64ri32:
+            if (mi.getNumOperands() >= 2) { oss << "andq\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::OR64ri32:
+            if (mi.getNumOperands() >= 2) { oss << "orq\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::XOR64ri32:
+            if (mi.getNumOperands() >= 2) { oss << "xorq\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::CMP64ri32:
+            if (mi.getNumOperands() >= 2) { oss << "cmpq\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
+            break;
+        case X86::SAR64rCL:
+            if (mi.getNumOperands() >= 1) { oss << "sarq\t%cl, "; printOperand(mi.getOperand(0), oss); }
+            break;
+        case X86::SHR64rCL:
+            if (mi.getNumOperands() >= 1) { oss << "shrq\t%cl, "; printOperand(mi.getOperand(0), oss); }
+            break;
         case X86::CQO:
             oss << "cqo";
+            break;
+        case X86::SETEr:
+            if (mi.getNumOperands() >= 1) { oss << "sete\t"; printOperand(mi.getOperand(0), oss); }
             break;
         case X86::CALL64pcrel32:
             if (mi.getNumOperands() >= 1) {
