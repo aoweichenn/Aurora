@@ -379,3 +379,173 @@ TEST(X86AsmPrinterTest, UnknownOpcode) {
     printer.emitInstruction(mi);
     EXPECT_NE(oss.str().find("unknown opcode"), std::string::npos);
 }
+
+TEST(X86AsmPrinterTest, EmitMemoryAndGlobalOperands) {
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const X86RegisterInfo ri;
+    X86AsmPrinter printer(streamer, ri);
+
+    MachineInstr load(X86::MOV64rm);
+    load.addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+    load.addOperand(MachineOperand::createFrameIndex(0));
+    printer.emitInstruction(load);
+
+    MachineInstr movGlobal(X86::MOV64ri32);
+    movGlobal.addOperand(MachineOperand::createGlobalSym("global_value"));
+    movGlobal.addOperand(MachineOperand::createReg(X86RegisterInfo::RBX));
+    printer.emitInstruction(movGlobal);
+
+    MachineInstr callGlobal(X86::CALL64pcrel32);
+    callGlobal.addOperand(MachineOperand::createGlobalSym("callee"));
+    printer.emitInstruction(callGlobal);
+
+    const std::string out = oss.str();
+    EXPECT_NE(out.find("movq\t-8(%rbp), %rax"), std::string::npos);
+    EXPECT_NE(out.find("$global_value"), std::string::npos);
+    EXPECT_NE(out.find("call\tcallee"), std::string::npos);
+}
+
+TEST(X86AsmPrinterTest, EmitImmediateAndShiftVariants) {
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const X86RegisterInfo ri;
+    X86AsmPrinter printer(streamer, ri);
+
+    MachineInstr shlImm(X86::SHL64ri);
+    shlImm.addOperand(MachineOperand::createImm(3));
+    shlImm.addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+    printer.emitInstruction(shlImm);
+
+    MachineInstr andImm(X86::AND64ri32);
+    andImm.addOperand(MachineOperand::createImm(255));
+    andImm.addOperand(MachineOperand::createReg(X86RegisterInfo::RCX));
+    printer.emitInstruction(andImm);
+
+    MachineInstr orImm(X86::OR64ri32);
+    orImm.addOperand(MachineOperand::createImm(1));
+    orImm.addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
+    printer.emitInstruction(orImm);
+
+    MachineInstr xorImm(X86::XOR64ri32);
+    xorImm.addOperand(MachineOperand::createImm(7));
+    xorImm.addOperand(MachineOperand::createReg(X86RegisterInfo::RBX));
+    printer.emitInstruction(xorImm);
+
+    MachineInstr cmpImm(X86::CMP64ri32);
+    cmpImm.addOperand(MachineOperand::createImm(0));
+    cmpImm.addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+    printer.emitInstruction(cmpImm);
+
+    MachineInstr sar(X86::SAR64rCL);
+    sar.addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+    printer.emitInstruction(sar);
+
+    MachineInstr shr(X86::SHR64rCL);
+    shr.addOperand(MachineOperand::createReg(X86RegisterInfo::RCX));
+    printer.emitInstruction(shr);
+
+    const std::string out = oss.str();
+    EXPECT_NE(out.find("shlq\t$3, %rax"), std::string::npos);
+    EXPECT_NE(out.find("andq\t$255, %rcx"), std::string::npos);
+    EXPECT_NE(out.find("orq\t$1, %rdx"), std::string::npos);
+    EXPECT_NE(out.find("xorq\t$7, %rbx"), std::string::npos);
+    EXPECT_NE(out.find("cmpq\t$0, %rax"), std::string::npos);
+    EXPECT_NE(out.find("sarq\t%cl, %rax"), std::string::npos);
+    EXPECT_NE(out.find("shrq\t%cl, %rcx"), std::string::npos);
+}
+
+TEST(X86AsmPrinterTest, EmitConversionAndFloatingPointVariants) {
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const X86RegisterInfo ri;
+    X86AsmPrinter printer(streamer, ri);
+
+    MachineInstr movsx(X86::MOVSX64rr32);
+    movsx.addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+    movsx.addOperand(MachineOperand::createReg(X86RegisterInfo::RCX));
+    printer.emitInstruction(movsx);
+
+    MachineInstr idiv(X86::IDIV64r);
+    idiv.addOperand(MachineOperand::createReg(X86RegisterInfo::RBX));
+    printer.emitInstruction(idiv);
+
+    for (uint16_t opcode : {X86::ADDSDrr, X86::SUBSDrr, X86::MULSDrr, X86::DIVSDrr,
+                            X86::UCOMISDrr, X86::CVTSI2SDrr, X86::CVTTSD2SIrr, X86::XOR32rr}) {
+        MachineInstr mi(opcode);
+        mi.addOperand(MachineOperand::createReg(X86RegisterInfo::XMM0));
+        mi.addOperand(MachineOperand::createReg(X86RegisterInfo::XMM1));
+        printer.emitInstruction(mi);
+    }
+
+    const std::string out = oss.str();
+    EXPECT_NE(out.find("movslq\t%rax, %rcx"), std::string::npos);
+    EXPECT_NE(out.find("idivq\t%rbx"), std::string::npos);
+    EXPECT_NE(out.find("addsd"), std::string::npos);
+    EXPECT_NE(out.find("subsd"), std::string::npos);
+    EXPECT_NE(out.find("mulsd"), std::string::npos);
+    EXPECT_NE(out.find("divsd"), std::string::npos);
+    EXPECT_NE(out.find("ucomisd"), std::string::npos);
+    EXPECT_NE(out.find("cvtsi2sd"), std::string::npos);
+    EXPECT_NE(out.find("cvttsd2si"), std::string::npos);
+    EXPECT_NE(out.find("xorl"), std::string::npos);
+}
+
+TEST(X86AsmPrinterTest, EmitUnsignedBranchesAndSetccVariants) {
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const X86RegisterInfo ri;
+    X86AsmPrinter printer(streamer, ri);
+    MachineBasicBlock target("Ltarget");
+
+    for (uint16_t opcode : {X86::JA_1, X86::JB_1, X86::JAE_1, X86::JBE_1}) {
+        MachineInstr mi(opcode);
+        mi.addOperand(MachineOperand::createMBB(&target));
+        printer.emitInstruction(mi);
+    }
+
+    for (uint16_t opcode : {X86::SETEr, X86::SETNEr, X86::SETLr, X86::SETGr, X86::SETLEr,
+                            X86::SETGEr, X86::SETAr, X86::SETBEr, X86::SETAEr}) {
+        MachineInstr mi(opcode);
+        mi.addOperand(MachineOperand::createReg(X86RegisterInfo::R8));
+        printer.emitInstruction(mi);
+    }
+
+    MachineInstr setXmm(X86::SETEr);
+    setXmm.addOperand(MachineOperand::createReg(X86RegisterInfo::XMM0));
+    printer.emitInstruction(setXmm);
+
+    MachineInstr setImm(X86::SETNEr);
+    setImm.addOperand(MachineOperand::createImm(1));
+    printer.emitInstruction(setImm);
+
+    const std::string out = oss.str();
+    EXPECT_NE(out.find("ja\t.Ltarget"), std::string::npos);
+    EXPECT_NE(out.find("jb\t.Ltarget"), std::string::npos);
+    EXPECT_NE(out.find("jae\t.Ltarget"), std::string::npos);
+    EXPECT_NE(out.find("jbe\t.Ltarget"), std::string::npos);
+    EXPECT_NE(out.find("sete\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setne\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setl\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setg\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setle\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setge\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("seta\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setbe\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("setae\t%r8b"), std::string::npos);
+    EXPECT_NE(out.find("sete\t%xmm0"), std::string::npos);
+    EXPECT_NE(out.find("setne\t$1"), std::string::npos);
+}
+
+TEST(X86AsmPrinterTest, EmitsDefaultOperandForUnsupportedKind) {
+    std::ostringstream oss;
+    AsmTextStreamer streamer(oss);
+    const X86RegisterInfo ri;
+    X86AsmPrinter printer(streamer, ri);
+
+    MachineInstr call(X86::CALL64pcrel32);
+    call.addOperand(MachineOperand{});
+    printer.emitInstruction(call);
+
+    EXPECT_NE(oss.str().find("call\t?"), std::string::npos);
+}

@@ -12,6 +12,7 @@ class MachineFunction;
 class MachineOperand;
 class Module;
 class GlobalVariable;
+class X86ObjectEncoder;
 
 struct RelocEntry {
     uint64_t offset;       // offset in .text
@@ -59,7 +60,7 @@ private:
     static constexpr uint8_t STB_GLOBAL = 1;
     static constexpr uint8_t STV_DEFAULT = 0;
 
-    void encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out);
+    void encodeInstruction(const MachineInstr& mi, std::vector<uint8_t>& out);
     void addRelocation(uint64_t offset, uint64_t symIdx, uint32_t type, int64_t addend);
     bool writeELF(const std::string& path);
 };

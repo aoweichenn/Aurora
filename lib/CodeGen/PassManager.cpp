@@ -1,4 +1,9 @@
 #include "Aurora/CodeGen/PassManager.h"
+#include "Aurora/CodeGen/ISel/ISelContext.h"
+#include "Aurora/CodeGen/ISel/LoweringStrategy.h"
+#include "Aurora/CodeGen/ISel/X86LoweringStrategies.h"
+#include "Aurora/CodeGen/ISel/X86OpcodeMapper.h"
+#include "Aurora/CodeGen/Passes/PassPipeline.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
@@ -19,10 +24,23 @@ void PassManager::addPass(std::unique_ptr<CodeGenPass> pass) {
     passes_.push_back(std::move(pass));
 }
 
+void PassManager::setInstrumentation(PassInstrumentation* instrumentation) noexcept {
+    instrumentation_ = instrumentation;
+}
+
+unsigned PassManager::getPassCount() const noexcept {
+    return static_cast<unsigned>(passes_.size());
+}
+
 void PassManager::run(MachineFunction& mf) const
 {
-    for (const auto& pass : passes_)
+    for (const auto& pass : passes_) {
+        if (instrumentation_)
+            instrumentation_->beforePass(*pass, mf);
         pass->run(mf);
+        if (instrumentation_)
+            instrumentation_->afterPass(*pass, mf);
+    }
 }
 
 namespace {
@@ -65,45 +83,14 @@ public:
     const char* getName() const override { return "AIR to MachineIR"; }
 };
 
-// Map ICmpCond to Jcc opcode for use after CMP
-static uint16_t getJccForCond(ICmpCond cond, bool negate) {
-    switch (cond) {
-    case ICmpCond::EQ:  return negate ? X86::JNE_1 : X86::JE_1;
-    case ICmpCond::NE:  return negate ? X86::JE_1  : X86::JNE_1;
-    case ICmpCond::SLT: return negate ? X86::JGE_1 : X86::JL_1;
-    case ICmpCond::SLE: return negate ? X86::JG_1  : X86::JLE_1;
-    case ICmpCond::SGT: return negate ? X86::JLE_1 : X86::JG_1;
-    case ICmpCond::SGE: return negate ? X86::JL_1  : X86::JGE_1;
-    case ICmpCond::ULT: return negate ? X86::JAE_1 : X86::JB_1;
-    case ICmpCond::ULE: return negate ? X86::JA_1  : X86::JBE_1;
-    case ICmpCond::UGT: return negate ? X86::JBE_1 : X86::JA_1;
-    case ICmpCond::UGE: return negate ? X86::JB_1  : X86::JAE_1;
-    }
-    return X86::JMP_1;
-}
-
-static uint16_t getX86Opcode(AIROpcode airOp, unsigned sizeBits) {
-    switch (airOp) {
-    case AIROpcode::Add:  return sizeBits == 64 ? X86::ADD64rr : X86::ADD32rr;
-    case AIROpcode::Sub:  return sizeBits == 64 ? X86::SUB64rr : X86::SUB32rr;
-    case AIROpcode::Mul:  return sizeBits == 64 ? X86::IMUL64rr : X86::IMUL32rr;
-    case AIROpcode::And:  return sizeBits == 64 ? X86::AND64rr : X86::AND32rr;
-    case AIROpcode::Or:   return sizeBits == 64 ? X86::OR64rr  : X86::OR32rr;
-    case AIROpcode::Xor:  return sizeBits == 64 ? X86::XOR64rr : X86::XOR32rr;
-    case AIROpcode::SDiv: return sizeBits == 64 ? X86::IDIV64r : X86::IDIV32r;
-    case AIROpcode::Shl:  return sizeBits == 64 ? X86::SHL64rCL : X86::SHL32rCL;
-    case AIROpcode::LShr: return sizeBits == 64 ? X86::SHR64rCL : X86::SHR32rCL;
-    case AIROpcode::AShr: return sizeBits == 64 ? X86::SAR64rCL : X86::SAR32rCL;
-    default: return 0;
-    }
-}
-
 class InstructionSelectionPass : public CodeGenPass {
 public:
     void run(MachineFunction& mf) override {
         frameIndexMap_.clear();
-        constantMap_.clear();
         buildStoreMap(mf);
+        ISelContext iselCtx(mf);
+        LoweringRegistry loweringRegistry;
+        loweringRegistry.addStrategy(createX86ConstantLoweringStrategy());
         const auto& airFunc = mf.getAIRFunction();
         auto& mbbList = mf.getBlocks();
 
@@ -138,7 +125,7 @@ public:
                 case AIROpcode::Shl:
                 case AIROpcode::LShr:
                 case AIROpcode::AShr:
-                    iselBinOp(*mbb, mi, airOp);
+                    iselBinOp(*mbb, mi, airOp, iselCtx);
                     break;
                 case AIROpcode::UDiv:
                 case AIROpcode::URem:
@@ -168,7 +155,7 @@ public:
                     iselGEP(*mbb, mi);
                     break;
                 case AIROpcode::ConstantInt:
-                    iselConstantInt(*mbb, mi, mf);
+                    (void)loweringRegistry.lower(*mbb, mi, iselCtx);
                     break;
                 case AIROpcode::Call:
                     iselCall(*mbb, mi, mf);
@@ -298,7 +285,7 @@ private:
 
             if (prevIsCmp) {
             // Emit Jcc to true target (CMP is already in place before this)
-            auto* jccMI = new MachineInstr(getJccForCond(icmpCond, false));
+            auto* jccMI = new MachineInstr(X86OpcodeMapper::getJccForCond(icmpCond, false));
             if (successors.size() > 0)
                 jccMI->addOperand(MachineOperand::createMBB(successors[0]));
             replaceMI(mbb, mi, jccMI);
@@ -424,7 +411,7 @@ private:
         }
     }
 
-    void iselBinOp(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
+    void iselBinOp(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp, const ISelContext& iselCtx) {
         unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) lhsVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) rhsVReg = mi->getOperand(1).getVirtualReg();
@@ -437,17 +424,17 @@ private:
         if (airTy && (airTy->isFloat() || airTy->getKind() == TypeKind::Float))
             isFloat = true;
 
-        auto lhsConstIt = constantMap_.find(lhsVReg);
-        auto rhsConstIt = constantMap_.find(rhsVReg);
-        bool lhsIsConst = lhsConstIt != constantMap_.end();
-        bool rhsIsConst = rhsConstIt != constantMap_.end();
+        int64_t lhsConst = 0;
+        int64_t rhsConst = 0;
+        bool lhsIsConst = iselCtx.getConstant(lhsVReg, lhsConst);
+        bool rhsIsConst = iselCtx.getConstant(rhsVReg, rhsConst);
 
         // Step 1: MOV lhs → result
         if (lhsVReg != resultVReg) {
             auto* movMI = new MachineInstr(X86::MOV64rr);
             if (lhsIsConst) {
-                movMI = new MachineInstr(isFloat ? X86::MOV64ri32 : X86::MOV64ri32);
-                movMI->addOperand(MachineOperand::createImm(lhsConstIt->second));
+                movMI = new MachineInstr(X86::MOV64ri32);
+                movMI->addOperand(MachineOperand::createImm(lhsConst));
             } else {
                 movMI->addOperand(MachineOperand::createVReg(lhsVReg));
             }
@@ -473,15 +460,15 @@ private:
             case AIROpcode::And: x86Op = X86::AND64ri32; break;
             case AIROpcode::Or:  x86Op = X86::OR64ri32;  break;
             case AIROpcode::Xor: x86Op = X86::XOR64ri32; break;
-            default: x86Op = getX86Opcode(airOp, 64); break;
+            default: x86Op = X86OpcodeMapper::getBinaryOpcode(airOp, 64); break;
             }
             if (x86Op == 0) return;
             auto* newMI = new MachineInstr(x86Op);
-            newMI->addOperand(MachineOperand::createImm(rhsConstIt->second));
+            newMI->addOperand(MachineOperand::createImm(rhsConst));
             newMI->addOperand(MachineOperand::createVReg(resultVReg));
             replaceMI(mbb, mi, newMI);
         } else {
-            x86Op = getX86Opcode(airOp, 64);
+            x86Op = X86OpcodeMapper::getBinaryOpcode(airOp, 64);
             if (x86Op == 0) return;
             auto* newMI = new MachineInstr(x86Op);
             newMI->addOperand(MachineOperand::createVReg(rhsVReg != ~0U ? rhsVReg : lhsVReg));
@@ -742,33 +729,6 @@ private:
         // JNE skips movF when cond is true; if false, falls through to movF
     }
 
-    void iselConstantInt(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& /*mf*/) {
-        // ... (existing code)
-        unsigned resultVReg = ~0U;
-        if (mi->getNumOperands() >= 1) resultVReg = mi->getOperand(0).getVirtualReg();
-
-        int64_t val = 0;
-        const auto& airFunc = mbb.getParent()->getAIRFunction();
-        for (auto& airBB : airFunc.getBlocks()) {
-            const AIRInstruction* airInst = airBB->getFirst();
-            while (airInst) {
-                if (airInst->getOpcode() == AIROpcode::ConstantInt &&
-                    airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
-                    val = airInst->getConstantValue();
-                    break;
-                }
-                airInst = airInst->getNext();
-            }
-        }
-
-        constantMap_[resultVReg] = val;
-
-        auto* movMI = new MachineInstr(X86::MOV64ri32);
-        movMI->addOperand(MachineOperand::createImm(val));
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
-        replaceMI(mbb, mi, movMI);
-    }
-
     void iselGlobalAddress(MachineBasicBlock& mbb, MachineInstr* mi) {
         // The AIR-to-MachineIR pass puts destVReg as operand[0] for instructions with results
         unsigned resultVReg = (mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg())
@@ -1002,7 +962,6 @@ private:
 
     void rebuildSuccessors(MachineFunction& /*mf*/) {}  // NOLINT
     std::map<unsigned, int> frameIndexMap_;
-    std::map<unsigned, int64_t> constantMap_;
     std::map<unsigned, unsigned> storeMap_;
 
     struct PhiInfo { unsigned resultVReg; MachineBasicBlock* mergeMBB; std::vector<std::pair<std::string, unsigned>> incomings; };
@@ -1172,7 +1131,7 @@ private:
                         if (spillIt != spilledVRegs.end()) {
                             bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
                             // Insert reload before use
-                            auto* reload = new MachineInstr(isFloat ? X86::MOV64rm : X86::MOV64rm);
+                            auto* reload = new MachineInstr(X86::MOV64rm);
                             reload->addOperand(MachineOperand::createReg(isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX));
                             reload->addOperand(MachineOperand::createFrameIndex(spillIt->second));
                             mbb->insertBefore(mi, reload);
@@ -1199,7 +1158,7 @@ private:
                 // After rewriting, if the instruction defined a spilled vreg,
                 // insert a store to spill the result to the stack slot
                 if (hasSpillDef) {
-                    auto* spill = new MachineInstr(spillDefIsFloat ? X86::MOV64mr : X86::MOV64mr);
+                    auto* spill = new MachineInstr(X86::MOV64mr);
                     spill->addOperand(MachineOperand::createFrameIndex(spillDefSlot));
                     spill->addOperand(MachineOperand::createReg(spillDefIsFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX));
                     mbb->insertAfter(mi, spill);
@@ -1312,6 +1271,26 @@ public:
 };
 } // anonymous namespace
 
+std::unique_ptr<CodeGenPass> createAIRToMachineIRPass() {
+    return std::make_unique<AIRToMachineIRPass>();
+}
+
+std::unique_ptr<CodeGenPass> createInstructionSelectionPass() {
+    return std::make_unique<InstructionSelectionPass>();
+}
+
+std::unique_ptr<CodeGenPass> createRegisterAllocationPass() {
+    return std::make_unique<RegisterAllocationPass>();
+}
+
+std::unique_ptr<CodeGenPass> createPrologueEpilogueInsertionPass() {
+    return std::make_unique<PrologueEpilogueInsertionPass>();
+}
+
+std::unique_ptr<CodeGenPass> createBranchFoldingPass() {
+    return std::make_unique<BranchFoldingPass>();
+}
+
 CodeGenContext::CodeGenContext(TargetMachine& tm, Module& module)
     : target_(tm), module_(module) {}
 
@@ -1327,11 +1306,7 @@ void CodeGenContext::run() const
 }
 
 void CodeGenContext::addStandardPasses(PassManager& pm, TargetMachine& /*tm*/) {
-    pm.addPass(std::make_unique<AIRToMachineIRPass>());
-    pm.addPass(std::make_unique<InstructionSelectionPass>());
-    pm.addPass(std::make_unique<RegisterAllocationPass>());
-    pm.addPass(std::make_unique<PrologueEpilogueInsertionPass>());
-    pm.addPass(std::make_unique<BranchFoldingPass>());
+    PassPipeline::standardCodeGenPipeline().build(pm);
 }
 
 } // namespace aurora

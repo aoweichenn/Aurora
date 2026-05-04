@@ -16,13 +16,23 @@ public:
     [[nodiscard]] virtual const char* getName() const = 0;
 };
 
+class PassInstrumentation {
+public:
+    virtual ~PassInstrumentation() = default;
+    virtual void beforePass(const CodeGenPass& pass, const MachineFunction& mf) = 0;
+    virtual void afterPass(const CodeGenPass& pass, const MachineFunction& mf) = 0;
+};
+
 class PassManager {
 public:
     void addPass(std::unique_ptr<CodeGenPass> pass);
+    void setInstrumentation(PassInstrumentation* instrumentation) noexcept;
+    [[nodiscard]] unsigned getPassCount() const noexcept;
     void run(MachineFunction& mf) const;
 
 private:
     std::vector<std::unique_ptr<CodeGenPass>> passes_;
+    PassInstrumentation* instrumentation_ = nullptr;
 };
 
 class CodeGenContext {

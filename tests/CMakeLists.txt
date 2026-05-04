@@ -47,9 +47,11 @@ add_executable(CodeGen_tests
     CodeGen/SelectionDAGFullTest.cpp
     CodeGen/InstructionSelectorTest.cpp
     CodeGen/PassManagerTest.cpp
+    CodeGen/PassManagerDeepCoverageTest.cpp
     CodeGen/LiveIntervalTest.cpp
     CodeGen/ISelCoverageTest.cpp
     CodeGen/ISelPipeline2Test.cpp
+    CodeGen/ISelRefactorTest.cpp
     CodeGen/FuncCoverTest.cpp
     CodeGen/PipelineBoostTest.cpp
     CodeGen/FinalCoverageTest.cpp
@@ -65,6 +67,7 @@ add_executable(MC_tests
     MC/ObjectWriterTest.cpp
     MC/ObjectWriterFullTest.cpp
     MC/ObjWriterFuncTest.cpp
+    MC/X86ObjectEncoderTest.cpp
 )
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)

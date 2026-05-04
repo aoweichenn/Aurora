@@ -1,9 +1,9 @@
 #include "Aurora/MC/ObjectWriter.h"
+#include "Aurora/MC/X86ObjectEncoder.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
-#include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Constant.h"
 #include <fstream>
@@ -141,198 +141,24 @@ void ObjectWriter::addExternSymbol(const std::string& name) {
     }
 }
 
-void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out) {
-    uint16_t opc = mi.getOpcode();
-    unsigned numOps = mi.getNumOperands();
-
-    // x86 opcode lookup table — simplified for common instructions
-    auto emitModRM = [&](uint8_t mod, uint8_t reg, uint8_t rm) {
-        out.push_back(static_cast<uint8_t>((mod << 6) | ((reg & 7) << 3) | (rm & 7)));
-    };
-    auto emitImm32 = [&](int64_t v) {
-        for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((v >> (i*8)) & 0xFF));
-    };
-    auto emitImm8 = [&](int64_t v) {
-        out.push_back(static_cast<uint8_t>(v & 0xFF));
-    };
-    auto getReg = [&](unsigned idx) -> uint8_t {
-        if (idx < numOps && mi.getOperand(idx).isReg())
-            return static_cast<uint8_t>(mi.getOperand(idx).getReg());
-        return 0;
-    };
-    auto getImm = [&](unsigned idx) -> int64_t {
-        if (idx < numOps && mi.getOperand(idx).isImm())
-            return mi.getOperand(idx).getImm();
-        return 0;
-    };
-    auto emitREX = [&](unsigned regFieldIdx, unsigned rmFieldIdx) {
-        uint8_t rex = 0x48;
-        if (regFieldIdx < numOps && mi.getOperand(regFieldIdx).isReg() && mi.getOperand(regFieldIdx).getReg() >= 8)
-            rex |= 4;
-        if (rmFieldIdx < numOps && mi.getOperand(rmFieldIdx).isReg() && mi.getOperand(rmFieldIdx).getReg() >= 8)
-            rex |= 1;
-        out.push_back(rex);
-    };
-    auto emitREXForRM = [&](unsigned rmFieldIdx) {
-        uint8_t rex = 0x48;
-        if (rmFieldIdx < numOps && mi.getOperand(rmFieldIdx).isReg() && mi.getOperand(rmFieldIdx).getReg() >= 8)
-            rex |= 1;
-        out.push_back(rex);
-    };
-
-    switch (opc) {
-    // MOV64rr: REX.W + 0x89 /r
-    case X86::MOV64rr:
-        emitREX(0, 1);
-        out.push_back(0x89);
-        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
-        break;
-    // MOV64ri32
-    case X86::MOV64ri32:
-        emitREXForRM(1); out.push_back(0xC7);
-        emitModRM(3, 0, getReg(1) & 7);
-        if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym) {
-            const char* sym = mi.getOperand(0).getGlobalSym();
-            size_t symIdx = 0;
-            auto it = symbolIndexMap_.find(sym);
-            if (it == symbolIndexMap_.end()) {
-                symbols_.push_back({sym, 0, 0, 0, STB_GLOBAL, 0});
-                symIdx = symbols_.size() - 1;
-                symbolIndexMap_[sym] = symIdx;
-            } else { symIdx = it->second; }
-            emitImm32(0);
-            relocs_.push_back({textBytes_.size() + out.size() - 4, symIdx, R_X86_64_32S, 0});
+void ObjectWriter::encodeInstruction(const MachineInstr& mi, std::vector<uint8_t>& out) {
+    X86ObjectEncoder encoder;
+    auto resolveSymbol = [this](const char* sym) -> size_t {
+        size_t symIdx = 0;
+        auto it = symbolIndexMap_.find(sym);
+        if (it == symbolIndexMap_.end()) {
+            symbols_.push_back({sym, 0, 0, 0, STB_GLOBAL, 0});
+            symIdx = symbols_.size() - 1;
+            symbolIndexMap_[sym] = symIdx;
         } else {
-            emitImm32(getImm(0));
+            symIdx = it->second;
         }
-        break;
-    // ADD64rr
-    case X86::ADD64rr:
-        emitREX(0, 1);
-        out.push_back(0x01);
-        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
-        break;
-    case X86::ADD64ri32:
-        emitREXForRM(1); out.push_back(0x81);
-        emitModRM(3, 0, getReg(1) & 7);
-        emitImm32(getImm(0));
-        break;
-    case X86::SUB64rr:
-        emitREX(0, 1);
-        out.push_back(0x29);
-        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
-        break;
-    case X86::SUB64ri32:
-        emitREXForRM(1); out.push_back(0x81);
-        emitModRM(3, 5, getReg(1) & 7);
-        emitImm32(getImm(0));
-        break;
-    case X86::IMUL64rr:
-        emitREX(1, 0);
-        out.push_back(0x0F); out.push_back(0xAF);
-        emitModRM(3, getReg(1) & 7, getReg(0) & 7);
-        break;
-    case X86::AND64rr: case X86::OR64rr: case X86::XOR64rr: {
-        emitREX(0, 1);
-        uint8_t op = (opc == X86::AND64rr) ? 0x21 : (opc == X86::OR64rr) ? 0x09 : 0x31;
-        out.push_back(op);
-        emitModRM(3, getReg(0) & 7, getReg(1) & 7);
-        break;
-    }
-    case X86::XOR32rr: out.push_back(0x31); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::AND64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::OR64ri32:  emitREXForRM(1); out.push_back(0x81); emitModRM(3, 1, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::XOR64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 6, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::CMP64rr:   emitREX(0, 1); out.push_back(0x39); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::CMP64ri32: emitREXForRM(1); out.push_back(0x81); emitModRM(3, 7, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::RETQ: out.push_back(0xC3); break;
-    case X86::PUSH64r: {
-        uint8_t reg = getReg(0);
-        if (reg >= 8) { out.push_back(0x41); out.push_back(0x50 + (reg & 7)); }
-        else out.push_back(0x50 + reg);
-        break;
-    }
-    case X86::POP64r: {
-        uint8_t reg = getReg(0);
-        if (reg >= 8) { out.push_back(0x41); out.push_back(0x58 + (reg & 7)); }
-        else out.push_back(0x58 + reg);
-        break;
-    }
-    case X86::MOV64rm: {
-        emitREX(0, 1); out.push_back(0x8B);
-        uint8_t dst = getReg(0) & 7;
-        if (numOps >= 2 && mi.getOperand(1).getKind() == MachineOperandKind::MO_FrameIndex) {
-            int fi = mi.getOperand(1).getFrameIndex();
-            int disp = -(fi + 6) * 8;
-            uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
-            emitModRM(mod, dst, 5); // rm=5=RBP
-            if (mod == 1) out.push_back(static_cast<uint8_t>(disp));
-            else { for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((disp >> (i*8)) & 0xFF)); }
-        } else {
-            emitModRM(3, dst, getReg(1) & 7);
-        }
-        break;
-    }
-    case X86::MOV64mr: {
-        emitREX(1, 0); out.push_back(0x89);
-        if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_FrameIndex) {
-            int fi = mi.getOperand(0).getFrameIndex();
-            int disp = -(fi + 6) * 8;
-            uint8_t src = (numOps >= 2) ? (getReg(1) & 7) : 0;
-            uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
-            emitModRM(mod, src, 5);
-            if (mod == 1) out.push_back(static_cast<uint8_t>(disp));
-            else { for (int i = 0; i < 4; i++) out.push_back(static_cast<uint8_t>((disp >> (i*8)) & 0xFF)); }
-        } else {
-            emitModRM(3, (numOps >= 2 ? getReg(1) & 7 : 0), getReg(0) & 7);
-        }
-        break;
-    }
-    case X86::MOV32rr:  out.push_back(0x89); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::NOP: out.push_back(0x90); break;
-    case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
-    case X86::MOVSX64rr32: emitREX(1, 0); out.push_back(0x63); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::IDIV64r: emitREXForRM(0); out.push_back(0xF7); emitModRM(3, 7, getReg(0) & 7); break;
-    // Float ops
-    case X86::ADDSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x58); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::SUBSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5C); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::MULSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x59); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::DIVSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5E); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::UCOMISDrr: out.push_back(0x66); out.push_back(0x0F); out.push_back(0x2E); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::CVTSI2SDrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x2A); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::CVTTSD2SIrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x2C); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    // SETcc
-    case X86::SETEr:  out.push_back(0x0F); out.push_back(0x94); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETNEr: out.push_back(0x0F); out.push_back(0x95); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETLr:  out.push_back(0x0F); out.push_back(0x9C); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETGr:  out.push_back(0x0F); out.push_back(0x9F); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETLEr: out.push_back(0x0F); out.push_back(0x9E); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETGEr: out.push_back(0x0F); out.push_back(0x9D); emitModRM(3, 0, getReg(0) & 7); break;
-    // Jcc/JMP rel8 with 0 displacement (fixup needed for real branching)
-    case X86::JMP_1: out.push_back(0xEB); out.push_back(0x00); break;
-    case X86::JE_1:  out.push_back(0x74); out.push_back(0x00); break;
-    case X86::JNE_1: out.push_back(0x75); out.push_back(0x00); break;
-    case X86::JL_1:  out.push_back(0x7C); out.push_back(0x00); break;
-    case X86::JG_1:  out.push_back(0x7F); out.push_back(0x00); break;
-    case X86::JLE_1: out.push_back(0x7E); out.push_back(0x00); break;
-    case X86::JGE_1: out.push_back(0x7D); out.push_back(0x00); break;
-    case X86::JAE_1: out.push_back(0x73); out.push_back(0x00); break;
-    case X86::JBE_1: out.push_back(0x76); out.push_back(0x00); break;
-    case X86::JA_1:  out.push_back(0x77); out.push_back(0x00); break;
-    case X86::JB_1:  out.push_back(0x72); out.push_back(0x00); break;
-    // SHL by immediate
-    case X86::SHL64ri: emitREXForRM(1); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm8(getImm(0)); break;
-    // MOVSX r8 → r32
-    case X86::MOVSX32rr8_op: out.push_back(0x0F); out.push_back(0xBE); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    // SETAEr (SETcc for unsigned above-equal)
-    case X86::SETAEr: out.push_back(0x0F); out.push_back(0x93); emitModRM(3, 0, getReg(0) & 7); break;
-    // SETAr / SETBEr (unsigned above / below-equal)
-    case X86::SETAr:  out.push_back(0x0F); out.push_back(0x97); emitModRM(3, 0, getReg(0) & 7); break;
-    case X86::SETBEr: out.push_back(0x0F); out.push_back(0x96); emitModRM(3, 0, getReg(0) & 7); break;
-    default:
-        out.push_back(0x90); // NOP placeholder for unknown
-        break;
-    }
+        return symIdx;
+    };
+    auto addReloc = [this](uint64_t offset, size_t symIdx, uint32_t type, int64_t addend) {
+        addRelocation(offset, symIdx, type, addend);
+    };
+    encoder.encode(mi, out, textBytes_.size(), resolveSymbol, addReloc);
 }
 
 void ObjectWriter::addRelocation(uint64_t offset, uint64_t symIdx, uint32_t type, int64_t addend) {

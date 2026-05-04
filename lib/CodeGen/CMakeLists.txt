@@ -7,6 +7,11 @@ add_library(AuroraCodeGen STATIC
     LiveInterval.cpp
     RegisterAllocator.cpp
     PrologueEpilogueInserter.cpp
+    ISel/ISelContext.cpp
+    ISel/LoweringStrategy.cpp
+    ISel/X86LoweringStrategies.cpp
+    ISel/X86OpcodeMapper.cpp
+    Passes/PassPipeline.cpp
     PassManager.cpp
 )
 target_link_libraries(AuroraCodeGen PUBLIC AuroraTarget AuroraX86)
@@ -21,6 +26,11 @@ if(AURORA_BUILD_SHARED_LIBS)
         LiveInterval.cpp
         RegisterAllocator.cpp
         PrologueEpilogueInserter.cpp
+        ISel/ISelContext.cpp
+        ISel/LoweringStrategy.cpp
+        ISel/X86LoweringStrategies.cpp
+        ISel/X86OpcodeMapper.cpp
+        Passes/PassPipeline.cpp
         PassManager.cpp
     )
     target_link_libraries(AuroraCodeGen_shared PUBLIC AuroraTarget AuroraX86)
