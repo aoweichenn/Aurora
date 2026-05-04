@@ -12,6 +12,7 @@ option(AURORA_BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(AURORA_BUILD_STATIC_LIBS "Build static libraries" ON)
 option(AURORA_BUILD_TESTS "Build tests" ON)
 option(AURORA_BUILD_BENCHMARKS "Build benchmarks" ON)
+option(AURORA_ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
 
 set(AURORA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -82,6 +83,14 @@ add_subdirectory(tools/minic)
 
 # ---- ELF Object Writer ----
 add_subdirectory(tools/aurora-obj)
+
+# ---- Coverage ----
+if(AURORA_ENABLE_COVERAGE)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+        target_compile_options(AuroraCommon INTERFACE -fprofile-arcs -ftest-coverage)
+        target_link_libraries(AuroraCommon INTERFACE -fprofile-arcs -ftest-coverage --coverage)
+    endif()
+endif()
 
 # ---- Tests ----
 if(AURORA_BUILD_TESTS)

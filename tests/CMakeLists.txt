@@ -23,6 +23,7 @@ add_executable(Air_tests
     Air/BuilderTest.cpp
     Air/ConstantTest.cpp
     Air/ModuleTest.cpp
+    Air/TypeCoverageTest.cpp
 )
 target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
 add_test(NAME Air_tests COMMAND Air_tests)
@@ -42,6 +43,7 @@ add_executable(CodeGen_tests
     CodeGen/InstructionSelectorTest.cpp
     CodeGen/PassManagerTest.cpp
     CodeGen/LiveIntervalTest.cpp
+    CodeGen/ISelCoverageTest.cpp
 )
 target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
