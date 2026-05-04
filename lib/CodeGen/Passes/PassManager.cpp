@@ -18,8 +18,11 @@
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/Target/AArch64/AArch64InstrInfo.h"
 #include "Aurora/Target/AArch64/AArch64RegisterInfo.h"
+#include <algorithm>
+#include <limits>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace aurora {
 
@@ -1124,18 +1127,7 @@ private:
         if (numArgs > 0) { resultVReg = mi->getOperand(numArgs - 1).getVirtualReg(); --numArgs; }
 
         // Look up callee name from AIR
-        const char* calleeName = nullptr;
-        const auto& airFunc = mbb.getParent()->getAIRFunction();
-        for (auto& airBB : airFunc.getBlocks()) {
-            const AIRInstruction* airInst = airBB->getFirst();
-            while (airInst) {
-                if (airInst->getOpcode() == AIROpcode::Call && airInst->getCalledFunction()) {
-                    calleeName = airInst->getCalledFunction()->getName().c_str();
-                    break;
-                }
-                airInst = airInst->getNext();
-            }
-        }
+        const char* calleeName = findCalleeForCallResult(mbb.getParent()->getAIRFunction(), resultVReg);
         bool indirect = (calleeName == nullptr);
         unsigned stackArgBytes = 0;
 
@@ -1367,19 +1359,7 @@ private:
 
     void buildStoreMap(MachineFunction& mf) {
         storeMap_.clear();
-        const auto& airFunc = mf.getAIRFunction();
-        for (auto& bb : airFunc.getBlocks()) {
-            const AIRInstruction* inst = bb->getFirst();
-            while (inst) {
-                if (inst->getOpcode() == AIROpcode::Store && inst->getNumOperands() >= 2) {
-                    unsigned valVReg = inst->getOperand(0);
-                    unsigned ptrVReg = inst->getOperand(1);
-                    // Record last store to each alloca (single-block mem2reg)
-                    storeMap_[ptrVReg] = valVReg;
-                }
-                inst = inst->getNext();
-            }
-        }
+        (void)mf;
     }
 };
 
@@ -1392,55 +1372,107 @@ public:
             rewriteVirtualRegsAArch64(mf);
         else
             rewriteVirtualRegs(mf);
+        normalizeReturnRegs(mf);
         eliminateRedundantMoves(mf);
     }
     const char* getName() const override { return "Register Allocation"; }
 
 private:
-    void rewriteVirtualRegsAArch64(MachineFunction& mf) const {
-        std::map<unsigned, unsigned> vregToPReg;
+    struct VRegRange {
+        unsigned vreg;
+        unsigned start;
+        unsigned end;
+    };
+
+    std::vector<VRegRange> computeVRegRanges(const MachineFunction& mf) const {
+        std::map<unsigned, VRegRange> ranges;
+        unsigned slot = 0;
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
                 for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
-                    const auto& mo = mi->getOperand(i);
-                    if (mo.isVReg())
-                        vregToPReg[mo.getVirtualReg()] = ~0U;
+                    const auto& operand = mi->getOperand(i);
+                    if (!operand.isVReg())
+                        continue;
+                    const unsigned vreg = operand.getVirtualReg();
+                    auto [it, inserted] = ranges.emplace(vreg, VRegRange{vreg, slot, slot});
+                    if (!inserted) {
+                        it->second.start = std::min(it->second.start, slot);
+                        it->second.end = std::max(it->second.end, slot);
+                    }
                 }
                 mi = mi->getNext();
+                ++slot;
             }
         }
 
+        std::vector<VRegRange> result;
+        for (const auto& [_, range] : ranges)
+            result.push_back(range);
+        std::sort(result.begin(), result.end(), [](const VRegRange& lhs, const VRegRange& rhs) {
+            if (lhs.start != rhs.start)
+                return lhs.start < rhs.start;
+            return lhs.vreg < rhs.vreg;
+        });
+        return result;
+    }
+
+    std::map<unsigned, unsigned> assignGreedyRegs(
+        const std::vector<VRegRange>& ranges,
+        const std::map<unsigned, unsigned>& preassigned,
+        const std::vector<unsigned>& registerPool) const
+    {
+        struct ActiveReg { unsigned end; unsigned reg; };
+        std::vector<ActiveReg> active;
+        std::map<unsigned, unsigned> result = preassigned;
+
+        for (const auto& range : ranges) {
+            active.erase(std::remove_if(active.begin(), active.end(), [&](const ActiveReg& activeReg) {
+                return activeReg.end < range.start;
+            }), active.end());
+
+            auto preassignedIt = result.find(range.vreg);
+            if (preassignedIt != result.end() && preassignedIt->second != ~0U) {
+                active.push_back({range.end, preassignedIt->second});
+                continue;
+            }
+
+            unsigned chosenReg = ~0U;
+            for (const unsigned reg : registerPool) {
+                const bool used = std::any_of(active.begin(), active.end(), [&](const ActiveReg& activeReg) {
+                    return activeReg.reg == reg;
+                });
+                if (!used) {
+                    chosenReg = reg;
+                    break;
+                }
+            }
+
+            result[range.vreg] = chosenReg;
+            if (chosenReg != ~0U)
+                active.push_back({range.end, chosenReg});
+        }
+
+        return result;
+    }
+
+    void rewriteVirtualRegsAArch64(MachineFunction& mf) const {
         static const unsigned argRegs[] = {
             AArch64RegisterInfo::X0, AArch64RegisterInfo::X1, AArch64RegisterInfo::X2, AArch64RegisterInfo::X3,
             AArch64RegisterInfo::X4, AArch64RegisterInfo::X5, AArch64RegisterInfo::X6, AArch64RegisterInfo::X7,
         };
-        static const unsigned tempRegs[] = {
+        const std::vector<unsigned> tempRegs = {
             AArch64RegisterInfo::X9, AArch64RegisterInfo::X10, AArch64RegisterInfo::X11, AArch64RegisterInfo::X12,
             AArch64RegisterInfo::X13, AArch64RegisterInfo::X14, AArch64RegisterInfo::X15, AArch64RegisterInfo::X16,
-            AArch64RegisterInfo::X17, AArch64RegisterInfo::X8,
+            AArch64RegisterInfo::X17, AArch64RegisterInfo::X8, AArch64RegisterInfo::X2, AArch64RegisterInfo::X3,
+            AArch64RegisterInfo::X4, AArch64RegisterInfo::X5, AArch64RegisterInfo::X6, AArch64RegisterInfo::X7,
         };
 
+        std::map<unsigned, unsigned> preassigned;
         for (unsigned i = 0; i < mf.getAIRFunction().getNumArgs() && i < 8; ++i) {
-            auto it = vregToPReg.find(i);
-            if (it != vregToPReg.end())
-                it->second = argRegs[i];
+            preassigned[i] = argRegs[i];
         }
-
-        unsigned nextTemp = 0;
-        for (auto& [vreg, preg] : vregToPReg) {
-            if (preg != ~0U) continue;
-            preg = nextTemp < (sizeof(tempRegs) / sizeof(tempRegs[0])) ? tempRegs[nextTemp++] : AArch64RegisterInfo::X9;
-        }
-
-        for (auto& mbb : mf.getBlocks()) {
-            MachineInstr* mi = mbb->getFirst();
-            while (mi) {
-                if (mi->getOpcode() == AArch64::RET && mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg())
-                    vregToPReg[mi->getOperand(0).getVirtualReg()] = AArch64RegisterInfo::X0;
-                mi = mi->getNext();
-            }
-        }
+        std::map<unsigned, unsigned> vregToPReg = assignGreedyRegs(computeVRegRanges(mf), preassigned, tempRegs);
 
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
@@ -1459,37 +1491,21 @@ private:
 
     void rewriteVirtualRegs(MachineFunction& mf) const
     {
-        std::map<unsigned, unsigned> vregToPReg;
         std::map<unsigned, int> spilledVRegs;
 
-        // Collect all vregs
-        for (auto& mbb : mf.getBlocks()) {
-            MachineInstr* mi = mbb->getFirst();
-            while (mi) {
-                for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
-                    const auto& mo = mi->getOperand(i);
-                    if (mo.isVReg()) {
-                        vregToPReg[mo.getVirtualReg()] = ~0U;
-                    }
-                }
-                mi = mi->getNext();
-            }
-        }
-
         // Pools: GPR for integers, XMM for floats
-        static const unsigned gprPool[] = {
-            X86RegisterInfo::RAX, X86RegisterInfo::RCX, X86RegisterInfo::RDX,
-            X86RegisterInfo::RBX, X86RegisterInfo::RSI, X86RegisterInfo::RDI,
-            X86RegisterInfo::R8,  X86RegisterInfo::R9,  X86RegisterInfo::R10,
-            X86RegisterInfo::R11, X86RegisterInfo::R12, X86RegisterInfo::R13,
-            X86RegisterInfo::R14, X86RegisterInfo::R15,
+        const std::vector<unsigned> gprPool = {
+            X86RegisterInfo::RBX, X86RegisterInfo::R12, X86RegisterInfo::R13,
+            X86RegisterInfo::R14, X86RegisterInfo::R15, X86RegisterInfo::RAX,
+            X86RegisterInfo::RCX, X86RegisterInfo::RDX, X86RegisterInfo::RSI,
+            X86RegisterInfo::RDI, X86RegisterInfo::R8, X86RegisterInfo::R9,
+            X86RegisterInfo::R10, X86RegisterInfo::R11,
         };
-        static const unsigned xmmPool[] = {
+        const std::vector<unsigned> xmmPool = {
             X86RegisterInfo::XMM0, X86RegisterInfo::XMM1, X86RegisterInfo::XMM2,
             X86RegisterInfo::XMM3, X86RegisterInfo::XMM4, X86RegisterInfo::XMM5,
             X86RegisterInfo::XMM6, X86RegisterInfo::XMM7,
         };
-        unsigned nextGPR = 0, nextXMM = 0;
 
         // Get type info from AIR function
         std::map<unsigned, bool> vregIsFloat;
@@ -1505,36 +1521,25 @@ private:
             }
         }
 
-        for (auto& [vreg, preg] : vregToPReg) {
-            if (vreg == 0) { preg = X86RegisterInfo::RDI; continue; }
-            if (vreg == 1) { preg = X86RegisterInfo::RSI; continue; }
+        static const unsigned argRegs[] = {
+            X86RegisterInfo::RDI, X86RegisterInfo::RSI, X86RegisterInfo::RDX,
+            X86RegisterInfo::RCX, X86RegisterInfo::R8, X86RegisterInfo::R9,
+        };
+        std::map<unsigned, unsigned> preassigned;
+        for (unsigned i = 0; i < mf.getAIRFunction().getNumArgs() && i < 6; ++i)
+            preassigned[i] = argRegs[i];
 
-            bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
-            if (isFloat && nextXMM < 8) {
-                preg = xmmPool[nextXMM++];
-            } else if (!isFloat && nextGPR < 14) {
-                preg = gprPool[nextGPR++];
-            } else {
+        std::map<unsigned, unsigned> vregToPReg = assignGreedyRegs(computeVRegRanges(mf), preassigned, gprPool);
+        for (auto& [vreg, preg] : vregToPReg) {
+            const bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
+            if (isFloat) {
+                preg = xmmPool.empty() ? X86RegisterInfo::XMM0 : xmmPool[vreg % xmmPool.size()];
+                continue;
+            }
+            if (preg == ~0U) {
                 int spillSlot = mf.createStackSlot(8, 8);
                 spilledVRegs[vreg] = spillSlot;
-                preg = isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX;
-            }
-        }
-
-        // Force return value vreg to RAX (for int) or XMM0 (for float)
-        for (auto& mbb : mf.getBlocks()) {
-            MachineInstr* mi = mbb->getFirst();
-            while (mi) {
-                if (mi->getOpcode() == X86::RETQ && mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg()) {
-                    unsigned retVReg = mi->getOperand(0).getVirtualReg();
-                    bool isFloat = vregIsFloat.count(retVReg) && vregIsFloat[retVReg];
-                    unsigned target = isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX;
-                    unsigned oldReg = vregToPReg[retVReg];
-                    for (auto& [v, p] : vregToPReg)
-                        if (p == target && v != retVReg) vregToPReg[v] = oldReg;
-                    vregToPReg[retVReg] = target;
-                }
-                mi = mi->getNext();
+                preg = X86RegisterInfo::RAX;
             }
         }
 
@@ -1587,6 +1592,31 @@ private:
                     mbb->insertAfter(mi, spill);
                 }
 
+                mi = mi->getNext();
+            }
+        }
+    }
+
+    void normalizeReturnRegs(MachineFunction& mf) const
+    {
+        const bool aarch64 = isAArch64Target(mf);
+        const uint16_t retOpcode = aarch64 ? static_cast<uint16_t>(AArch64::RET) : static_cast<uint16_t>(X86::RETQ);
+        const uint16_t movOpcode = aarch64 ? static_cast<uint16_t>(AArch64::MOVrr) : static_cast<uint16_t>(X86::MOV64rr);
+        const unsigned returnReg = aarch64 ? AArch64RegisterInfo::X0 : X86RegisterInfo::RAX;
+
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                if (mi->getOpcode() == retOpcode && mi->getNumOperands() >= 1 && mi->getOperand(0).isReg()) {
+                    const unsigned sourceReg = mi->getOperand(0).getReg();
+                    if (sourceReg != returnReg) {
+                        auto* moveRet = new MachineInstr(movOpcode);
+                        moveRet->addOperand(MachineOperand::createReg(sourceReg));
+                        moveRet->addOperand(MachineOperand::createReg(returnReg));
+                        mbb->insertBefore(mi, moveRet);
+                        mi->setOperand(0, MachineOperand::createReg(returnReg));
+                    }
+                }
                 mi = mi->getNext();
             }
         }

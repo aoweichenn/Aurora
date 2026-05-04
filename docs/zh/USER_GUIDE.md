@@ -16,21 +16,29 @@ ctest --test-dir build
 
 ## 2. 运行 MiniC
 
-MiniC 接受一个 `.mini` 源文件，支持当前阶段的语法：
+MiniC 接受一个 `.mini` 源文件，支持 C-like 整数子集：
 
-- 函数定义：`fn name(a, b) = expr`
-- 整数字面量和变量引用
-- `+ - * /`
-- 比较：`== != < <= > >=`
-- `if cond then expr else expr`
-- 函数调用
+- 函数定义：`long name(long a, long b) { ... }`
+- 标量局部变量和可选初始化：`long value = 0;`
+- 语句：`return`、块、`if` / `else`、`while`、`for`、`break`、`continue`
+- 表达式：赋值、复合赋值、函数调用、三元 `?:`、前后缀 `++` / `--`
+- 运算符：`+ - * / %`、比较、逻辑运算、位运算和移位
+- 兼容旧表达式函数：`fn name(a, b) = expr`
 
 示例：
 
 ```mini
-fn add(a, b) = a + b
-fn abs(x) = if x < 0 then 0 - x else x
-fn max(a, b) = if a > b then a else b
+long sum_to(long n) {
+    long sum = 0;
+    for (long i = 0; i <= n; i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+long main() {
+    return sum_to(5);
+}
 ```
 
 运行：

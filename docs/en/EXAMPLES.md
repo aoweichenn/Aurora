@@ -13,19 +13,33 @@ builder.createRet(sum);
 
 This produces a trivial `add` function backed by AIR `add` and `ret` instructions.
 
-## 2. Mini Language Control Flow
+## 2. MiniC Control Flow
 
 ```mini
-fn abs(x) = if x < 0 then 0 - x else x
-fn max(a, b) = if a > b then a else b
+long gcd(long a, long b) {
+    while (b != 0) {
+        long next = a - (a / b) * b;
+        a = b;
+        b = next;
+    }
+    return a;
+}
+
+long sum_to(long n) {
+    long sum = 0;
+    for (long i = 0; i <= n; i++) {
+        sum += i;
+    }
+    return sum;
+}
 ```
 
 This exercises:
 
 - `Lexer` keyword and operator recognition
-- `Parser` AST construction
-- `tools/minic/CodeGen` emission of AIR `icmp`, `condbr`, and `phi`
-- backend lowering to x86 assembly
+- `Parser` AST construction for functions, statements, and expressions
+- `tools/minic/CodeGen` emission of AIR local variables, calls, branches, and loops
+- backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File
 

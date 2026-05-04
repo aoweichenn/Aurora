@@ -4,10 +4,10 @@
 
 - `include/Aurora/ADT`：基础容器与工具
 - `include/Aurora/Air`：AIR IR 与 Builder
-- `include/Aurora/Target`：目标抽象与 x86 实现
+- `include/Aurora/Target`：目标抽象与 x86-64/AArch64 具体实现
 - `include/Aurora/CodeGen`：MIR、SelectionDAG、Pass、寄存器分配
 - `include/Aurora/MC`：汇编打印、对象写出、编码器
-- `tools/minic`：示例前端
+- `tools/minic`：C-like 示例前端
 - `tools/aurorac`：后端样例驱动
 - `tools/aurora-obj`：对象文件样例驱动
 - `tests`：按模块组织的单元测试与覆盖测试

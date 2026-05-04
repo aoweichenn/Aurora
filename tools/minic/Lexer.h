@@ -9,11 +9,17 @@ namespace minic {
 enum class TokenKind {
     Eof, Ident, IntLit,
     Invalid,
-    Fn, If, Then, Else,
-    LParen, RParen, Assign,
-    Plus, Minus, Star, Slash,
+    Fn, If, Then, Else, Return, While, For, Break, Continue,
+    Int, Long, Char, Void,
+    LParen, RParen, LBrace, RBrace,
+    Semicolon, Comma, Question, Colon,
+    Assign, PlusAssign, MinusAssign, StarAssign, SlashAssign, PercentAssign,
+    Plus, Minus, Star, Slash, Percent,
+    PlusPlus, MinusMinus,
     EqEq, Neq, Lt, Le, Gt, Ge,
-    Comma,
+    Amp, Pipe, Caret, Tilde, Bang,
+    AmpAmp, PipePipe,
+    Shl, Shr,
 };
 
 struct Token {

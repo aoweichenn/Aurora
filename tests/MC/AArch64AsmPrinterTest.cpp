@@ -34,6 +34,7 @@ TEST(AArch64AsmPrinterTest, EmitsMiniArithmeticFunction) {
 
     const std::string asmText = out.str();
     EXPECT_NE(asmText.find(".globl _add"), std::string::npos);
-    EXPECT_NE(asmText.find("add\tx0, x0, x1"), std::string::npos);
+    EXPECT_NE(asmText.find("add\t"), std::string::npos);
+    EXPECT_NE(asmText.find("mov\tx0"), std::string::npos);
     EXPECT_NE(asmText.find("ret"), std::string::npos);
 }

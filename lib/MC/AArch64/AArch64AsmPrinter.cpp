@@ -14,7 +14,7 @@ AArch64AsmPrinter::AArch64AsmPrinter(MCStreamer& streamer, const AArch64Register
     : AsmPrinter(streamer) {}
 
 void AArch64AsmPrinter::emitBasicBlock(MachineBasicBlock& mbb) {
-    getStreamer().emitLabel("L" + mbb.getName());
+    getStreamer().emitLabel(labelName(mbb.getName()));
 
     const MachineInstr* mi = mbb.getFirst();
     while (mi) {
@@ -233,6 +233,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
 
 void AArch64AsmPrinter::emitFunctionHeader(MachineFunction& mf) {
     const auto& fn = mf.getAIRFunction();
+    currentFunctionName_ = fn.getName();
     getStreamer().emitRawText(".p2align 2");
     getStreamer().emitRawText(".globl " + symbolName(fn.getName()));
     getStreamer().emitLabel(symbolName(fn.getName()));
@@ -252,7 +253,7 @@ void AArch64AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os)
         os << "#" << mo.getImm();
         break;
     case MachineOperandKind::MO_MBB:
-        os << "L" << mo.getMBB()->getName();
+        os << labelName(mo.getMBB()->getName());
         break;
     case MachineOperandKind::MO_FrameIndex:
         os << "[x29, #-" << ((mo.getFrameIndex() + 1) * 8) << "]";
@@ -268,10 +269,16 @@ void AArch64AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os)
 
 void AArch64AsmPrinter::printLabelOperand(const MachineOperand& mo, std::ostream& os) const {
     if (mo.getKind() == MachineOperandKind::MO_MBB) {
-        os << "L" << mo.getMBB()->getName();
+        os << labelName(mo.getMBB()->getName());
         return;
     }
     printOperand(mo, os);
+}
+
+std::string AArch64AsmPrinter::labelName(const std::string& blockName) const {
+    if (currentFunctionName_.empty())
+        return "L" + blockName;
+    return "L" + currentFunctionName_ + "_" + blockName;
 }
 
 std::string AArch64AsmPrinter::symbolName(const std::string& name) const {

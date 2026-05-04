@@ -1,7 +1,9 @@
 #include "Aurora/MC/X86/X86AsmPrinter.h"
 #include "Aurora/MC/MCStreamer.h"
 #include "Aurora/CodeGen/MachineFunction.h"
+#include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
+#include "Aurora/Air/Function.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
 #include <sstream>
@@ -333,7 +335,18 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
     getStreamer().emitRawText(oss.str());
 }
 
+void X86AsmPrinter::emitBasicBlock(MachineBasicBlock& mbb) {
+    getStreamer().emitLabel(labelName(mbb.getName()));
+
+    const MachineInstr* mi = mbb.getFirst();
+    while (mi) {
+        emitInstruction(*mi);
+        mi = mi->getNext();
+    }
+}
+
 void X86AsmPrinter::emitFunctionHeader(MachineFunction& mf) {
+    currentFunctionName_ = mf.getAIRFunction().getName();
     AsmPrinter::emitFunctionHeader(mf);
     getStreamer().emitRawText("\t.cfi_startproc");
 }
@@ -358,7 +371,7 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) con
             os << "$" << mo.getImm();
             break;
         case MachineOperandKind::MO_MBB:
-            os << "." << mo.getMBB()->getName();
+            os << labelName(mo.getMBB()->getName());
             break;
         case MachineOperandKind::MO_FrameIndex:
             os << "-" << ((mo.getFrameIndex() + 1) * 8) << "(%rbp)";
@@ -389,6 +402,12 @@ void X86AsmPrinter::printMemOperand(const MachineOperand& base, const MachineOpe
     os << offset.getImm() << "(%";
     const auto reg = X86RegisterInfo::getReg(base.getReg());
     os << reg.name << ")";
+}
+
+std::string X86AsmPrinter::labelName(const std::string& blockName) const {
+    if (currentFunctionName_.empty())
+        return "." + blockName;
+    return ".L" + currentFunctionName_ + "_" + blockName;
 }
 
 } // namespace aurora

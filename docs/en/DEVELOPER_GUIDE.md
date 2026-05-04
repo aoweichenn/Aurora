@@ -4,10 +4,10 @@
 
 - `include/Aurora/ADT`: core containers and utilities
 - `include/Aurora/Air`: AIR IR and builders
-- `include/Aurora/Target`: target abstractions and x86 implementation
+- `include/Aurora/Target`: target abstractions and concrete x86-64/AArch64 implementations
 - `include/Aurora/CodeGen`: MIR, SelectionDAG, passes, and register allocation
 - `include/Aurora/MC`: assembly printing, object writing, and encoders
-- `tools/minic`: sample front-end
+- `tools/minic`: C-like sample front-end
 - `tools/aurorac`: backend sample driver
 - `tools/aurora-obj`: object-file sample driver
 - `tests`: module-oriented unit and coverage tests

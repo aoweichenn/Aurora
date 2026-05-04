@@ -13,19 +13,33 @@ builder.createRet(sum);
 
 这个例子会生成一个简单的 `add` 函数，对应 AIR 中的 `add` 和 `ret`。
 
-## 2. Mini 语言控制流
+## 2. MiniC 控制流
 
 ```mini
-fn abs(x) = if x < 0 then 0 - x else x
-fn max(a, b) = if a > b then a else b
+long gcd(long a, long b) {
+    while (b != 0) {
+        long next = a - (a / b) * b;
+        a = b;
+        b = next;
+    }
+    return a;
+}
+
+long sum_to(long n) {
+    long sum = 0;
+    for (long i = 0; i <= n; i++) {
+        sum += i;
+    }
+    return sum;
+}
 ```
 
 这会触发：
 
 - `Lexer` 识别关键字和运算符
-- `Parser` 生成 AST
-- `tools/minic/CodeGen` 生成 AIR `icmp`、`condbr` 和 `phi`
-- 后端生成 x86 汇编
+- `Parser` 为函数、语句和表达式生成 AST
+- `tools/minic/CodeGen` 生成 AIR 局部变量、调用、分支和循环
+- 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件
 

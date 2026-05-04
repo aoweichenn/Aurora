@@ -16,21 +16,29 @@ The build produces:
 
 ## 2. Run MiniC
 
-MiniC accepts a `.mini` source file and supports the current-stage syntax:
+MiniC accepts a `.mini` source file and supports a C-like integer subset:
 
-- function definitions: `fn name(a, b) = expr`
-- integer literals and variables
-- `+ - * /`
-- comparisons: `== != < <= > >=`
-- `if cond then expr else expr`
-- function calls
+- function definitions: `long name(long a, long b) { ... }`
+- scalar local variables with optional initializers: `long value = 0;`
+- statements: `return`, blocks, `if` / `else`, `while`, `for`, `break`, and `continue`
+- expressions: assignment, compound assignment, calls, ternary `?:`, prefix/postfix `++` / `--`
+- operators: `+ - * / %`, comparisons, logical operators, bitwise operators, and shifts
+- legacy expression functions: `fn name(a, b) = expr`
 
 Example:
 
 ```mini
-fn add(a, b) = a + b
-fn abs(x) = if x < 0 then 0 - x else x
-fn max(a, b) = if a > b then a else b
+long sum_to(long n) {
+    long sum = 0;
+    for (long i = 0; i <= n; i++) {
+        sum += i;
+    }
+    return sum;
+}
+
+long main() {
+    return sum_to(5);
+}
 ```
 
 Run it with:

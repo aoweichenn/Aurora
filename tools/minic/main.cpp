@@ -40,11 +40,11 @@ static std::unique_ptr<TargetMachine> createTargetMachine(BackendTarget target) 
 int main(int argc, char** argv) {
     if (argc < 2) {
         std::cerr << "Usage: minic [--target=x86_64|arm64] <source-file>\n";
-        std::cerr << "  Compiles a mini-language program to assembly.\n";
+        std::cerr << "  Compiles a C-like MiniC program to assembly.\n";
         std::cerr << "\nExample program:\n";
-        std::cerr << "  fn add(a, b) = a + b\n";
-        std::cerr << "  fn abs(x) = if x < 0 then 0 - x else x\n";
-        std::cerr << "  fn max(a, b) = if a > b then a else b\n";
+        std::cerr << "  long add(long a, long b) { return a + b; }\n";
+        std::cerr << "  long abs(long x) { if (x < 0) return 0 - x; return x; }\n";
+        std::cerr << "  long sum_to(long n) { long s = 0; for (long i = 0; i <= n; i++) s += i; return s; }\n";
         return 1;
     }
 
