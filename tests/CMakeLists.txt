@@ -24,6 +24,7 @@ add_executable(Air_tests
     Air/ConstantTest.cpp
     Air/ModuleTest.cpp
     Air/TypeCoverageTest.cpp
+    Air/InstructionFactoryTest.cpp
 )
 target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
 add_test(NAME Air_tests COMMAND Air_tests)
@@ -40,6 +41,7 @@ add_test(NAME Target_tests COMMAND Target_tests)
 add_executable(CodeGen_tests
     CodeGen/MachineInstrTest.cpp
     CodeGen/SelectionDAGTest.cpp
+    CodeGen/SelectionDAGFullTest.cpp
     CodeGen/InstructionSelectorTest.cpp
     CodeGen/PassManagerTest.cpp
     CodeGen/LiveIntervalTest.cpp
@@ -51,6 +53,8 @@ add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
 add_executable(MC_tests
     MC/AsmPrinterTest.cpp
     MC/IntegrationTest.cpp
+    MC/IntegrationFullTest.cpp
+    MC/CoverageBoostTest.cpp
 )
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)
