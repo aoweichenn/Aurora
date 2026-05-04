@@ -123,7 +123,7 @@ TEST(FuncCoverRATest, AllocateRegisters) {
 TEST(FuncCoverTargetTest, TargetMachine) {
     auto tm = TargetMachine::createX86_64();
     EXPECT_NE(tm, nullptr);
-    EXPECT_EQ(tm->getTargetTriple(), "x86_64-unknown-linux-gnu");
+    EXPECT_STREQ(tm->getTargetTriple(), "x86_64-unknown-linux-gnu");
 }
 TEST(FuncCoverTargetTest, RegisterInfo) {
     auto tm = TargetMachine::createX86_64();
