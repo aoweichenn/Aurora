@@ -314,6 +314,15 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     case X86::JBE_1: out.push_back(0x76); out.push_back(0x00); break;
     case X86::JA_1:  out.push_back(0x77); out.push_back(0x00); break;
     case X86::JB_1:  out.push_back(0x72); out.push_back(0x00); break;
+    // SHL by immediate
+    case X86::SHL64ri: out.push_back(0x48); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
+    // MOVSX r8 → r32
+    case X86::MOVSX32rr8_op: out.push_back(0x0F); out.push_back(0xBE); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
+    // SETAEr (SETcc for unsigned above-equal)
+    case X86::SETAEr: out.push_back(0x0F); out.push_back(0x93); emitModRM(3, 0, getReg(0) & 7); break;
+    // SETAr / SETBEr (unsigned above / below-equal)
+    case X86::SETAr:  out.push_back(0x0F); out.push_back(0x97); emitModRM(3, 0, getReg(0) & 7); break;
+    case X86::SETBEr: out.push_back(0x0F); out.push_back(0x96); emitModRM(3, 0, getReg(0) & 7); break;
     default:
         out.push_back(0x90); // NOP placeholder for unknown
         break;

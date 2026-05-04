@@ -629,8 +629,8 @@ private:
         }
 
         auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         movMI->addOperand(MachineOperand::createVReg(baseVReg));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, movMI);
 
         if (totalOffset != 0) {
@@ -693,8 +693,8 @@ private:
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
         auto* newMI = new MachineInstr(X86::MOV32rr);
-        newMI->addOperand(MachineOperand::createVReg(resultVReg));
         newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, newMI);
     }
 
@@ -704,8 +704,8 @@ private:
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
         auto* newMI = new MachineInstr(X86::MOV32rr);
-        newMI->addOperand(MachineOperand::createVReg(resultVReg));
         newMI->addOperand(MachineOperand::createVReg(srcVReg));
+        newMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, newMI);
     }
 
@@ -715,16 +715,16 @@ private:
         // Lower to: CMP cond, 0; CMOVNE tval, result; CMOVE fval, result
         // Or simpler: MOV tval → result; MOV fval → temp; TEST cond,cond; CMOVNE temp, result
         // For now: use conditional move via branching (generate new blocks)
-        // Simplest: result = cond ? tval : fval → CMP cond,0; MOV tval→result; JZ false; JMP merge; false: MOV fval→result; merge:
+        // Simplest: result = cond ? tval : fval → MOV tval→result; TEST cond,cond; JNE skip; MOV fval→result; skip:
         unsigned condVReg = ~0U, tValVReg = ~0U, fValVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) condVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) tValVReg = mi->getOperand(1).getVirtualReg();
         if (mi->getNumOperands() >= 3) fValVReg = mi->getOperand(2).getVirtualReg();
         if (mi->getNumOperands() >= 4) resultVReg = mi->getOperand(3).getVirtualReg();
-        // Simple lowering: MOV tval→result; TEST cond,cond; JZ skip; MOV fval→result; skip:
+        // Simple lowering: MOV tval→result (op0=src=tval, op1=dst=result)
         auto* movT = new MachineInstr(X86::MOV64rr);
-        movT->addOperand(MachineOperand::createVReg(resultVReg));
         movT->addOperand(MachineOperand::createVReg(tValVReg));
+        movT->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, movT);
 
         auto* testMI = new MachineInstr(X86::TEST64rr);
@@ -732,14 +732,14 @@ private:
         testMI->addOperand(MachineOperand::createVReg(condVReg));
         mbb.pushBack(testMI);
 
-        auto* jzMI = new MachineInstr(X86::JE_1);
-        mbb.pushBack(jzMI);
+        auto* jneMI = new MachineInstr(X86::JNE_1);
+        mbb.pushBack(jneMI);
 
         auto* movF = new MachineInstr(X86::MOV64rr);
-        movF->addOperand(MachineOperand::createVReg(resultVReg));
         movF->addOperand(MachineOperand::createVReg(fValVReg));
+        movF->addOperand(MachineOperand::createVReg(resultVReg));
         mbb.pushBack(movF);
-        // JE target would be set by rebuildSuccessors; for now leave it
+        // JNE skips movF when cond is true; if false, falls through to movF
     }
 
     void iselConstantInt(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& /*mf*/) {
@@ -902,8 +902,8 @@ private:
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
         // Simplified: MOV agg → result (whole aggregate copy)
         auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         movMI->addOperand(MachineOperand::createVReg(aggVReg));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, movMI);
     }
 
@@ -916,8 +916,8 @@ private:
         if (mi->getNumOperands() >= 3) resultVReg = mi->getOperand(2).getVirtualReg();
         // Simplified: MOV val → result
         auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         movMI->addOperand(MachineOperand::createVReg(valVReg));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, movMI);
     }
 
@@ -967,8 +967,8 @@ private:
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
         auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         movMI->addOperand(MachineOperand::createVReg(srcVReg));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, movMI);
     }
 
