@@ -1,58 +1,45 @@
 # Architecture
 
-## Code Generation Pipeline
+Aurora is currently a combination of an x86-64 backend and a small sample front-end.
+The end-to-end flow is:
 
-```
-Source (AIR IR)
-    ↓
-AIRToMachineIRPass        -- Translate AIR to MachineInstrs
-    ↓
-InstructionSelectionPass  -- Pattern-match to x86 opcodes
-    ↓
-CopyCoalescingPass        -- Merge redundant copies
-    ↓
-PeepholePass              -- Remove no-op instructions
-    ↓
-DeadCodeEliminationPass   -- Remove unused instructions
-    ↓
-RegisterAllocationPass    -- Linear scan + spill
-    ↓
-PrologueEpilogueInserter  -- Frame setup/teardown
-    ↓
-BranchFoldingPass         -- Merge consecutive jumps
-    ↓
-Assembly/ELF output       -- X86AsmPrinter / ObjectWriter
+```text
+Mini source -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
+-> PassManager -> MachineFunction/MIR -> AsmPrinter or ObjectWriter -> assembly/ELF object
 ```
 
-## AIR Instruction Set
+## Layers
 
-| Category | Opcodes |
-|----------|---------|
-| Terminators | Ret, Br, CondBr, Unreachable |
-| Arithmetic | Add, Sub, Mul, UDiv, SDiv, URem, SRem |
-| Bitwise | And, Or, Xor, Shl, LShr, AShr |
-| Comparison | ICmp, FCmp |
-| Memory | Alloca, Load, Store, GetElementPtr |
-| Conversion | SExt, ZExt, Trunc, FpToSi, SiToFp, BitCast |
-| Control | Phi, Select |
-| Call | Call |
-| Struct | ExtractValue, InsertValue |
-| Constant | ConstantInt |
-| Switch | Switch |
+| Layer | Responsibility |
+|-------|----------------|
+| `ADT` | Foundational utilities: `SmallVector`, `BitVector`, `Graph`, `SparseSet`, `BumpPtrAllocator` |
+| `AIR` | SSA-style IR: types, constants, functions, basic blocks, instructions, builders, modules |
+| `Target` | Target abstraction: registers, instructions, lowering, calling convention, stack frame |
+| `Target/X86` | Concrete x86-64 implementation |
+| `CodeGen` | AIR to MIR, instruction selection, register allocation, stack frame insertion, branch folding |
+| `MC` | Assembly printing, machine-code encoding, ELF relocatable output |
+| `tools/minic` | Mini language front-end |
 
-## Register Allocation
+## Core Objects
 
-- Linear scan algorithm
-- Separate GPR and XMM pools
-- Spill code generation for register pressure
-- Return value forced to RAX/XMM0
+- `Module` owns `Function` and `GlobalVariable` instances.
+- `Function` owns `BasicBlock` objects and tracks virtual register numbering and types.
+- `AIRBuilder` emits AIR instructions at the current insertion point.
+- `PassManager` runs the standard pipeline; `CodeGenContext::addStandardPasses` registers the default passes.
+- `MachineFunction` carries MIR, stack objects, virtual register types, and target information.
+- `SelectionDAG` exposes DAG nodes, constants, register references, and basic select/schedule hooks.
+- `AsmPrinter` and `ObjectWriter` are the two backend output paths for text assembly and ELF objects.
 
-## ELF Output
+## Current Pipeline
 
-The `ObjectWriter` produces standard ELF64 .o files with:
-- `.text` section (encoded x86-64 machine code)
-- `.data` section (global variable initialization)
-- `.symtab` (function and data symbols)
-- `.strtab` (symbol name strings)
-- `.rela.text` (R_X86_64_PLT32/PC32/32S relocations)
-- `.shstrtab` (section names)
+1. AIR to MachineIR: maps AIR instructions directly to MIR.
+2. Instruction Selection: lowers AIR operations to target instructions.
+3. Register Allocation: linear-scan register allocation with spills to stack slots.
+4. Prologue/Epilogue Insertion: inserts function prologue and epilogue code.
+5. Branch Folding: removes redundant jumps and threads simple jump chains.
+
+## Notes
+
+- The current implementation focuses on correctness and test coverage, not full LLVM-grade optimization.
+- SelectionDAG interfaces are present, but primarily as the current-stage structure and extension point.
+- Documentation and code should stay mirrored between Chinese and English.

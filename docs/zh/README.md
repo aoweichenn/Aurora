@@ -1,61 +1,44 @@
-# Aurora - 生产级 x86-64 编译器后端
+# Aurora
 
-Aurora 是一个 C++17 编写的生产级 x86-64 编译器后端框架，仿 LLVM 架构设计。将自定义 SSA IR（AIR）转换为 x86-64 AT&T 汇编和 ELF 目标文件。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](../../LICENSE)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
+[![CMake](https://img.shields.io/badge/CMake-3.16%2B-green.svg)](https://cmake.org)
+
+Aurora 是一个 C++17 x86-64 编译器后端与代码生成练习项目。
+当前仓库包含 AIR 中间表示、目标抽象层、x86 专用 lowering 与编码、ELF 可重定位对象写出器，以及用于示例工具和测试的 MiniC 前端。
 
 ## 快速开始
 
 ```bash
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j8
-./build/tools/minic/minic test.mini
-./build/tools/aurora-obj/aurora-obj test.o
-```
-
-## 模块架构
-
-```
-ADT (数据结构) → Air (SSA IR) → Target (平台抽象)
-                                  ↓
-                                X86 (x86-64 实现)
-                                  ↓
-CodeGen (指令选择，寄存器分配) → MC (汇编/ELF 输出)
-```
-
-| 模块 | 用途 |
-|------|------|
-| ADT | SmallVector, BitVector, Graph, BumpAllocator, SparseSet |
-| Air | SSA 中间表示：~40 条指令，类型系统，AIRBuilder |
-| Target | 目标机器的抽象基类 |
-| X86 | x86-64 寄存器信息，指令集，ISel 模式表，调用约定，栈帧管理 |
-| CodeGen | SelectionDAG, InstructionSelector, LinearScan 寄存器分配器, Pass 管理器 |
-| MC | 汇编打印器（AT&T 语法）, ELF 对象文件写入器 |
-
-## 构建选项
-
-| 选项 | 默认值 | 说明 |
-|------|--------|------|
-| `AURORA_BUILD_TESTS` | ON | 构建测试套件 (GoogleTest) |
-| `AURORA_BUILD_BENCHMARKS` | ON | 构建基准测试 (Google Benchmark) |
-| `AURORA_BUILD_SHARED_LIBS` | ON | 构建共享库 |
-| `AURORA_ENABLE_COVERAGE` | OFF | 启用 lcov 代码覆盖率 |
-
-## 覆盖率
-
-```bash
-cmake -B build -S . -DAURORA_ENABLE_COVERAGE=ON -DAURORA_BUILD_TESTS=ON
+cmake -B build -S . -DAURORA_BUILD_TESTS=ON
 cmake --build build -j8
 ctest --test-dir build
-lcov --capture --directory build --output-file coverage.info
-lcov --remove coverage.info '/usr/*' '*/_deps/*' '*/tests/*' -o coverage.info
-genhtml coverage.info --output-directory coverage_report
+./build/tools/minic/minic test.mini
 ```
 
-## 工具
+## 文档目录
 
-- **minic**: 迷你语言编译器（表达式 → AIR → 汇编）
-- **aurorac**: 示例 AIR 构建和汇编输出
-- **aurora-obj**: AIR → ELF .o 文件写入器
+- `ARCHITECTURE.md`：当前架构、流水线和模块分层
+- `API_REFERENCE.md`：当前公开接口清单
+- `USER_GUIDE.md`：构建、运行、集成方式
+- `DEVELOPER_GUIDE.md`：扩展 AIR、x86 指令、Pass、MiniC 语法的流程
+- `EXAMPLES.md`：AIR、MiniC、汇编输出、对象文件输出示例
+- English: `../en/README.md`
 
-## 许可证
+## 当前范围
 
-MIT License
+- `ADT`：`SmallVector`、`BitVector`、`Graph`、`SparseSet`、`BumpPtrAllocator`
+- `AIR`：类型、常量、函数、基本块、指令、Builder、Module
+- `Target`：寄存器、指令、lowering、调用约定、栈帧 lowering 抽象
+- `X86`：x86-64 目标层具体实现
+- `CodeGen`：SelectionDAG 框架、指令选择、寄存器分配、Pass 管线
+- `MC`：汇编打印、对象编码、ELF relocatable writer
+- `tools/minic`：Mini 语言的词法、语法和 AIR 生成
+- `tools/aurorac`：后端流水线示例驱动
+- `tools/aurora-obj`：ELF 对象写出示例驱动
+
+## 说明
+
+- 中文和英文文档保持一一对应。
+- 目前仓库为 ADT、AIR、Target、CodeGen、MC 都配套了测试。
+- 当前实现重点是可运行、可测试、可扩展，文档只描述已经落地的能力。

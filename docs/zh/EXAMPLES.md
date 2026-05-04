@@ -1,0 +1,64 @@
+# 示例
+
+## 1. 最小 AIR 生成
+
+```cpp
+auto module = std::make_unique<aurora::Module>("example");
+aurora::SmallVector<aurora::Type*, 8> params = {aurora::Type::getInt32Ty(), aurora::Type::getInt32Ty()};
+auto* fn = module->createFunction(new aurora::FunctionType(aurora::Type::getInt32Ty(), params), "add");
+aurora::AIRBuilder builder(fn->getEntryBlock());
+unsigned sum = builder.createAdd(aurora::Type::getInt32Ty(), 0, 1);
+builder.createRet(sum);
+```
+
+这个例子会生成一个简单的 `add` 函数，对应 AIR 中的 `add` 和 `ret`。
+
+## 2. Mini 语言控制流
+
+```mini
+fn abs(x) = if x < 0 then 0 - x else x
+fn max(a, b) = if a > b then a else b
+```
+
+这会触发：
+
+- `Lexer` 识别关键字和运算符
+- `Parser` 生成 AST
+- `tools/minic/CodeGen` 生成 AIR `icmp`、`condbr` 和 `phi`
+- 后端生成 x86 汇编
+
+## 3. 生成对象文件
+
+```cpp
+auto tm = aurora::TargetMachine::createX86_64();
+aurora::MachineFunction mf(*fn, *tm);
+aurora::PassManager pm;
+aurora::CodeGenContext::addStandardPasses(pm, *tm);
+pm.run(mf);
+
+aurora::ObjectWriter writer;
+writer.addFunction(mf);
+writer.write("out.o");
+```
+
+适合验证：
+
+- 符号表是否正确
+- 重定位是否生成
+- `.text` / `.data` 是否布局正确
+
+## 4. 观察后端流水线
+
+```cpp
+aurora::AsmTextStreamer streamer(std::cout);
+const auto& ri = static_cast<const aurora::X86RegisterInfo&>(tm->getRegisterInfo());
+aurora::X86AsmPrinter printer(streamer, ri);
+printer.emitFunction(mf);
+```
+
+适合用来检查：
+
+- 指令选择结果
+- 寄存器分配结果
+- 序言/尾声
+- 跳转和 PHI lowering

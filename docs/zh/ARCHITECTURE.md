@@ -1,58 +1,45 @@
 # 架构
 
-## 代码生成管线
+Aurora 当前阶段是一个以 x86-64 为目标的编译后端和示例前端组合项目。
+整体流水线如下：
 
-```
-源码 (AIR IR)
-    ↓
-AIRToMachineIRPass        -- 将 AIR 翻译为 MachineInstr
-    ↓
-InstructionSelectionPass  -- 模式匹配到 x86 操作码
-    ↓
-CopyCoalescingPass        -- 合并冗余复制
-    ↓
-PeepholePass              -- 删除无用指令
-    ↓
-DeadCodeEliminationPass   -- 删除死代码
-    ↓
-RegisterAllocationPass    -- 线性扫描 + 溢出
-    ↓
-PrologueEpilogueInserter  -- 栈帧设置/恢复
-    ↓
-BranchFoldingPass         -- 合并连续跳转
-    ↓
-Assembly/ELF output       -- X86AsmPrinter / ObjectWriter
+```text
+Mini 源码 -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
+-> PassManager -> MachineFunction/MIR -> AsmPrinter 或 ObjectWriter -> 汇编/ELF 对象
 ```
 
-## AIR 指令集
+## 分层
 
-| 类别 | 操作码 |
-|------|--------|
-| 终止指令 | Ret, Br, CondBr, Unreachable |
-| 算术运算 | Add, Sub, Mul, UDiv, SDiv, URem, SRem |
-| 位运算 | And, Or, Xor, Shl, LShr, AShr |
-| 比较 | ICmp, FCmp |
-| 内存 | Alloca, Load, Store, GetElementPtr |
-| 转换 | SExt, ZExt, Trunc, FpToSi, SiToFp, BitCast |
-| 控制流 | Phi, Select |
-| 函数调用 | Call |
-| 结构体 | ExtractValue, InsertValue |
-| 常量 | ConstantInt |
-| 分支 | Switch |
+| 层级 | 作用 |
+|------|------|
+| `ADT` | 基础容器和工具：`SmallVector`、`BitVector`、`Graph`、`SparseSet`、`BumpPtrAllocator` |
+| `AIR` | SSA 风格中间表示：类型、常量、函数、基本块、指令、Builder、Module |
+| `Target` | 目标抽象：寄存器、指令、lowering、调用约定、栈帧 |
+| `Target/X86` | x86-64 的具体实现 |
+| `CodeGen` | AIR 到 MIR、指令选择、寄存器分配、栈帧插入、branch folding |
+| `MC` | 汇编打印、机器码编码、ELF relocatable 输出 |
+| `tools/minic` | Mini 语言前端 |
 
-## 寄存器分配
+## 关键对象
 
-- 线性扫描算法
-- 独立的 GPR 和 XMM 寄存器池
-- 寄存器压力溢出代码生成
-- 返回值强制映射到 RAX/XMM0
+- `Module` 持有 `Function` 和 `GlobalVariable`。
+- `Function` 持有 `BasicBlock`，并管理虚拟寄存器编号和类型信息。
+- `AIRBuilder` 负责在当前插入点生成 AIR 指令。
+- `PassManager` 运行标准流水线，`CodeGenContext::addStandardPasses` 会注册默认 passes。
+- `MachineFunction` 承载 MIR、栈对象、虚拟寄存器类型和目标信息。
+- `SelectionDAG` 提供 DAG 节点、常量、寄存器引用和基本的选择/调度接口。
+- `AsmPrinter` 与 `ObjectWriter` 是两条后端输出路径，分别面向文本汇编和 ELF 对象。
 
-## ELF 输出
+## 当前流水线
 
-`ObjectWriter` 生成标准的 ELF64 .o 文件，包含：
-- `.text` 段（编码的 x86-64 机器码）
-- `.data` 段（全局变量初始化）
-- `.symtab`（函数和数据符号）
-- `.strtab`（符号名字符串）
-- `.rela.text`（R_X86_64_PLT32/PC32/32S 重定位）
-- `.shstrtab`（段名称）
+1. AIR to MachineIR：把 AIR 指令直接映射到 MIR。
+2. Instruction Selection：把 AIR 操作降成目标指令。
+3. Register Allocation：线性扫描分配物理寄存器，必要时溢出到栈。
+4. Prologue/Epilogue Insertion：插入函数序言和尾声。
+5. Branch Folding：折叠冗余跳转并线程化简单跳转链。
+
+## 约束
+
+- 目前实现重点是可运行与可测试，不是完整 LLVM 等级优化器。
+- 选择 DAG 相关接口已经存在，但更多是当前阶段的结构入口。
+- 文档和代码都应保持中英文对应。
