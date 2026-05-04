@@ -61,3 +61,13 @@ TEST(SelectionDAGTest, MachineOpcodeOnNode) {
     sv.getNode()->createMachineInstr(42);
     EXPECT_EQ(sv.getNode()->getMachineOpcode(), 42u);
 }
+
+TEST(SelectionDAGTest, ConstantNodeStoresValue) {
+    SelectionDAG dag;
+    const auto sv = dag.createConstant(-42, Type::getInt64Ty());
+
+    ASSERT_TRUE(sv.isValid());
+    EXPECT_EQ(sv.getNode()->getOpcode(), AIROpcode::ConstantInt);
+    EXPECT_TRUE(sv.getNode()->hasConstantValue());
+    EXPECT_EQ(sv.getNode()->getConstantValue(), -42);
+}

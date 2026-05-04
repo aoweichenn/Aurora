@@ -38,6 +38,10 @@ public:
     [[nodiscard]] unsigned getVReg() const noexcept { return vreg_; }
     void setVReg(const unsigned v) noexcept { vreg_ = v; }
 
+    [[nodiscard]] bool hasConstantValue() const noexcept { return hasConstantValue_; }
+    [[nodiscard]] int64_t getConstantValue() const noexcept { return constantValue_; }
+    void setConstantValue(int64_t value) noexcept;
+
     void createMachineInstr(uint16_t opcode);
 
 private:
@@ -47,6 +51,8 @@ private:
     unsigned vreg_;
     SmallVector<SDNode*, 4> operands_;
     SmallVector<SDNode*, 4> users_;
+    int64_t constantValue_;
+    bool hasConstantValue_;
     bool selected_;
     uint16_t machOpcode_;
 };

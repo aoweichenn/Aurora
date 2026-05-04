@@ -5,7 +5,7 @@ namespace aurora {
 
 SDNode::SDNode(const AIROpcode op, Type* ty)
     : opcode_(op), type_(ty), nodeId_(0), vreg_(~0U),
-      selected_(false), machOpcode_(0) {}
+      constantValue_(0), hasConstantValue_(false), selected_(false), machOpcode_(0) {}
 
 SDNode::~SDNode() = default;
 
@@ -28,6 +28,11 @@ void SDNode::createMachineInstr(const uint16_t opcode) {
     selected_ = true;
 }
 
+void SDNode::setConstantValue(const int64_t value) noexcept {
+    constantValue_ = value;
+    hasConstantValue_ = true;
+}
+
 SelectionDAG::SelectionDAG() : nextNodeId_(0) {}
 SelectionDAG::~SelectionDAG() {
     for (const auto* n : allNodes_) delete n;
@@ -42,8 +47,8 @@ SDValue SelectionDAG::createNode(const AIROpcode op, Type* ty, const SmallVector
 }
 
 SDValue SelectionDAG::createConstant(const int64_t val, Type* ty) {
-    auto* node = createSDNode(AIROpcode::Add, ty);
-    (void)val; // TODO: store constant value properly
+    auto* node = createSDNode(AIROpcode::ConstantInt, ty);
+    node->setConstantValue(val);
     return SDValue(node);
 }
 
@@ -70,7 +75,9 @@ void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* /*m
         }
 
         if (inst->hasResult()) {
-            auto sv = createNode(op, ty, ops);
+            auto sv = op == AIROpcode::ConstantInt
+                ? createConstant(inst->getConstantValue(), ty)
+                : createNode(op, ty, ops);
             sv.getNode()->setVReg(inst->getDestVReg());
             roots_.push_back(sv);
         } else {
