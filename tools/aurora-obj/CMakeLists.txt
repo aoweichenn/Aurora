@@ -8,10 +8,5 @@ target_include_directories(aurora-obj PRIVATE
 )
 
 target_link_libraries(aurora-obj PRIVATE
-    AuroraCommon
-    AuroraAir
-    AuroraCodeGen
     AuroraMC
-    AuroraX86
-    AuroraTarget
 )

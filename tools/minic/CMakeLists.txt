@@ -11,10 +11,5 @@ target_include_directories(minic PRIVATE
 )
 
 target_link_libraries(minic PRIVATE
-    AuroraCommon
-    AuroraAir
     AuroraMC
-    AuroraCodeGen
-    AuroraX86
-    AuroraTarget
 )

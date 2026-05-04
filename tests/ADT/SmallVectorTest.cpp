@@ -72,7 +72,7 @@ TEST(SmallVectorTest, MoveConstructor) {
 TEST(SmallVectorTest, Erase) {
     SmallVector<int, 8> v;
     v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4);
-    v.erase(v.begin() + 1);
+    (void)v.erase(v.begin() + 1);
     EXPECT_EQ(v.size(), 3u);
     EXPECT_EQ(v[0], 1);
     EXPECT_EQ(v[1], 3);
@@ -82,7 +82,7 @@ TEST(SmallVectorTest, Erase) {
 TEST(SmallVectorTest, RangeErase) {
     SmallVector<int, 8> v;
     v.push_back(1); v.push_back(2); v.push_back(3); v.push_back(4);
-    v.erase(v.begin() + 1, v.begin() + 3);
+    (void)v.erase(v.begin() + 1, v.begin() + 3);
     EXPECT_EQ(v.size(), 2u);
     EXPECT_EQ(v[0], 1);
     EXPECT_EQ(v[1], 4);

@@ -1,11 +1,11 @@
 # Architecture
 
-Aurora is currently a combination of an x86-64 backend and a small sample front-end.
+Aurora is currently a combination of x86-64 and macOS arm64 assembly backends with a small sample front-end.
 The end-to-end flow is:
 
 ```text
 Mini source -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
--> PassManager -> MachineFunction/MIR -> AsmPrinter or ObjectWriter -> assembly/ELF object
+-> PassManager -> MachineFunction/MIR -> AsmPrinter or ObjectWriter -> assembly/x86-64 ELF object
 ```
 
 ## Layers
@@ -16,8 +16,9 @@ Mini source -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
 | `AIR` | SSA-style IR: types, constants, functions, basic blocks, instructions, builders, modules |
 | `Target` | Target abstraction: registers, instructions, lowering, calling convention, stack frame |
 | `Target/X86` | Concrete x86-64 implementation |
+| `Target/AArch64` | Concrete macOS arm64 implementation for assembly output |
 | `CodeGen` | AIR to MIR, instruction selection, register allocation, stack frame insertion, branch folding |
-| `MC` | Assembly printing, machine-code encoding, ELF relocatable output |
+| `MC` | Assembly printing, x86-64 machine-code encoding, x86-64 ELF relocatable output |
 | `tools/minic` | Mini language front-end |
 
 ## Core Objects
@@ -28,7 +29,7 @@ Mini source -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
 - `PassManager` runs the standard pipeline; `CodeGenContext::addStandardPasses` registers the default passes.
 - `MachineFunction` carries MIR, stack objects, virtual register types, and target information.
 - `SelectionDAG` exposes DAG nodes, constants, register references, and basic select/schedule hooks.
-- `AsmPrinter` and `ObjectWriter` are the two backend output paths for text assembly and ELF objects.
+- `AsmPrinter` and `ObjectWriter` are the two backend output paths for text assembly and x86-64 ELF objects.
 
 ## Current Pipeline
 

@@ -37,12 +37,13 @@ Run it with:
 
 ```bash
 ./build/tools/minic/minic test.mini
+./build/tools/minic/minic --target=arm64 test.mini
 ```
 
 The output contains:
 
 - AIR IR printing
-- x86-64 AT&T assembly printing
+- target assembly printing; `x86_64` is the default, and `arm64` emits macOS arm64 assembly
 
 ## 3. Use the AIR API directly
 
@@ -82,6 +83,8 @@ aurora::X86AsmPrinter printer(streamer, ri);
 printer.emitFunction(mf);
 ```
 
+Use `aurora::TargetMachine::createAArch64_Apple()` with `aurora::AArch64AsmPrinter` to emit macOS arm64 assembly.
+
 ## 5. Emit an object file
 
 ```cpp
@@ -91,7 +94,7 @@ writer.addGlobal(*globalVar);
 writer.write("out.o");
 ```
 
-`ObjectWriter` emits an ELF relocatable object containing:
+`ObjectWriter` currently emits an x86-64 ELF relocatable object containing:
 
 - `.text`
 - `.data`

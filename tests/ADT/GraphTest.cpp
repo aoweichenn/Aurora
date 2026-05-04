@@ -35,10 +35,10 @@ TEST(GraphTest, SuccessorsAndPredecessors) {
 
 TEST(GraphTest, PostOrder) {
     DirectedGraph<int> g;
-    g.addNode(0);
-    g.addNode(1);
-    g.addNode(2);
-    g.addNode(3);
+    (void)g.addNode(0);
+    (void)g.addNode(1);
+    (void)g.addNode(2);
+    (void)g.addNode(3);
     g.addEdge(0, 1);
     g.addEdge(1, 2);
     g.addEdge(2, 3);
@@ -54,10 +54,10 @@ TEST(GraphTest, PostOrder) {
 
 TEST(GraphTest, ReversePostOrder) {
     DirectedGraph<int> g;
-    g.addNode(0);
-    g.addNode(1);
-    g.addNode(2);
-    g.addNode(3);
+    (void)g.addNode(0);
+    (void)g.addNode(1);
+    (void)g.addNode(2);
+    (void)g.addNode(3);
     g.addEdge(0, 1);
     g.addEdge(1, 2);
     g.addEdge(2, 3);
@@ -73,7 +73,7 @@ TEST(GraphTest, ReversePostOrder) {
 TEST(GraphTest, DagPostOrder) {
     DirectedGraph<int> g;
     // Create a small DAG
-    g.addNode(0); g.addNode(1); g.addNode(2); g.addNode(3); g.addNode(4);
+    (void)g.addNode(0); (void)g.addNode(1); (void)g.addNode(2); (void)g.addNode(3); (void)g.addNode(4);
     g.addEdge(0, 1); g.addEdge(0, 2);
     g.addEdge(1, 3); g.addEdge(2, 3);
     g.addEdge(3, 4);

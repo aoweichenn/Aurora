@@ -105,6 +105,7 @@ TEST(FuncCoverFrameTest, FrameIndexRef) {
     X86FrameLowering fl;
     unsigned r = 0; int o = fl.getFrameIndexReference(mf, 0, r);
     EXPECT_EQ(r, X86RegisterInfo::RBP);
+    EXPECT_LT(o, 0);
 }
 
 // ---- RegisterAllocator ----

@@ -247,6 +247,7 @@ TEST(BuilderTest, SetInsertPointWithPosition) {
     Module mod("test");
     auto* fn = mod.createFunction(fnTy, "insert");
     AIRBuilder builder(fn->getEntryBlock());
-    builder.createAdd(Type::getInt64Ty(), 0, 0);
+    const unsigned add = builder.createAdd(Type::getInt64Ty(), 0, 0);
+    EXPECT_EQ(add, 1u);
     EXPECT_EQ(builder.getInsertBlock(), fn->getEntryBlock());
 }

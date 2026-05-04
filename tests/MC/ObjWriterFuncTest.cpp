@@ -14,14 +14,6 @@
 
 using namespace aurora;
 
-static void runPipeline(MachineFunction& mf) {
-    auto tm = TargetMachine::createX86_64();
-    PassManager pm;
-    CodeGenContext::addStandardPasses(pm, *tm);
-    pm.run(mf);
-    delete &mf.getTarget();
-}
-
 TEST(ObjectWriterFuncTest, Construction) { ObjectWriter w; SUCCEED(); }
 TEST(ObjectWriterFuncTest, AddGlobal) { ObjectWriter w; auto* g = new GlobalVariable(Type::getInt64Ty(), "x", ConstantInt::getInt64(1)); w.addGlobal(*g); delete g; SUCCEED(); }
 TEST(ObjectWriterFuncTest, AddExtern) { ObjectWriter w; w.addExternSymbol("printf"); w.addExternSymbol("malloc"); SUCCEED(); }

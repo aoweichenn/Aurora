@@ -8,11 +8,22 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(AURORA_BUILD_SHARED_LIBS "Build shared libraries" ON)
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" AURORA_SYSTEM_PROCESSOR)
+set(AURORA_BUILD_SHARED_LIBS_DEFAULT ON)
+if(AURORA_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$")
+    set(AURORA_BUILD_SHARED_LIBS_DEFAULT OFF)
+endif()
+
+option(AURORA_BUILD_SHARED_LIBS "Build shared libraries" ${AURORA_BUILD_SHARED_LIBS_DEFAULT})
 option(AURORA_BUILD_STATIC_LIBS "Build static libraries" ON)
 option(AURORA_BUILD_TESTS "Build tests" ON)
 option(AURORA_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(AURORA_ENABLE_COVERAGE "Enable code coverage instrumentation" OFF)
+
+if(AURORA_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64)$" AND AURORA_BUILD_SHARED_LIBS)
+    message(STATUS "Aurora: disabling shared libraries on ARM64 hosts; static tools still build and target x86-64")
+    set(AURORA_BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+endif()
 
 set(AURORA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

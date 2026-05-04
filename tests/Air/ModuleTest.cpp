@@ -56,6 +56,9 @@ TEST(ModuleTest, CreateMultipleFunctions) {
     auto* fn2 = mod.createFunction(fnTy, "f2");
     auto* fn3 = mod.createFunction(fnTy, "f3");
 
+    EXPECT_NE(fn1, nullptr);
+    EXPECT_NE(fn2, nullptr);
+    EXPECT_NE(fn3, nullptr);
     EXPECT_EQ(mod.getFunctions().size(), 3u);
     EXPECT_EQ(mod.getFunctions()[0]->getName(), "f1");
     EXPECT_EQ(mod.getFunctions()[1]->getName(), "f2");
@@ -84,9 +87,9 @@ TEST(ModuleTest, FunctionsAndGlobalsMixed) {
     SmallVector<Type*, 8> params;
     auto* fnTy = new FunctionType(Type::getVoidTy(), params);
 
-    mod.createFunction(fnTy, "main");
-    mod.createGlobal(Type::getInt32Ty(), "counter");
-    mod.createFunction(fnTy, "init");
+    (void)mod.createFunction(fnTy, "main");
+    (void)mod.createGlobal(Type::getInt32Ty(), "counter");
+    (void)mod.createFunction(fnTy, "init");
 
     EXPECT_EQ(mod.getFunctions().size(), 2u);
     EXPECT_EQ(mod.getGlobals().size(), 1u);

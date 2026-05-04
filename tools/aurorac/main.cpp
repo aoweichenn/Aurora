@@ -7,12 +7,35 @@
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/Target/TargetMachine.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
+#include "Aurora/Target/AArch64/AArch64RegisterInfo.h"
 #include "Aurora/MC/MCStreamer.h"
 #include "Aurora/MC/X86/X86AsmPrinter.h"
+#include "Aurora/MC/AArch64/AArch64AsmPrinter.h"
 #include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 using namespace aurora;
+
+enum class BackendTarget {
+    X86_64,
+    AArch64Apple,
+};
+
+static BackendTarget parseTargetName(const std::string& target) {
+    if (target == "x86" || target == "x86_64" || target == "x86_64-linux")
+        return BackendTarget::X86_64;
+    if (target == "arm64" || target == "aarch64" || target == "arm64-apple-darwin" || target == "aarch64-apple-darwin")
+        return BackendTarget::AArch64Apple;
+    throw std::runtime_error("unknown target: " + target);
+}
+
+static std::unique_ptr<TargetMachine> createTargetMachine(BackendTarget target) {
+    if (target == BackendTarget::AArch64Apple)
+        return TargetMachine::createAArch64_Apple();
+    return TargetMachine::createX86_64();
+}
 
 static std::unique_ptr<Module> buildSampleModule() {
     auto mod = std::make_unique<Module>("sample");
@@ -33,7 +56,23 @@ static std::unique_ptr<Module> buildSampleModule() {
     return mod;
 }
 
-int main(int /*argc*/, char** /*argv*/) {
+int main(int argc, char** argv) {
+    BackendTarget backendTarget = BackendTarget::X86_64;
+    try {
+        for (int i = 1; i < argc; ++i) {
+            const std::string arg = argv[i];
+            const std::string targetPrefix = "--target=";
+            if (arg.rfind(targetPrefix, 0) == 0)
+                backendTarget = parseTargetName(arg.substr(targetPrefix.size()));
+            else
+                throw std::runtime_error("unexpected argument: " + arg);
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        std::cerr << "Usage: aurorac [--target=x86_64|arm64]\n";
+        return 1;
+    }
+
     std::cerr << "Aurora Compiler Backend v0.1.0\n";
     std::cerr << "================================\n\n";
 
@@ -57,8 +96,8 @@ int main(int /*argc*/, char** /*argv*/) {
     }
 
     // Stage 2: Create target machine
-    std::cerr << "\n[2] Creating x86-64 target machine...\n";
-    const auto tm = TargetMachine::createX86_64();
+    const auto tm = createTargetMachine(backendTarget);
+    std::cerr << "\n[2] Creating " << tm->getTargetTriple() << " target machine...\n";
     std::cerr << "    Target: " << tm->getTargetTriple() << "\n";
 
     // Stage 3: Run codegen passes
@@ -68,22 +107,30 @@ int main(int /*argc*/, char** /*argv*/) {
     std::cerr << "    Code generation complete.\n";
 
     // Stage 4: Emit assembly
-    std::cerr << "\n[4] Emitting x86-64 assembly:\n";
+    std::cerr << "\n[4] Emitting " << tm->getTargetTriple() << " assembly:\n";
     std::cerr << "--------------------------------\n";
 
     AsmTextStreamer streamer(std::cout);
-    const auto& x86RegInfo = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
-    X86AsmPrinter printer(streamer, x86RegInfo);
-
-    for (auto& fn : module->getFunctions()) {
-        MachineFunction mf(*fn, *tm);
-        // Run passes on this MF
-        PassManager pm;
-        CodeGenContext::addStandardPasses(pm, *tm);
-        pm.run(mf);
-
-        // Emit
-        printer.emitFunction(mf);
+    if (backendTarget == BackendTarget::AArch64Apple) {
+        const auto& regInfo = dynamic_cast<const AArch64RegisterInfo&>(tm->getRegisterInfo());
+        AArch64AsmPrinter printer(streamer, regInfo);
+        for (auto& fn : module->getFunctions()) {
+            MachineFunction mf(*fn, *tm);
+            PassManager pm;
+            CodeGenContext::addStandardPasses(pm, *tm);
+            pm.run(mf);
+            printer.emitFunction(mf);
+        }
+    } else {
+        const auto& regInfo = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
+        X86AsmPrinter printer(streamer, regInfo);
+        for (auto& fn : module->getFunctions()) {
+            MachineFunction mf(*fn, *tm);
+            PassManager pm;
+            CodeGenContext::addStandardPasses(pm, *tm);
+            pm.run(mf);
+            printer.emitFunction(mf);
+        }
     }
 
     std::cerr << "\nDone.\n";

@@ -9,6 +9,7 @@ add_library(AuroraTarget STATIC
 target_link_libraries(AuroraTarget PUBLIC AuroraAir)
 
 add_subdirectory(X86)
+add_subdirectory(AArch64)
 
 if(AURORA_BUILD_SHARED_LIBS)
     add_library(AuroraTarget_shared SHARED

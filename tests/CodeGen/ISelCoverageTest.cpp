@@ -54,6 +54,7 @@ TEST(ISelCoverageTest, ConstantAndConversion) {
     unsigned s = b.createSExt(Type::getInt64Ty(), 0);
     unsigned z = b.createZExt(Type::getInt64Ty(), 0);
     unsigned t = b.createTrunc(Type::getInt32Ty(), 0);
+    EXPECT_NE(t, ~0U);
     unsigned r = b.createAdd(Type::getInt64Ty(), b.createAdd(Type::getInt64Ty(), c, s), z);
     b.createRet(r);
     runPipeline(*mod);
@@ -106,7 +107,7 @@ TEST(ISelCoverageTest, ControlFlowWithPhi) {
     b.setInsertPoint(fBB); unsigned zero = b.createConstantInt(0); b.createBr(mBB);
     b.setInsertPoint(mBB);
     SmallVector<std::pair<BasicBlock*, unsigned>,4> inc = {{tBB, one}, {fBB, zero}};
-    b.createPhi(Type::getInt64Ty(), inc);
+    (void)b.createPhi(Type::getInt64Ty(), inc);
     b.createRet(one);
     runPipeline(*mod);
 }

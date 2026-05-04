@@ -2,6 +2,7 @@ add_library(AuroraMC STATIC
     MCStreamer.cpp
     AsmPrinter.cpp
     X86/X86AsmPrinter.cpp
+    AArch64/AArch64AsmPrinter.cpp
     X86/X86InstEncoder.cpp
     X86/X86ObjectEncoder.cpp
     ObjectWriter.cpp
@@ -13,6 +14,7 @@ if(AURORA_BUILD_SHARED_LIBS)
         MCStreamer.cpp
         AsmPrinter.cpp
         X86/X86AsmPrinter.cpp
+        AArch64/AArch64AsmPrinter.cpp
         X86/X86InstEncoder.cpp
         X86/X86ObjectEncoder.cpp
         ObjectWriter.cpp

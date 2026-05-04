@@ -41,8 +41,8 @@ TEST(AllocatorTest, LargeAllocation) {
 
 TEST(AllocatorTest, Reset) {
     BumpPtrAllocator alloc;
-    alloc.allocate(100);
-    alloc.allocate(200);
+    (void)alloc.allocate(100);
+    (void)alloc.allocate(200);
     alloc.reset();
     // After reset, should be able to allocate again
     void* ptr = alloc.allocate(50);
@@ -52,7 +52,7 @@ TEST(AllocatorTest, Reset) {
 TEST(AllocatorTest, TotalSize) {
     BumpPtrAllocator alloc;
     EXPECT_GE(alloc.totalSize(), 0u);
-    alloc.allocate(100);
+    (void)alloc.allocate(100);
     // Total size should include at least the slab
     EXPECT_GE(alloc.totalSize(), 100u);
 }

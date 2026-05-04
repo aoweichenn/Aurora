@@ -37,12 +37,13 @@ fn max(a, b) = if a > b then a else b
 
 ```bash
 ./build/tools/minic/minic test.mini
+./build/tools/minic/minic --target=arm64 test.mini
 ```
 
 输出包含两部分：
 
 - AIR IR 打印
-- x86-64 AT&T 汇编打印
+- 目标汇编打印；`x86_64` 是默认目标，`arm64` 会输出 macOS arm64 汇编
 
 ## 3. 直接使用 AIR API
 
@@ -82,6 +83,8 @@ aurora::X86AsmPrinter printer(streamer, ri);
 printer.emitFunction(mf);
 ```
 
+如果要输出 macOS arm64 汇编，可使用 `aurora::TargetMachine::createAArch64_Apple()` 搭配 `aurora::AArch64AsmPrinter`。
+
 ## 5. 生成对象文件
 
 ```cpp
@@ -91,7 +94,7 @@ writer.addGlobal(*globalVar);
 writer.write("out.o");
 ```
 
-`ObjectWriter` 会写出 ELF relocatable object，包括：
+`ObjectWriter` 当前会写出 x86-64 ELF relocatable object，包括：
 
 - `.text`
 - `.data`

@@ -54,7 +54,7 @@ static void BM_Allocator_SmallAllocs(benchmark::State& state) {
     BumpPtrAllocator alloc;
     for (auto _ : state) { // NOLINT
         for (auto i = 0; i < 1000; ++i)
-            alloc.allocate(32, 8);
+            benchmark::DoNotOptimize(alloc.allocate(32, 8));
         alloc.reset();
     }
 }

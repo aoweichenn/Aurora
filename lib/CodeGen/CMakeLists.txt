@@ -14,7 +14,7 @@ add_library(AuroraCodeGen STATIC
     Passes/PassPipeline.cpp
     Passes/PassManager.cpp
 )
-target_link_libraries(AuroraCodeGen PUBLIC AuroraTarget AuroraX86)
+target_link_libraries(AuroraCodeGen PUBLIC AuroraTarget AuroraX86 AuroraAArch64)
 
 if(AURORA_BUILD_SHARED_LIBS)
     add_library(AuroraCodeGen_shared SHARED
@@ -33,7 +33,7 @@ if(AURORA_BUILD_SHARED_LIBS)
         Passes/PassPipeline.cpp
         Passes/PassManager.cpp
     )
-    target_link_libraries(AuroraCodeGen_shared PUBLIC AuroraTarget AuroraX86)
+    target_link_libraries(AuroraCodeGen_shared PUBLIC AuroraTarget AuroraX86 AuroraAArch64)
     set_target_properties(AuroraCodeGen_shared PROPERTIES OUTPUT_NAME AuroraCodeGen)
 endif()
 

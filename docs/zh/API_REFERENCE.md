@@ -42,6 +42,15 @@
 - `X86TargetLowering`：目标合法化和类型注册尺寸规则。
 - `X86InstrEncode`：面向编码表的机器码编码入口。
 
+## Target/AArch64
+
+- `AArch64TargetMachine`：macOS arm64 目标机器实现。
+- `AArch64RegisterInfo`：AArch64 寄存器描述、寄存器类与分配顺序。
+- `AArch64InstrInfo`：AArch64 指令表与 opcode 查询。
+- `AArch64CallingConv`：AAPCS 风格的寄存器和栈参数分配。
+- `AArch64FrameLowering`：函数序言/尾声与栈帧引用计算。
+- `AArch64TargetLowering`：目标合法化和类型寄存器尺寸规则。
+
 ## CodeGen
 
 - `MachineOperand`：`createReg()`、`createVReg()`、`createImm()`、`createMBB()`、`createFrameIndex()`、`createGlobalSym()`，以及对应访问器。
@@ -65,6 +74,7 @@
 - `MCStreamer`：汇编文本输出抽象。
 - `AsmPrinter`：遍历 `MachineFunction` 并打印汇编。
 - `X86AsmPrinter`：x86-64 AT&T 语法打印。
+- `AArch64AsmPrinter`：macOS arm64 汇编打印。
 - `ObjectWriter`：`addFunction()`、`addGlobal()`、`addExternSymbol()`、`write()`。
 - `X86ObjectEncoder`：机器指令到字节流编码。
 - `X86InstEncoder`：基于编码表的指令编码。
@@ -78,5 +88,5 @@
 
 ## 示例工具
 
-- `tools/aurorac`：读取样例 `Module` 并通过后端打印汇编。
-- `tools/aurora-obj`：生成 ELF relocatable 对象文件。
+- `tools/aurorac`：读取样例 `Module` 并通过所选后端打印汇编。
+- `tools/aurora-obj`：生成 x86-64 ELF relocatable 对象文件。

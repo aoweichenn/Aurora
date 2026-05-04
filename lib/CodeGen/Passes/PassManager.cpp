@@ -16,9 +16,51 @@
 #include "Aurora/Target/X86/X86ISelPatterns.h"
 #include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Target/X86/X86RegisterInfo.h"
+#include "Aurora/Target/AArch64/AArch64InstrInfo.h"
+#include "Aurora/Target/AArch64/AArch64RegisterInfo.h"
 #include <map>
+#include <string>
 
 namespace aurora {
+
+namespace {
+bool isAArch64Target(const MachineFunction& mf) {
+    const std::string triple = mf.getTarget().getTargetTriple();
+    return triple.find("arm64") != std::string::npos || triple.find("aarch64") != std::string::npos;
+}
+
+uint16_t getAArch64BccForCond(const ICmpCond cond) {
+    switch (cond) {
+    case ICmpCond::EQ: return AArch64::BEQ;
+    case ICmpCond::NE: return AArch64::BNE;
+    case ICmpCond::SLT:
+    case ICmpCond::ULT: return AArch64::BLT;
+    case ICmpCond::SLE:
+    case ICmpCond::ULE: return AArch64::BLE;
+    case ICmpCond::SGT:
+    case ICmpCond::UGT: return AArch64::BGT;
+    case ICmpCond::SGE:
+    case ICmpCond::UGE: return AArch64::BGE;
+    }
+    return AArch64::BNE;
+}
+
+uint16_t getAArch64CSetForCond(const ICmpCond cond) {
+    switch (cond) {
+    case ICmpCond::EQ: return AArch64::CSETEQ;
+    case ICmpCond::NE: return AArch64::CSETNE;
+    case ICmpCond::SLT:
+    case ICmpCond::ULT: return AArch64::CSETLT;
+    case ICmpCond::SLE:
+    case ICmpCond::ULE: return AArch64::CSETLE;
+    case ICmpCond::SGT:
+    case ICmpCond::UGT: return AArch64::CSETGT;
+    case ICmpCond::SGE:
+    case ICmpCond::UGE: return AArch64::CSETGE;
+    }
+    return AArch64::CSETNE;
+}
+} // namespace
 
 void PassManager::addPass(std::unique_ptr<CodeGenPass> pass) {
     passes_.push_back(std::move(pass));
@@ -86,7 +128,13 @@ public:
 class InstructionSelectionPass : public CodeGenPass {
 public:
     void run(MachineFunction& mf) override {
+        if (isAArch64Target(mf)) {
+            runAArch64(mf);
+            return;
+        }
+
         frameIndexMap_.clear();
+        pendingPhis_.clear();
         buildStoreMap(mf);
         ISelContext iselCtx(mf);
         LoweringRegistry loweringRegistry;
@@ -225,11 +273,311 @@ public:
     const char* getName() const override { return "Instruction Selection"; }
 
 private:
+    void runAArch64(MachineFunction& mf) {
+        frameIndexMap_.clear();
+        pendingPhis_.clear();
+        buildStoreMap(mf);
+        const auto& airFunc = mf.getAIRFunction();
+
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                const AIROpcode airOp = static_cast<AIROpcode>(mi->getOpcode());
+                MachineInstr* next = mi->getNext();
+
+                switch (airOp) {
+                case AIROpcode::Ret: a64Ret(*mbb, mi); break;
+                case AIROpcode::Br: a64Br(*mbb, mi); break;
+                case AIROpcode::CondBr: a64CondBr(airFunc, *mbb, mi); break;
+                case AIROpcode::ICmp: a64ICmp(*mbb, mi); break;
+                case AIROpcode::Add:
+                case AIROpcode::Sub:
+                case AIROpcode::Mul:
+                case AIROpcode::And:
+                case AIROpcode::Or:
+                case AIROpcode::Xor:
+                case AIROpcode::Shl:
+                case AIROpcode::LShr:
+                case AIROpcode::AShr:
+                case AIROpcode::SDiv: a64BinOp(*mbb, mi, airOp); break;
+                case AIROpcode::ConstantInt: a64Constant(mf, *mbb, mi); break;
+                case AIROpcode::Phi: collectPhi(mf, airFunc, *mbb, mi); break;
+                case AIROpcode::Alloca: iselAlloca(mf, *mbb, mi); break;
+                case AIROpcode::Load: a64Load(*mbb, mi); break;
+                case AIROpcode::Store: a64Store(*mbb, mi); break;
+                case AIROpcode::Call: a64Call(*mbb, mi); break;
+                case AIROpcode::SExt:
+                case AIROpcode::ZExt:
+                case AIROpcode::Trunc:
+                case AIROpcode::BitCast: a64MoveLike(*mbb, mi); break;
+                case AIROpcode::Unreachable: a64Unreachable(*mbb, mi); break;
+                default:
+                    break;
+                }
+
+                mi = next;
+            }
+        }
+
+        executePhis(mf);
+        applyInstrFlags(mf);
+    }
+
     void replaceMI(MachineBasicBlock& mbb, MachineInstr* oldMI, MachineInstr* newMI) const
     {
         mbb.insertBefore(oldMI, newMI);
         mbb.remove(oldMI);
         delete oldMI;
+    }
+
+    static unsigned getResultVReg(const MachineInstr* mi) {
+        if (mi->getNumOperands() == 0) return ~0U;
+        const auto& result = mi->getOperand(mi->getNumOperands() - 1);
+        return result.isVReg() ? result.getVirtualReg() : ~0U;
+    }
+
+    static ICmpCond findICmpCondForVReg(const Function& airFunc, const unsigned vreg) {
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::ICmp && airInst->hasResult() && airInst->getDestVReg() == vreg)
+                    return airInst->getICmpCondition();
+                airInst = airInst->getNext();
+            }
+        }
+        return ICmpCond::NE;
+    }
+
+    static int64_t findConstantForVReg(const Function& airFunc, const unsigned vreg) {
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::ConstantInt && airInst->hasResult() && airInst->getDestVReg() == vreg)
+                    return airInst->getConstantValue();
+                airInst = airInst->getNext();
+            }
+        }
+        return 0;
+    }
+
+    static const char* findCalleeForCallResult(const Function& airFunc, const unsigned resultVReg) {
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::Call && airInst->hasResult() && airInst->getDestVReg() == resultVReg && airInst->getCalledFunction())
+                    return airInst->getCalledFunction()->getName().c_str();
+                airInst = airInst->getNext();
+            }
+        }
+        return nullptr;
+    }
+
+    void applyInstrFlags(MachineFunction& mf) const {
+        const auto& instrInfo = mf.getTarget().getInstrInfo();
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                const auto& desc = instrInfo.get(mi->getOpcode());
+                uint8_t flags = 0;
+                if (desc.isTerminator) flags |= MachineInstr::MIF_TERMINATOR;
+                if (desc.isBranch) flags |= MachineInstr::MIF_BRANCH;
+                if (desc.isCall) flags |= MachineInstr::MIF_CALL;
+                if (desc.isReturn) flags |= MachineInstr::MIF_RETURN;
+                if (desc.isMove) flags |= MachineInstr::MIF_MOVE;
+                if (desc.hasSideEffects) flags |= MachineInstr::MIF_SIDE_EFFECTS;
+                mi->setFlags(flags);
+                mi = mi->getNext();
+            }
+        }
+    }
+
+    void a64Ret(MachineBasicBlock& mbb, MachineInstr* mi) {
+        auto* retMI = new MachineInstr(AArch64::RET);
+        if (mi->getNumOperands() > 0)
+            retMI->addOperand(mi->getOperand(0));
+        replaceMI(mbb, mi, retMI);
+    }
+
+    void a64Br(MachineBasicBlock& mbb, MachineInstr* mi) {
+        auto* branch = new MachineInstr(AArch64::B);
+        if (!mbb.successors().empty())
+            branch->addOperand(MachineOperand::createMBB(mbb.successors()[0]));
+        replaceMI(mbb, mi, branch);
+    }
+
+    void a64CondBr(const Function& airFunc, MachineBasicBlock& mbb, MachineInstr* mi) {
+        const unsigned condVReg = mi->getNumOperands() > 0 ? mi->getOperand(0).getVirtualReg() : ~0U;
+        const auto& successors = mbb.successors();
+        MachineInstr* prevMI = mi->getPrev();
+        const bool prevIsCmp = prevMI && (prevMI->getOpcode() == AArch64::CMPrr || prevMI->getOpcode() == AArch64::CMPri);
+
+        if (prevIsCmp) {
+            auto* bcc = new MachineInstr(getAArch64BccForCond(findICmpCondForVReg(airFunc, condVReg)));
+            if (successors.size() > 0)
+                bcc->addOperand(MachineOperand::createMBB(successors[0]));
+            replaceMI(mbb, mi, bcc);
+
+            auto* branch = new MachineInstr(AArch64::B);
+            if (successors.size() > 1)
+                branch->addOperand(MachineOperand::createMBB(successors[1]));
+            mbb.insertAfter(bcc, branch);
+            return;
+        }
+
+        auto* cmp = new MachineInstr(AArch64::CMPri);
+        if (condVReg != ~0U)
+            cmp->addOperand(MachineOperand::createVReg(condVReg));
+        cmp->addOperand(MachineOperand::createImm(0));
+        replaceMI(mbb, mi, cmp);
+
+        auto* bne = new MachineInstr(AArch64::BNE);
+        if (successors.size() > 0)
+            bne->addOperand(MachineOperand::createMBB(successors[0]));
+        mbb.insertAfter(cmp, bne);
+
+        auto* branch = new MachineInstr(AArch64::B);
+        if (successors.size() > 1)
+            branch->addOperand(MachineOperand::createMBB(successors[1]));
+        mbb.insertAfter(bne, branch);
+    }
+
+    void a64ICmp(MachineBasicBlock& mbb, MachineInstr* mi) {
+        MachineInstr* next = mi->getNext();
+        const unsigned resultVReg = mi->getNumOperands() > 2 ? mi->getOperand(2).getVirtualReg() : ~0U;
+        const bool feedsCondBr = next && static_cast<AIROpcode>(next->getOpcode()) == AIROpcode::CondBr;
+        auto* cmp = new MachineInstr(AArch64::CMPrr);
+        if (mi->getNumOperands() >= 2) {
+            cmp->addOperand(mi->getOperand(0));
+            cmp->addOperand(mi->getOperand(1));
+        }
+        replaceMI(mbb, mi, cmp);
+
+        if (feedsCondBr)
+            return;
+
+        const ICmpCond cond = findICmpCondForVReg(mbb.getParent()->getAIRFunction(), resultVReg);
+        auto* cset = new MachineInstr(getAArch64CSetForCond(cond));
+        if (resultVReg != ~0U)
+            cset->addOperand(MachineOperand::createVReg(resultVReg));
+        mbb.insertAfter(cmp, cset);
+    }
+
+    void a64BinOp(MachineBasicBlock& mbb, MachineInstr* mi, const AIROpcode airOp) {
+        unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) lhsVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) rhsVReg = mi->getOperand(1).getVirtualReg();
+        resultVReg = getResultVReg(mi);
+
+        uint16_t opcode = AArch64::ADDrr;
+        switch (airOp) {
+        case AIROpcode::Add: opcode = AArch64::ADDrr; break;
+        case AIROpcode::Sub: opcode = AArch64::SUBrr; break;
+        case AIROpcode::Mul: opcode = AArch64::MULrr; break;
+        case AIROpcode::And: opcode = AArch64::ANDrr; break;
+        case AIROpcode::Or: opcode = AArch64::ORRrr; break;
+        case AIROpcode::Xor: opcode = AArch64::EORrr; break;
+        case AIROpcode::Shl: opcode = AArch64::LSLrr; break;
+        case AIROpcode::LShr: opcode = AArch64::LSRrr; break;
+        case AIROpcode::AShr: opcode = AArch64::ASRrr; break;
+        case AIROpcode::SDiv: opcode = AArch64::SDIVrr; break;
+        default: break;
+        }
+
+        auto* lowered = new MachineInstr(opcode);
+        if (lhsVReg != ~0U) lowered->addOperand(MachineOperand::createVReg(lhsVReg));
+        if (rhsVReg != ~0U) lowered->addOperand(MachineOperand::createVReg(rhsVReg));
+        if (resultVReg != ~0U) lowered->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, lowered);
+    }
+
+    void a64Constant(MachineFunction& mf, MachineBasicBlock& mbb, MachineInstr* mi) {
+        const unsigned resultVReg = getResultVReg(mi);
+        auto* mov = new MachineInstr(AArch64::MOVri);
+        mov->addOperand(MachineOperand::createImm(findConstantForVReg(mf.getAIRFunction(), resultVReg)));
+        if (resultVReg != ~0U)
+            mov->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, mov);
+    }
+
+    void a64Load(MachineBasicBlock& mbb, MachineInstr* mi) {
+        unsigned ptrVReg = ~0U, resultVReg = ~0U;
+        if (mi->getNumOperands() >= 1) ptrVReg = mi->getOperand(0).getVirtualReg();
+        resultVReg = getResultVReg(mi);
+
+        auto storeIt = storeMap_.find(ptrVReg);
+        if (storeIt != storeMap_.end() && storeIt->second != resultVReg) {
+            auto* mov = new MachineInstr(AArch64::MOVrr);
+            mov->addOperand(MachineOperand::createVReg(storeIt->second));
+            mov->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, mov);
+            return;
+        }
+
+        auto* load = new MachineInstr(AArch64::LDRfi);
+        auto it = frameIndexMap_.find(ptrVReg);
+        if (it != frameIndexMap_.end())
+            load->addOperand(MachineOperand::createFrameIndex(it->second));
+        else
+            load->addOperand(MachineOperand::createVReg(ptrVReg));
+        load->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, load);
+    }
+
+    void a64Store(MachineBasicBlock& mbb, MachineInstr* mi) {
+        unsigned valVReg = ~0U, ptrVReg = ~0U;
+        if (mi->getNumOperands() >= 1) valVReg = mi->getOperand(0).getVirtualReg();
+        if (mi->getNumOperands() >= 2) ptrVReg = mi->getOperand(1).getVirtualReg();
+
+        auto* store = new MachineInstr(AArch64::STRfi);
+        store->addOperand(MachineOperand::createVReg(valVReg));
+        auto it = frameIndexMap_.find(ptrVReg);
+        if (it != frameIndexMap_.end())
+            store->addOperand(MachineOperand::createFrameIndex(it->second));
+        else
+            store->addOperand(MachineOperand::createVReg(ptrVReg));
+        replaceMI(mbb, mi, store);
+    }
+
+    void a64Call(MachineBasicBlock& mbb, MachineInstr* mi) {
+        static const unsigned argRegs[] = {
+            AArch64RegisterInfo::X0, AArch64RegisterInfo::X1, AArch64RegisterInfo::X2, AArch64RegisterInfo::X3,
+            AArch64RegisterInfo::X4, AArch64RegisterInfo::X5, AArch64RegisterInfo::X6, AArch64RegisterInfo::X7,
+        };
+        unsigned numArgs = mi->getNumOperands();
+        const unsigned resultVReg = getResultVReg(mi);
+        if (numArgs > 0) --numArgs;
+
+        const unsigned regArgs = numArgs > 8 ? 8 : numArgs;
+        for (unsigned i = 0; i < regArgs; ++i) {
+            auto* movArg = new MachineInstr(AArch64::MOVrr);
+            movArg->addOperand(mi->getOperand(i));
+            movArg->addOperand(MachineOperand::createReg(argRegs[i]));
+            mbb.insertBefore(mi, movArg);
+        }
+
+        auto* call = new MachineInstr(AArch64::BL);
+        const char* calleeName = findCalleeForCallResult(mbb.getParent()->getAIRFunction(), resultVReg);
+        call->addOperand(MachineOperand::createGlobalSym(calleeName ? calleeName : ""));
+        replaceMI(mbb, mi, call);
+
+        if (resultVReg != ~0U) {
+            auto* movRet = new MachineInstr(AArch64::MOVrr);
+            movRet->addOperand(MachineOperand::createReg(AArch64RegisterInfo::X0));
+            movRet->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.insertAfter(call, movRet);
+        }
+    }
+
+    void a64MoveLike(MachineBasicBlock& mbb, MachineInstr* mi) {
+        if (mi->getNumOperands() < 2) return;
+        auto* mov = new MachineInstr(AArch64::MOVrr);
+        mov->addOperand(mi->getOperand(0));
+        mov->addOperand(mi->getOperand(1));
+        replaceMI(mbb, mi, mov);
+    }
+
+    void a64Unreachable(MachineBasicBlock& mbb, MachineInstr* mi) {
+        replaceMI(mbb, mi, new MachineInstr(AArch64::BRK));
     }
 
     void iselRet(MachineFunction& /*mf*/, MachineBasicBlock& mbb, MachineInstr* mi) {
@@ -996,13 +1344,17 @@ private:
     void executePhis(MachineFunction& mf) {
         std::map<std::string, MachineBasicBlock*> nameMap;
         for (auto& mb : mf.getBlocks()) nameMap[mb->getName()] = mb.get();
-        const std::vector<uint16_t> branchOps = {X86::JMP_1, X86::JE_1, X86::JG_1, X86::JL_1, X86::JNE_1, X86::JGE_1, X86::JLE_1, X86::JA_1, X86::JB_1, X86::JAE_1, X86::JBE_1};
+        const bool aarch64 = isAArch64Target(mf);
+        const uint16_t movOpcode = aarch64 ? static_cast<uint16_t>(AArch64::MOVrr) : static_cast<uint16_t>(X86::MOV64rr);
+        const std::vector<uint16_t> branchOps = aarch64
+            ? std::vector<uint16_t>{AArch64::B, AArch64::BEQ, AArch64::BNE, AArch64::BLT, AArch64::BLE, AArch64::BGT, AArch64::BGE}
+            : std::vector<uint16_t>{X86::JMP_1, X86::JE_1, X86::JG_1, X86::JL_1, X86::JNE_1, X86::JGE_1, X86::JLE_1, X86::JA_1, X86::JB_1, X86::JAE_1, X86::JBE_1};
         for (auto& pi : pendingPhis_) {
             for (auto& inc : pi.incomings) {
                 auto it = nameMap.find(inc.first); if (it == nameMap.end()) continue;
                 auto* pred = it->second;
                 auto* term = pred->getLast();
-                auto* movMI = new MachineInstr(X86::MOV64rr);
+                auto* movMI = new MachineInstr(movOpcode);
                 movMI->addOperand(MachineOperand::createVReg(inc.second));
                 movMI->addOperand(MachineOperand::createVReg(pi.resultVReg));
                 bool hasBranch = false;
@@ -1036,12 +1388,75 @@ public:
     void run(MachineFunction& mf) override {
         LinearScanRegAlloc allocator(mf);
         allocator.allocateRegisters();
-        rewriteVirtualRegs(mf);
+        if (isAArch64Target(mf))
+            rewriteVirtualRegsAArch64(mf);
+        else
+            rewriteVirtualRegs(mf);
         eliminateRedundantMoves(mf);
     }
     const char* getName() const override { return "Register Allocation"; }
 
 private:
+    void rewriteVirtualRegsAArch64(MachineFunction& mf) const {
+        std::map<unsigned, unsigned> vregToPReg;
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
+                    const auto& mo = mi->getOperand(i);
+                    if (mo.isVReg())
+                        vregToPReg[mo.getVirtualReg()] = ~0U;
+                }
+                mi = mi->getNext();
+            }
+        }
+
+        static const unsigned argRegs[] = {
+            AArch64RegisterInfo::X0, AArch64RegisterInfo::X1, AArch64RegisterInfo::X2, AArch64RegisterInfo::X3,
+            AArch64RegisterInfo::X4, AArch64RegisterInfo::X5, AArch64RegisterInfo::X6, AArch64RegisterInfo::X7,
+        };
+        static const unsigned tempRegs[] = {
+            AArch64RegisterInfo::X9, AArch64RegisterInfo::X10, AArch64RegisterInfo::X11, AArch64RegisterInfo::X12,
+            AArch64RegisterInfo::X13, AArch64RegisterInfo::X14, AArch64RegisterInfo::X15, AArch64RegisterInfo::X16,
+            AArch64RegisterInfo::X17, AArch64RegisterInfo::X8,
+        };
+
+        for (unsigned i = 0; i < mf.getAIRFunction().getNumArgs() && i < 8; ++i) {
+            auto it = vregToPReg.find(i);
+            if (it != vregToPReg.end())
+                it->second = argRegs[i];
+        }
+
+        unsigned nextTemp = 0;
+        for (auto& [vreg, preg] : vregToPReg) {
+            if (preg != ~0U) continue;
+            preg = nextTemp < (sizeof(tempRegs) / sizeof(tempRegs[0])) ? tempRegs[nextTemp++] : AArch64RegisterInfo::X9;
+        }
+
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                if (mi->getOpcode() == AArch64::RET && mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg())
+                    vregToPReg[mi->getOperand(0).getVirtualReg()] = AArch64RegisterInfo::X0;
+                mi = mi->getNext();
+            }
+        }
+
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
+                    auto& mo = mi->getOperand(i);
+                    if (!mo.isVReg()) continue;
+                    const auto it = vregToPReg.find(mo.getVirtualReg());
+                    if (it != vregToPReg.end())
+                        mo = MachineOperand::createReg(it->second);
+                }
+                mi = mi->getNext();
+            }
+        }
+    }
+
     void rewriteVirtualRegs(MachineFunction& mf) const
     {
         std::map<unsigned, unsigned> vregToPReg;
@@ -1183,8 +1598,8 @@ private:
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
                 MachineInstr* next = mi->getNext();
-                // Remove MOV64rr where src == dst (same physical register)
-                if (mi->getOpcode() == X86::MOV64rr && mi->getNumOperands() >= 2) {
+                // Remove register-register moves where src == dst.
+                if ((mi->getOpcode() == X86::MOV64rr || mi->getOpcode() == AArch64::MOVrr) && mi->getNumOperands() >= 2) {
                     const auto& op0 = mi->getOperand(0);
                     const auto& op1 = mi->getOperand(1);
                     if (op0.isReg() && op1.isReg() && op0.getReg() == op1.getReg()) {

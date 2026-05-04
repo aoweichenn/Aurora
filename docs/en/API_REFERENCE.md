@@ -42,6 +42,15 @@ This document lists the main public interfaces exposed by the current headers. T
 - `X86TargetLowering`: type legalization and register-size rules.
 - `X86InstrEncode`: machine-code encoding entry points driven by the encoding table.
 
+## Target/AArch64
+
+- `AArch64TargetMachine`: macOS arm64 target-machine implementation.
+- `AArch64RegisterInfo`: AArch64 register description, register classes, and allocation order.
+- `AArch64InstrInfo`: AArch64 instruction table and opcode queries.
+- `AArch64CallingConv`: AAPCS-style register and stack argument assignment.
+- `AArch64FrameLowering`: prologue/epilogue emission and frame-index references.
+- `AArch64TargetLowering`: type legalization and register-size rules.
+
 ## CodeGen
 
 - `MachineOperand`: `createReg()`, `createVReg()`, `createImm()`, `createMBB()`, `createFrameIndex()`, `createGlobalSym()`, and the associated accessors.
@@ -65,6 +74,7 @@ This document lists the main public interfaces exposed by the current headers. T
 - `MCStreamer`: assembly-text emission abstraction.
 - `AsmPrinter`: walks a `MachineFunction` and prints assembly.
 - `X86AsmPrinter`: x86-64 AT&T syntax printer.
+- `AArch64AsmPrinter`: macOS arm64 assembly printer.
 - `ObjectWriter`: `addFunction()`, `addGlobal()`, `addExternSymbol()`, `write()`.
 - `X86ObjectEncoder`: machine-instruction to byte-stream encoding.
 - `X86InstEncoder`: table-driven instruction encoder.
@@ -78,5 +88,5 @@ This document lists the main public interfaces exposed by the current headers. T
 
 ## Sample Tools
 
-- `tools/aurorac`: reads a sample `Module` and prints assembly through the backend.
-- `tools/aurora-obj`: produces an ELF relocatable object.
+- `tools/aurorac`: reads a sample `Module` and prints assembly through the selected backend.
+- `tools/aurora-obj`: produces an x86-64 ELF relocatable object.

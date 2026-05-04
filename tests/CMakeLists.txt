@@ -36,9 +36,10 @@ add_executable(Target_tests
     Target/X86ISelPatternsTest.cpp
     Target/X86CallingConvTest.cpp
     Target/X86InstrEncodeTest.cpp
+    Target/AArch64TargetTest.cpp
     Target/FuncCoverTest.cpp
 )
-target_link_libraries(Target_tests PRIVATE AuroraX86 AuroraCodeGen AuroraTestCommon)
+target_link_libraries(Target_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME Target_tests COMMAND Target_tests)
 
 add_executable(CodeGen_tests
@@ -68,6 +69,7 @@ add_executable(MC_tests
     MC/ObjectWriterFullTest.cpp
     MC/ObjWriterFuncTest.cpp
     MC/X86ObjectEncoderTest.cpp
+    MC/AArch64AsmPrinterTest.cpp
 )
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)

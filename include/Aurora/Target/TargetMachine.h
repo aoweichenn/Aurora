@@ -30,7 +30,7 @@ public:
     [[nodiscard]] virtual const char* getTargetTriple() const = 0;
 
     [[nodiscard]] static std::unique_ptr<TargetMachine> createX86_64();
+    [[nodiscard]] static std::unique_ptr<TargetMachine> createAArch64_Apple();
 };
 
 } // namespace aurora
-

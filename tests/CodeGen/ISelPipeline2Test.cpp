@@ -118,7 +118,7 @@ TEST(ISelPipeline2Test, PhiMerge) {
     b.setInsertPoint(f2); unsigned zero = b.createConstantInt(0); b.createBr(m2);
     b.setInsertPoint(m2);
     SmallVector<std::pair<BasicBlock*, unsigned>,4> inc = {{t, one}, {f2, zero}};
-    b.createPhi(Type::getInt64Ty(), inc);
+    (void)b.createPhi(Type::getInt64Ty(), inc);
     b.createRet(one);
     runModule(*m);
 }

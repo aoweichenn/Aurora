@@ -1,11 +1,11 @@
 # 架构
 
-Aurora 当前阶段是一个以 x86-64 为目标的编译后端和示例前端组合项目。
+Aurora 当前阶段是一个包含 x86-64 与 macOS arm64 汇编后端的示例前端组合项目。
 整体流水线如下：
 
 ```text
 Mini 源码 -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
--> PassManager -> MachineFunction/MIR -> AsmPrinter 或 ObjectWriter -> 汇编/ELF 对象
+-> PassManager -> MachineFunction/MIR -> AsmPrinter 或 ObjectWriter -> 汇编/x86-64 ELF 对象
 ```
 
 ## 分层
@@ -16,8 +16,9 @@ Mini 源码 -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
 | `AIR` | SSA 风格中间表示：类型、常量、函数、基本块、指令、Builder、Module |
 | `Target` | 目标抽象：寄存器、指令、lowering、调用约定、栈帧 |
 | `Target/X86` | x86-64 的具体实现 |
+| `Target/AArch64` | macOS arm64 汇编输出的具体实现 |
 | `CodeGen` | AIR 到 MIR、指令选择、寄存器分配、栈帧插入、branch folding |
-| `MC` | 汇编打印、机器码编码、ELF relocatable 输出 |
+| `MC` | 汇编打印、x86-64 机器码编码、x86-64 ELF relocatable 输出 |
 | `tools/minic` | Mini 语言前端 |
 
 ## 关键对象
@@ -28,7 +29,7 @@ Mini 源码 -> Lexer -> Parser -> AST -> MiniC CodeGen -> AIR Module
 - `PassManager` 运行标准流水线，`CodeGenContext::addStandardPasses` 会注册默认 passes。
 - `MachineFunction` 承载 MIR、栈对象、虚拟寄存器类型和目标信息。
 - `SelectionDAG` 提供 DAG 节点、常量、寄存器引用和基本的选择/调度接口。
-- `AsmPrinter` 与 `ObjectWriter` 是两条后端输出路径，分别面向文本汇编和 ELF 对象。
+- `AsmPrinter` 与 `ObjectWriter` 是两条后端输出路径，分别面向文本汇编和 x86-64 ELF 对象。
 
 ## 当前流水线
 
