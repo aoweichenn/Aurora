@@ -75,7 +75,7 @@ void BitVector::set(const unsigned idx, const bool val) {
     else     words_[wordIdx] &= ~(static_cast<word_type>(1) << bitIdx);
 }
 
-void BitVector::reset(const unsigned idx) const
+void BitVector::reset(const unsigned idx)
 {
     if (idx >= numBits_) return;
     const unsigned wordIdx = idx / BITS_PER_WORD;
@@ -142,7 +142,7 @@ BitVector& BitVector::operator^=(const BitVector& rhs) {
     return *this;
 }
 
-void BitVector::flip() const
+void BitVector::flip()
 {
     for (unsigned i = 0; i < numWords_; ++i)
         words_[i] = ~words_[i];
@@ -193,7 +193,7 @@ void BitVector::resize(const unsigned n) {
     numBits_ = n;
 }
 
-void BitVector::clear() const noexcept {
+void BitVector::clear() noexcept {
     for (unsigned i = 0; i < numWords_; ++i)
         words_[i] = 0;
 }

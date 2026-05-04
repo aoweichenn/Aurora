@@ -20,7 +20,7 @@ public:
 
     [[nodiscard]] bool operator[](unsigned idx) const;
     void set(unsigned idx, bool val = true);
-    void reset(unsigned idx) const;
+    void reset(unsigned idx);
     [[nodiscard]] bool test(unsigned idx) const noexcept;
     [[nodiscard]] unsigned size() const noexcept;
     [[nodiscard]] unsigned count() const;
@@ -31,13 +31,13 @@ public:
     BitVector& operator|=(const BitVector& rhs);
     BitVector& operator&=(const BitVector& rhs);
     BitVector& operator^=(const BitVector& rhs);
-    void flip() const;
+    void flip();
 
     [[nodiscard]] int find_first() const;
     [[nodiscard]] int find_next(unsigned idx) const;
 
     void resize(unsigned n);
-    void clear() const noexcept;
+    void clear() noexcept;
 
 private:
     word_type* words_;

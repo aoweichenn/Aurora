@@ -54,6 +54,13 @@ private:
 
 class MachineInstr {
 public:
+    static constexpr uint8_t MIF_TERMINATOR = 1 << 0;
+    static constexpr uint8_t MIF_BRANCH     = 1 << 1;
+    static constexpr uint8_t MIF_CALL       = 1 << 2;
+    static constexpr uint8_t MIF_RETURN     = 1 << 3;
+    static constexpr uint8_t MIF_MOVE       = 1 << 4;
+    static constexpr uint8_t MIF_SIDE_EFFECTS = 1 << 5;
+
     explicit MachineInstr(uint16_t opcode);
     ~MachineInstr();
 
@@ -65,6 +72,9 @@ public:
     void addOperand(MachineOperand mo);
     void setOperand(unsigned i, MachineOperand mo);
 
+    void setFlags(uint8_t flags) noexcept { flags_ = flags; }
+    [[nodiscard]] uint8_t getFlags() const noexcept { return flags_; }
+
     [[nodiscard]] MachineBasicBlock* getParent() const noexcept { return parent_; }
     void setParent(MachineBasicBlock* bb) noexcept { parent_ = bb; }
 
@@ -73,11 +83,11 @@ public:
     void setNext(MachineInstr* n) noexcept { next_ = n; }
     void setPrev(MachineInstr* p) noexcept { prev_ = p; }
 
-    [[nodiscard]] bool isTerminator() const noexcept;
-    [[nodiscard]] bool isBranch() const noexcept;
-    [[nodiscard]] bool isReturn() const noexcept;
-    [[nodiscard]] bool isCall() const noexcept;
-    [[nodiscard]] bool isMove() const noexcept;
+    [[nodiscard]] bool isTerminator() const noexcept { return (flags_ & MIF_TERMINATOR) != 0; }
+    [[nodiscard]] bool isBranch()     const noexcept { return (flags_ & MIF_BRANCH)     != 0; }
+    [[nodiscard]] bool isReturn()     const noexcept { return (flags_ & MIF_RETURN)     != 0; }
+    [[nodiscard]] bool isCall()       const noexcept { return (flags_ & MIF_CALL)       != 0; }
+    [[nodiscard]] bool isMove()       const noexcept { return (flags_ & MIF_MOVE)       != 0; }
 
 private:
     uint16_t opcode_;
@@ -85,6 +95,7 @@ private:
     MachineBasicBlock* parent_;
     MachineInstr* next_;
     MachineInstr* prev_;
+    uint8_t flags_ = 0;
 };
 
 } // namespace aurora

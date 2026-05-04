@@ -212,6 +212,24 @@ public:
         // Build MBB successor lists from branch instructions
         rebuildSuccessors(mf);
         executePhis(mf);
+
+        // Set MachineInstr flags from TargetInstrInfo opcode descriptors
+        const auto& II = mf.getTarget().getInstrInfo();
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                const auto& desc = II.get(mi->getOpcode());
+                uint8_t f = 0;
+                if (desc.isTerminator)   f |= MachineInstr::MIF_TERMINATOR;
+                if (desc.isBranch)       f |= MachineInstr::MIF_BRANCH;
+                if (desc.isCall)         f |= MachineInstr::MIF_CALL;
+                if (desc.isReturn)       f |= MachineInstr::MIF_RETURN;
+                if (desc.isMove)         f |= MachineInstr::MIF_MOVE;
+                if (desc.hasSideEffects) f |= MachineInstr::MIF_SIDE_EFFECTS;
+                mi->setFlags(f);
+                mi = mi->getNext();
+            }
+        }
     }
 
     const char* getName() const override { return "Instruction Selection"; }

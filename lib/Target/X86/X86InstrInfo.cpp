@@ -1,4 +1,6 @@
 #include "Aurora/Target/X86/X86InstrInfo.h"
+#include "Aurora/CodeGen/MachineBasicBlock.h"
+#include "Aurora/CodeGen/MachineInstr.h"
 #include <algorithm>
 #include <cstring>
 
@@ -18,16 +20,28 @@ bool X86InstrInfo::isMoveImmediate(const MachineInstr& /*mi*/, unsigned& /*dstRe
     return false;
 }
 
-void X86InstrInfo::copyPhysReg(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                               const Register& /*dst*/, const Register& /*src*/) const {
+void X86InstrInfo::copyPhysReg(MachineBasicBlock& mbb, MachineInstr* pos,
+                               const Register& dst, const Register& src) const {
+    auto* mi = new MachineInstr(X86::MOV64rr);
+    mi->addOperand(MachineOperand::createReg(src.id));
+    mi->addOperand(MachineOperand::createReg(dst.id));
+    if (pos) mbb.insertBefore(pos, mi); else mbb.pushBack(mi);
 }
 
-void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                                       const Register& /*src*/, int /*frameIdx*/) const {
+void X86InstrInfo::storeRegToStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
+                                       const Register& src, int frameIdx) const {
+    auto* mi = new MachineInstr(X86::MOV64mr);
+    mi->addOperand(MachineOperand::createFrameIndex(frameIdx));
+    mi->addOperand(MachineOperand::createReg(src.id));
+    if (pos) mbb.insertBefore(pos, mi); else mbb.pushBack(mi);
 }
 
-void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& /*mbb*/, MachineInstr* /*pos*/,
-                                        const Register& /*dst*/, int /*frameIdx*/) const {
+void X86InstrInfo::loadRegFromStackSlot(MachineBasicBlock& mbb, MachineInstr* pos,
+                                        const Register& dst, int frameIdx) const {
+    auto* mi = new MachineInstr(X86::MOV64rm);
+    mi->addOperand(MachineOperand::createReg(dst.id));
+    mi->addOperand(MachineOperand::createFrameIndex(frameIdx));
+    if (pos) mbb.insertBefore(pos, mi); else mbb.pushBack(mi);
 }
 
 unsigned X86InstrInfo::getMoveOpcode(const unsigned srcSize, const unsigned dstSize) const {

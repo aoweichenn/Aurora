@@ -60,10 +60,6 @@ const MachineOperand& MachineInstr::getOperand(const unsigned i) const { return 
 void MachineInstr::addOperand(const MachineOperand mo) { operands_.push_back(mo); }
 void MachineInstr::setOperand(const unsigned i, const MachineOperand mo) { operands_[i] = mo; }
 
-bool MachineInstr::isTerminator() const noexcept { return false; }
-bool MachineInstr::isBranch() const noexcept { return false; }
-bool MachineInstr::isReturn() const noexcept { return false; }
-bool MachineInstr::isCall() const noexcept { return false; }
-bool MachineInstr::isMove() const noexcept { return false; }
+
 
 } // namespace aurora
