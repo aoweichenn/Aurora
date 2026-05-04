@@ -25,6 +25,7 @@ add_executable(Air_tests
     Air/ModuleTest.cpp
     Air/TypeCoverageTest.cpp
     Air/InstructionFactoryTest.cpp
+    Air/ToStringCoverageTest.cpp
 )
 target_link_libraries(Air_tests PRIVATE AuroraAir AuroraTestCommon)
 add_test(NAME Air_tests COMMAND Air_tests)
@@ -49,6 +50,8 @@ add_executable(CodeGen_tests
     CodeGen/ISelCoverageTest.cpp
     CodeGen/ISelPipeline2Test.cpp
     CodeGen/FuncCoverTest.cpp
+    CodeGen/PipelineBoostTest.cpp
+    CodeGen/FinalCoverageTest.cpp
 )
 target_link_libraries(CodeGen_tests PRIVATE AuroraCodeGen AuroraTestCommon)
 add_test(NAME CodeGen_tests COMMAND CodeGen_tests)
@@ -59,6 +62,7 @@ add_executable(MC_tests
     MC/IntegrationFullTest.cpp
     MC/CoverageBoostTest.cpp
     MC/ObjectWriterTest.cpp
+    MC/ObjectWriterFullTest.cpp
 )
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)
