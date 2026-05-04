@@ -50,82 +50,70 @@ ObjectWriter::ObjectWriter() : functionCount_(0), funcOffset_(0) {
 
 void ObjectWriter::addFunction(MachineFunction& mf) {
     const auto& name = mf.getAIRFunction().getName();
-
-    // Encode all instructions into textBytes_
     std::vector<uint8_t> funcBytes;
+    std::map<std::string, size_t> labelOffsets; // label → offset in funcBytes
+    std::vector<std::pair<size_t, std::string>> branchFixups; // (offset in funcBytes, target label)
+
     for (auto& mbb : mf.getBlocks()) {
+        labelOffsets[mbb->getName()] = funcBytes.size();
         MachineInstr* mi = mbb->getFirst();
         while (mi) {
             uint16_t opc = mi->getOpcode();
 
-            // Check for CALL to external symbol
-            if (opc == X86::CALL64pcrel32 && mi->getNumOperands() >= 1) {
-                auto& mo = mi->getOperand(0);
-                if (mo.getKind() == MachineOperandKind::MO_GlobalSym) {
-                    const char* callee = mo.getGlobalSym();
-                    if (callee) {
-                        size_t symIdx = 0;
-                        auto it = symbolIndexMap_.find(callee);
-                        if (it == symbolIndexMap_.end()) {
-                            symbols_.push_back({callee, 0, 0, 0, STB_GLOBAL, 0});
-                            symIdx = symbols_.size() - 1;
-                            symbolIndexMap_[callee] = symIdx;
-                        } else {
-                            symIdx = it->second;
-                        }
-                        // CALL rel32: encode E8 with 4 zero bytes, then add relocation
-                        funcBytes.push_back(0xE8);
-                        size_t relocOff = funcBytes.size();
-                        for (int i = 0; i < 4; i++) funcBytes.push_back(0);
-                        relocs_.push_back({textBytes_.size() + relocOff, symIdx, R_X86_64_PLT32, -4});
-                    }
+            // Record current position
+            size_t posBefore = funcBytes.size();
+
+            // CALL to external symbol
+            if (opc == X86::CALL64pcrel32 && mi->getNumOperands() >= 1 && mi->getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym) {
+                const char* callee = mi->getOperand(0).getGlobalSym();
+                if (callee) {
+                    size_t symIdx = 0;
+                    auto it = symbolIndexMap_.find(callee);
+                    if (it == symbolIndexMap_.end()) {
+                        symbols_.push_back({callee, 0, 0, 0, STB_GLOBAL, 0});
+                        symIdx = symbols_.size() - 1;
+                        symbolIndexMap_[callee] = symIdx;
+                    } else { symIdx = it->second; }
+                    funcBytes.push_back(0xE8);
+                    size_t relocOff = funcBytes.size();
+                    for (int i = 0; i < 4; i++) funcBytes.push_back(0);
+                    relocs_.push_back({textBytes_.size() + relocOff, symIdx, R_X86_64_PLT32, -4});
                 }
-                mi = mi->getNext();
-                continue;
+                mi = mi->getNext(); continue;
             }
 
-            // Check for MOV64ri32 with global symbol (load address)
-            if (opc == X86::MOV64ri32 && mi->getNumOperands() >= 1) {
-                auto& mo = mi->getOperand(0);
-                if (mo.getKind() == MachineOperandKind::MO_GlobalSym) {
-                    const char* gsym = mo.getGlobalSym();
-                    if (gsym) {
-                        size_t symIdx = 0;
-                        auto it = symbolIndexMap_.find(gsym);
-                        if (it == symbolIndexMap_.end()) {
-                            symbols_.push_back({gsym, 0, 0, STT_OBJECT, STB_GLOBAL, 2}); // section 2 = .data
-                            symIdx = symbols_.size() - 1;
-                            symbolIndexMap_[gsym] = symIdx;
-                        } else {
-                            symIdx = it->second;
-                        }
-                        // MOV r64, imm32 with REX.W: 0x48 0xC7 /0 + modrm + imm32
-                        funcBytes.push_back(0x48);
-                        funcBytes.push_back(0xC7);
-                        // Determine destination reg from operand[1]
-                        uint8_t dstReg = 0; // RAX default
-                        if (mi->getNumOperands() >= 2 && mi->getOperand(1).isReg())
-                            dstReg = mi->getOperand(1).getReg() & 7;
-                        funcBytes.push_back(0xC0 | dstReg); // ModRM: mod=11, reg=0, rm=reg
-                        size_t relocOff = funcBytes.size();
-                        for (int i = 0; i < 4; i++) funcBytes.push_back(0);
-                        relocs_.push_back({textBytes_.size() + relocOff, symIdx, R_X86_64_32S, 0});
-                    }
-                }
-                mi = mi->getNext();
-                continue;
+            // Check for JMP/Jcc with MBB target
+            bool isBranch = (opc == X86::JMP_1 || opc == X86::JE_1 || opc == X86::JNE_1 ||
+                             opc == X86::JL_1 || opc == X86::JG_1 || opc == X86::JLE_1 ||
+                             opc == X86::JGE_1 || opc == X86::JAE_1 || opc == X86::JBE_1 ||
+                             opc == X86::JA_1 || opc == X86::JB_1);
+            std::string branchTarget;
+            if (isBranch && mi->getNumOperands() >= 1 && mi->getOperand(0).getKind() == MachineOperandKind::MO_MBB) {
+                branchTarget = mi->getOperand(0).getMBB()->getName();
             }
 
-            // Default: encode instruction
+            // Encode instruction
             encodeInstruction(*mi, funcBytes);
+
+            // Record branch fixup
+            if (!branchTarget.empty())
+                branchFixups.push_back({posBefore + 1, branchTarget}); // +1 = after opcode byte
+
             mi = mi->getNext();
         }
     }
 
-    // Record symbol
+    // Apply branch fixups
+    for (auto& [off, target] : branchFixups) {
+        auto it = labelOffsets.find(target);
+        if (it == labelOffsets.end() || it->second == (size_t)-1) continue;
+        int64_t rel = (int64_t)it->second - (int64_t)(off + 1); // offset from instruction end
+        if (rel >= -128 && rel <= 127)
+            funcBytes[off] = (uint8_t)rel;
+    }
+
     symbols_.push_back({name, textBytes_.size(), funcBytes.size(), STT_FUNC, STB_GLOBAL, 1});
     symbolIndexMap_[name] = symbols_.size() - 1;
-
     textBytes_.insert(textBytes_.end(), funcBytes.begin(), funcBytes.end());
     functionCount_++;
 }
@@ -242,18 +230,52 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     case X86::CMP64rr:   out.push_back(0x48); out.push_back(0x39); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
     case X86::CMP64ri32: out.push_back(0x48); out.push_back(0x81); emitModRM(3, 7, getReg(1) & 7); emitImm32(getImm(0)); break;
     case X86::RETQ: out.push_back(0xC3); break;
-    case X86::PUSH64r: out.push_back(0x50 + (getReg(0) & 7)); break;
-    case X86::POP64r:  out.push_back(0x58 + (getReg(0) & 7)); break;
-    case X86::SHL64ri: out.push_back(0x48); out.push_back(0xC1); emitModRM(3, 4, getReg(1) & 7); emitImm32(getImm(0)); break;
-    case X86::SHL64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 4, getReg(0) & 7); break;
-    case X86::SHR64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 5, getReg(0) & 7); break;
-    case X86::SAR64rCL: out.push_back(0x48); out.push_back(0xD3); emitModRM(3, 7, getReg(0) & 7); break;
+    case X86::PUSH64r: {
+        uint8_t reg = getReg(0);
+        if (reg >= 8) { out.push_back(0x41); out.push_back(0x50 + (reg & 7)); }
+        else out.push_back(0x50 + reg);
+        break;
+    }
+    case X86::POP64r: {
+        uint8_t reg = getReg(0);
+        if (reg >= 8) { out.push_back(0x41); out.push_back(0x58 + (reg & 7)); }
+        else out.push_back(0x58 + reg);
+        break;
+    }
+    case X86::MOV64rm: {
+        out.push_back(0x48); out.push_back(0x8B);
+        uint8_t dst = getReg(0) & 7;
+        if (numOps >= 2 && mi.getOperand(1).getKind() == MachineOperandKind::MO_FrameIndex) {
+            int fi = mi.getOperand(1).getFrameIndex();
+            int disp = -(fi + 1) * 8;
+            uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
+            emitModRM(mod, dst, 5); // rm=5=RBP
+            if (mod == 1) out.push_back((uint8_t)disp);
+            else { for (int i = 0; i < 4; i++) out.push_back((uint8_t)((disp >> (i*8)) & 0xFF)); }
+        } else {
+            emitModRM(3, dst, getReg(1) & 7);
+        }
+        break;
+    }
+    case X86::MOV64mr: {
+        out.push_back(0x48); out.push_back(0x89);
+        if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_FrameIndex) {
+            int fi = mi.getOperand(0).getFrameIndex();
+            int disp = -(fi + 1) * 8;
+            uint8_t src = (numOps >= 2) ? (getReg(1) & 7) : 0;
+            uint8_t mod = (disp >= -128 && disp <= 127) ? 1 : 2;
+            emitModRM(mod, src, 5);
+            if (mod == 1) out.push_back((uint8_t)disp);
+            else { for (int i = 0; i < 4; i++) out.push_back((uint8_t)((disp >> (i*8)) & 0xFF)); }
+        } else {
+            emitModRM(3, (numOps >= 2 ? getReg(1) & 7 : 0), getReg(0) & 7);
+        }
+        break;
+    }
     case X86::MOV32rr:  out.push_back(0x89); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
     case X86::NOP: out.push_back(0x90); break;
     case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
     case X86::MOVSX64rr32: out.push_back(0x48); out.push_back(0x63); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
-    case X86::MOV64rm: out.push_back(0x48); out.push_back(0x8B); emitModRM(3, getReg(0) & 7, getReg(1) & 7); break;
-    case X86::MOV64mr: out.push_back(0x48); out.push_back(0x89); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;
     case X86::IDIV64r: out.push_back(0x48); out.push_back(0xF7); emitModRM(3, 7, getReg(0) & 7); break;
     // Float ops
     case X86::ADDSDrr:  out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x58); emitModRM(3, getReg(1) & 7, getReg(0) & 7); break;

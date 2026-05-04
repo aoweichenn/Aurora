@@ -126,6 +126,9 @@ public:
                 case AIROpcode::ICmp:
                     iselICmp(*mbb, mi);
                     break;
+                case AIROpcode::FCmp:
+                    iselFCmp(*mbb, mi);
+                    break;
                 case AIROpcode::Add:
                 case AIROpcode::Sub:
                 case AIROpcode::Mul:
@@ -363,6 +366,43 @@ private:
         mbb.pushBack(setMI);
     }
 
+    void iselFCmp(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // Float comparison: UCOMISD lhs, rhs → SETcc result
+        auto* cmpMI = new MachineInstr(X86::UCOMISDrr);
+        if (mi->getNumOperands() >= 2) {
+            cmpMI->addOperand(mi->getOperand(0));
+            cmpMI->addOperand(mi->getOperand(1));
+        }
+        unsigned resultVReg = mi->getNumOperands() > 2 ? mi->getOperand(2).getVirtualReg() : ~0U;
+        replaceMI(mbb, mi, cmpMI);
+
+        // SETcc using condition from AIR
+        ICmpCond cond = ICmpCond::EQ;
+        const auto& af = mbb.getParent()->getAIRFunction();
+        for (auto& bb : af.getBlocks()) {
+            const AIRInstruction* ii = bb->getFirst();
+            while (ii) {
+                if (ii->getOpcode() == AIROpcode::FCmp && ii->hasResult() && ii->getDestVReg() == resultVReg) {
+                    cond = ii->getICmpCondition(); break;
+                }
+                ii = ii->getNext();
+            }
+        }
+        uint16_t setOp = X86::SETEr;
+        switch (cond) {
+        case ICmpCond::EQ: setOp = X86::SETEr; break;
+        case ICmpCond::NE: setOp = X86::SETNEr; break;
+        case ICmpCond::SLT: case ICmpCond::ULT: setOp = X86::SETAr; break; // UCOMISD sets CF for below
+        case ICmpCond::SLE: case ICmpCond::ULE: setOp = X86::SETBEr; break;
+        default: setOp = X86::SETEr; break;
+        }
+        if (resultVReg != ~0U) {
+            auto* setMI = new MachineInstr(setOp);
+            setMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(setMI);
+        }
+    }
+
     void iselBinOp(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
         unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) lhsVReg = mi->getOperand(0).getVirtualReg();
@@ -580,14 +620,38 @@ private:
     }
 
     void iselSExt(MachineBasicBlock& mbb, MachineInstr* mi) {
-        // Sign-extend: 32-bit → 64-bit
         unsigned srcVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 1) srcVReg = mi->getOperand(0).getVirtualReg();
         if (mi->getNumOperands() >= 2) resultVReg = mi->getOperand(1).getVirtualReg();
-        auto* newMI = new MachineInstr(X86::MOVSX64rr32);
-        newMI->addOperand(MachineOperand::createVReg(srcVReg));
-        newMI->addOperand(MachineOperand::createVReg(resultVReg));
-        replaceMI(mbb, mi, newMI);
+        // Look up source type to pick correct extension width
+        Type* srcTy = getAIRType(mbb, srcVReg);
+        unsigned srcBits = srcTy ? srcTy->getSizeInBits() : 32;
+        if (srcBits <= 8) {
+            // i8→i64: MOVSX32rr8 (s-ext to 32, then MOVSX64rr32)
+            auto* mov = new MachineInstr(X86::MOVSX32rr8_op);
+            mov->addOperand(MachineOperand::createVReg(srcVReg));
+            mov->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, mov);
+            auto* mov2 = new MachineInstr(X86::MOVSX64rr32);
+            mov2->addOperand(MachineOperand::createVReg(resultVReg));
+            mov2->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(mov2);
+        } else if (srcBits <= 16) {
+            // i16→i64: MOVSX32rr8 chain
+            auto* mov = new MachineInstr(X86::MOVSX32rr8_op);
+            mov->addOperand(MachineOperand::createVReg(srcVReg));
+            mov->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, mov);
+            auto* mov2 = new MachineInstr(X86::MOVSX64rr32);
+            mov2->addOperand(MachineOperand::createVReg(resultVReg));
+            mov2->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(mov2);
+        } else {
+            auto* newMI = new MachineInstr(X86::MOVSX64rr32);
+            newMI->addOperand(MachineOperand::createVReg(srcVReg));
+            newMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, newMI);
+        }
     }
 
     void iselZExt(MachineBasicBlock& mbb, MachineInstr* mi) {

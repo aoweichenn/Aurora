@@ -343,6 +343,7 @@ const char* opcodeName(const AIROpcode op) {
         case AIROpcode::LShr:         return "lshr";
         case AIROpcode::AShr:         return "ashr";
         case AIROpcode::ICmp:         return "icmp";
+        case AIROpcode::FCmp:         return "fcmp";
         case AIROpcode::Alloca:       return "alloca";
         case AIROpcode::Load:         return "load";
         case AIROpcode::Store:        return "store";

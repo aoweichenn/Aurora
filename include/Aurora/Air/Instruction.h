@@ -28,6 +28,7 @@ enum class AIROpcode : uint16_t {
 
     // Comparison
     ICmp,
+    FCmp,
 
     // Memory
     Alloca,
