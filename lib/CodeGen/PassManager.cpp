@@ -485,14 +485,33 @@ private:
 
     void iselGEP(MachineBasicBlock& mbb, MachineInstr* mi) {
         // GEP: compute pointer = base + offset
-        // layout depends on operand count:
-        // [VReg(base_ptr), VReg(result)] → no indices, just MOV
-        // [VReg(base_ptr), VReg(idx0), VReg(result)] → base + idx0 * elemSize
-        // [VReg(base_ptr), VReg(idx0), VReg(idx1), VReg(result)] → base + idx0*stride0 + idx1*elemSize
-        unsigned numSrcOps = mi->getNumOperands() - 1; // last is result
+        unsigned numSrcOps = mi->getNumOperands() - 1;
         if (numSrcOps < 1) return;
         unsigned baseVReg = mi->getOperand(0).getVirtualReg();
         unsigned resultVReg = mi->getOperand(mi->getNumOperands() - 1).getVirtualReg();
+
+        // Get the AIR GEP to compute proper field offsets
+        int64_t totalOffset = 0;
+        const auto& airFunc = mbb.getParent()->getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::GetElementPtr &&
+                    airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
+                    // Compute byte offset from indices
+                    Type* baseTy = airInst->getType();
+                    auto& indices = airInst->getIndices();
+                    // Walk the type chain: for each index, advance the offset
+                    // idx0: array index (multiply by element size)
+                    // idx1+: struct field index (look up field offset)
+                    // Simplified: each index adds its value * 8
+                    for (size_t i = 0; i < indices.size(); ++i)
+                        totalOffset += (int64_t)indices[i] * 8;
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
 
         // MOV base → result
         auto* movMI = new MachineInstr(X86::MOV64rr);
@@ -500,22 +519,25 @@ private:
         movMI->addOperand(MachineOperand::createVReg(baseVReg));
         replaceMI(mbb, mi, movMI);
 
-        // For each index: result += index * stride
+        // Add total offset as immediate (if non-zero)
+        if (totalOffset != 0) {
+            auto* addMI = new MachineInstr(X86::ADD64ri32);
+            addMI->addOperand(MachineOperand::createImm(totalOffset));
+            addMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(addMI);
+        }
+
+        // For each index operand, also add index * element_size
         for (unsigned i = 1; i < numSrcOps; ++i) {
             unsigned idxVReg = mi->getOperand(i).getVirtualReg();
-            unsigned stride = (i == 1) ? 8 : 8; // simplified: assume 8-byte elements
-
-            // SHL index, log2(stride)
             auto* shlMI = new MachineInstr(X86::SHL64ri);
             shlMI->addOperand(MachineOperand::createImm(3)); // *8
             shlMI->addOperand(MachineOperand::createVReg(idxVReg));
             mbb.pushBack(shlMI);
-
-            // ADD idx*stride to result
-            auto* addMI = new MachineInstr(X86::ADD64rr);
-            addMI->addOperand(MachineOperand::createVReg(idxVReg));
-            addMI->addOperand(MachineOperand::createVReg(resultVReg));
-            mbb.pushBack(addMI);
+            auto* addIdxMI = new MachineInstr(X86::ADD64rr);
+            addIdxMI->addOperand(MachineOperand::createVReg(idxVReg));
+            addIdxMI->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(addIdxMI);
         }
     }
 
@@ -836,9 +858,9 @@ private:
     void rewriteVirtualRegs(MachineFunction& mf) const
     {
         std::map<unsigned, unsigned> vregToPReg;
-        std::map<unsigned, int> spilledVRegs; // vreg → spill slot
+        std::map<unsigned, int> spilledVRegs;
 
-        // First pass: collect all vregs and assign physical regs
+        // Collect all vregs
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
@@ -852,36 +874,69 @@ private:
             }
         }
 
-        // Simple allocation: allocate from GPR pool (skip RSP, RBP)
-        static const unsigned allocPool[] = {
+        // Pools: GPR for integers, XMM for floats
+        static const unsigned gprPool[] = {
             X86RegisterInfo::RAX, X86RegisterInfo::RCX, X86RegisterInfo::RDX,
             X86RegisterInfo::RBX, X86RegisterInfo::RSI, X86RegisterInfo::RDI,
             X86RegisterInfo::R8,  X86RegisterInfo::R9,  X86RegisterInfo::R10,
             X86RegisterInfo::R11, X86RegisterInfo::R12, X86RegisterInfo::R13,
             X86RegisterInfo::R14, X86RegisterInfo::R15,
         };
-        static const unsigned numAllocPool = sizeof(allocPool) / sizeof(allocPool[0]);
-        unsigned nextGPR = 0;
+        static const unsigned xmmPool[] = {
+            X86RegisterInfo::XMM0, X86RegisterInfo::XMM1, X86RegisterInfo::XMM2,
+            X86RegisterInfo::XMM3, X86RegisterInfo::XMM4, X86RegisterInfo::XMM5,
+            X86RegisterInfo::XMM6, X86RegisterInfo::XMM7,
+        };
+        unsigned nextGPR = 0, nextXMM = 0;
 
-        for (auto& [vreg, preg] : vregToPReg) {
-            if (vreg == 0) {
-                preg = X86RegisterInfo::RDI;
-            } else if (vreg == 1) {
-                preg = X86RegisterInfo::RSI;
-            } else {
-                if (nextGPR >= numAllocPool) {
-                    // Spill: no more registers
-                    int spillSlot = mf.createStackSlot(8, 8);
-                    spilledVRegs[vreg] = spillSlot;
-                    preg = X86RegisterInfo::RAX; // Use RAX as temp for spills
-                } else {
-                    preg = allocPool[nextGPR % numAllocPool];
-                    nextGPR++;
+        // Get type info from AIR function
+        std::map<unsigned, bool> vregIsFloat;
+        const auto& airFunc = mf.getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->hasResult()) {
+                    Type* ty = airInst->getType();
+                    vregIsFloat[airInst->getDestVReg()] = ty && ty->isFloat();
                 }
+                airInst = airInst->getNext();
             }
         }
 
-        // Second pass: rewrite vregs → physical regs, insert spill code
+        for (auto& [vreg, preg] : vregToPReg) {
+            if (vreg == 0) { preg = X86RegisterInfo::RDI; continue; }
+            if (vreg == 1) { preg = X86RegisterInfo::RSI; continue; }
+
+            bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
+            if (isFloat && nextXMM < 8) {
+                preg = xmmPool[nextXMM++];
+            } else if (!isFloat && nextGPR < 14) {
+                preg = gprPool[nextGPR++];
+            } else {
+                int spillSlot = mf.createStackSlot(8, 8);
+                spilledVRegs[vreg] = spillSlot;
+                preg = isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX;
+            }
+        }
+
+        // Force return value vreg to RAX (for int) or XMM0 (for float)
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                if (mi->getOpcode() == X86::RETQ && mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg()) {
+                    unsigned retVReg = mi->getOperand(0).getVirtualReg();
+                    bool isFloat = vregIsFloat.count(retVReg) && vregIsFloat[retVReg];
+                    unsigned target = isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX;
+                    unsigned oldReg = vregToPReg[retVReg];
+                    for (auto& [v, p] : vregToPReg)
+                        if (p == target && v != retVReg) vregToPReg[v] = oldReg;
+                    vregToPReg[retVReg] = target;
+                }
+                mi = mi->getNext();
+            }
+        }
+
+        // Second pass: rewrite
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
@@ -891,17 +946,16 @@ private:
                         unsigned vreg = mo.getVirtualReg();
                         auto spillIt = spilledVRegs.find(vreg);
                         if (spillIt != spilledVRegs.end()) {
-                            // Spilled: insert reload before use
-                            auto* reload = new MachineInstr(X86::MOV64rm);
-                            reload->addOperand(MachineOperand::createReg(X86RegisterInfo::RAX));
+                            bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
+                            auto* reload = new MachineInstr(isFloat ? X86::MOV64rm : X86::MOV64rm);
+                            reload->addOperand(MachineOperand::createReg(isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX));
                             reload->addOperand(MachineOperand::createFrameIndex(spillIt->second));
                             mbb->insertBefore(mi, reload);
-                            mo = MachineOperand::createReg(X86RegisterInfo::RAX);
+                            mo = MachineOperand::createReg(isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX);
                         } else {
                             auto it = vregToPReg.find(vreg);
-                            if (it != vregToPReg.end() && it->second != ~0U) {
+                            if (it != vregToPReg.end() && it->second != ~0U)
                                 mo = MachineOperand::createReg(it->second);
-                            }
                         }
                     }
                 }
