@@ -18,8 +18,8 @@ protected:
     void emitFunctionFooter(MachineFunction& mf) override;
 
 private:
-    void printOperand(const MachineOperand& mo, std::ostream& os);
-    void printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os);
+    void printOperand(const MachineOperand& mo, std::ostream& os) const;
+    void printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os) const;
 };
 
 } // namespace aurora

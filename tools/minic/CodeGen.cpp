@@ -49,7 +49,8 @@ unsigned CodeGen::genExpr(const ASTNode& node) {
     throw std::runtime_error("Unknown AST node type");
 }
 
-unsigned CodeGen::genIntLitExpr(const IntLitExpr& ie) {
+unsigned CodeGen::genIntLitExpr(const IntLitExpr& ie) const
+{
     return builder_->createConstantInt(ie.value);
 }
 

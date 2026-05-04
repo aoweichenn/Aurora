@@ -39,7 +39,7 @@ public:
     void emitString(const std::string& str) override;
     void emitRawText(const std::string& text) override;
 
-    [[nodiscard]] std::ostream& getOS() noexcept { return os_; }
+    [[nodiscard]] std::ostream& getOS() const noexcept { return os_; }
 
 private:
     std::ostream& os_;

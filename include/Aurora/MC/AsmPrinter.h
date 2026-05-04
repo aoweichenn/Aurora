@@ -18,7 +18,7 @@ public:
     virtual void emitInstruction(const MachineInstr& mi) = 0;
 
 protected:
-    [[nodiscard]] MCStreamer& getStreamer() noexcept { return streamer_; }
+    [[nodiscard]] MCStreamer& getStreamer() const noexcept { return streamer_; }
     virtual void emitFunctionHeader(MachineFunction& mf);
     virtual void emitFunctionFooter(MachineFunction& mf);
 

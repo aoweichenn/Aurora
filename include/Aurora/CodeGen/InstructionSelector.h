@@ -12,11 +12,11 @@ class InstructionSelector {
 public:
     explicit InstructionSelector(const TargetMachine& /*tm*/) {}
 
-    void run(SelectionDAG& dag, MachineBasicBlock& mbb);
+    void run(SelectionDAG& dag, MachineBasicBlock& mbb) const;
 
 private:
-    void selectNode(SDNode* node, MachineBasicBlock& mbb);
-    [[nodiscard]] MachineInstr* createMachineInstrFromPattern(SDNode* node);
+    void selectNode(SDNode* node, MachineBasicBlock& mbb) const;
+    [[nodiscard]] MachineInstr* createMachineInstrFromPattern(SDNode* node) const;
 };
 
 } // namespace aurora

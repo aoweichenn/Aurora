@@ -78,9 +78,9 @@ public:
     const std::vector<SDNode*>& getAllNodes() const noexcept { return allNodes_; }
     const SmallVector<SDValue, 4>& getRoots() const noexcept { return roots_; }
 
-    void dagCombine();
-    void legalize();
-    void select(MachineBasicBlock* mbb);
+    void dagCombine() const;
+    void legalize() const;
+    void select(MachineBasicBlock* mbb) const;
     void schedule(MachineBasicBlock* mbb);
 
 private:

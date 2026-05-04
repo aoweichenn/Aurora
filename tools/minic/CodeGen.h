@@ -25,7 +25,7 @@ private:
     unsigned genBinaryExpr(const BinaryExpr& be);
     unsigned genNegExpr(const NegExpr& ne);
     unsigned genIfExpr(const IfExpr& ie);
-    unsigned genIntLitExpr(const IntLitExpr& ie);
+    unsigned genIntLitExpr(const IntLitExpr& ie) const;
     unsigned genVarExpr(const VarExpr& ve);
 };
 

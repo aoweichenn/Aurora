@@ -98,12 +98,14 @@ void LinearScanRegAlloc::linearScan() {
     }
 }
 
-void LinearScanRegAlloc::expireOldIntervals(LiveInterval& /*current*/, unsigned /*currentStart*/) {
+void LinearScanRegAlloc::expireOldIntervals(LiveInterval& /*current*/, unsigned /*currentStart*/) const
+{
     // Remove intervals that end before currentStart from active set
     // (handled via sorted processing)
 }
 
-unsigned LinearScanRegAlloc::tryAllocateFreeReg(LiveInterval& current) {
+unsigned LinearScanRegAlloc::tryAllocateFreeReg(LiveInterval& current) const
+{
     const auto& order = regInfo_.getAllocOrder(RegClass::GPR64);
     for (const unsigned reg : order) {
         if (reg == X86RegisterInfo::RSP || reg == X86RegisterInfo::RBP)
@@ -120,18 +122,21 @@ unsigned LinearScanRegAlloc::tryAllocateFreeReg(LiveInterval& current) {
     return ~0U;
 }
 
-unsigned LinearScanRegAlloc::selectRegToSpill(LiveInterval& /*current*/) {
+unsigned LinearScanRegAlloc::selectRegToSpill(LiveInterval& /*current*/) const
+{
     // Select interval with furthest next use position to spill
     // Simplified: return first callee-saved register
     return X86RegisterInfo::RBX;
 }
 
-void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned /*slot*/) {
+void LinearScanRegAlloc::spillAt(LiveInterval& li, unsigned /*slot*/) const
+{
     const int spillSlot = mf_.createStackSlot(8, 8);
     li.setSpillSlot(spillSlot);
 }
 
-void LinearScanRegAlloc::assignPhysReg(LiveInterval& li, const unsigned reg) {
+void LinearScanRegAlloc::assignPhysReg(LiveInterval& li, const unsigned reg) const
+{
     li.setAssignedReg(reg);
 }
 

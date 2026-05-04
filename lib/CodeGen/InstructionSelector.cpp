@@ -5,11 +5,13 @@
 
 namespace aurora {
 
-void InstructionSelector::run(SelectionDAG& dag, MachineBasicBlock& mbb) {
+void InstructionSelector::run(SelectionDAG& dag, MachineBasicBlock& mbb) const
+{
     dag.select(&mbb);
 }
 
-void InstructionSelector::selectNode(SDNode* node, MachineBasicBlock& mbb) {
+void InstructionSelector::selectNode(SDNode* node, MachineBasicBlock& mbb) const
+{
     if (node->isSelected()) return;
 
     const AIROpcode op = node->getOpcode();
@@ -33,7 +35,8 @@ void InstructionSelector::selectNode(SDNode* node, MachineBasicBlock& mbb) {
     }
 }
 
-MachineInstr* InstructionSelector::createMachineInstrFromPattern(SDNode* /*node*/) {
+MachineInstr* InstructionSelector::createMachineInstrFromPattern(SDNode* /*node*/) const
+{
     return nullptr;
 }
 

@@ -5,7 +5,8 @@
 
 namespace aurora {
 
-void PrologueEpilogueInserter::run(MachineFunction& mf) {
+void PrologueEpilogueInserter::run(MachineFunction& mf) const
+{
     const auto& frameLowering = mf.getTarget().getFrameLowering();
 
     for (auto& mbb : mf.getBlocks()) {

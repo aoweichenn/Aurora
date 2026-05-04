@@ -44,15 +44,15 @@ public:
     void createCondBr(unsigned cond, BasicBlock* trueBB, BasicBlock* falseBB);
     void createUnreachable();
 
-    void setDestVReg(AIRInstruction* inst, unsigned vreg);
+    void setDestVReg(AIRInstruction* inst, unsigned vreg) const;
 
 private:
     BasicBlock* insertBlock_;
     AIRInstruction* insertPoint_;
     [[nodiscard]] Function* getFunction() const;
-    [[nodiscard]] unsigned allocateVReg(Type* ty);
+    [[nodiscard]] unsigned allocateVReg(Type* ty) const;
 
-    void insertInstruction(AIRInstruction* inst);
+    void insertInstruction(AIRInstruction* inst) const;
     void setResult(AIRInstruction* inst, unsigned vreg);
 };
 

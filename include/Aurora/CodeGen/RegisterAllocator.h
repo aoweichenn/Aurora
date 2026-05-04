@@ -25,11 +25,11 @@ private:
 
     void computeLiveIntervals();
     void linearScan();
-    void expireOldIntervals(LiveInterval& current, unsigned currentStart);
-    [[nodiscard]] unsigned tryAllocateFreeReg(LiveInterval& current);
-    [[nodiscard]] unsigned selectRegToSpill(LiveInterval& current);
-    void spillAt(LiveInterval& li, unsigned slot);
-    void assignPhysReg(LiveInterval& li, unsigned reg);
+    void expireOldIntervals(LiveInterval& current, unsigned currentStart) const;
+    [[nodiscard]] unsigned tryAllocateFreeReg(LiveInterval& current) const;
+    [[nodiscard]] unsigned selectRegToSpill(LiveInterval& current) const;
+    void spillAt(LiveInterval& li, unsigned slot) const;
+    void assignPhysReg(LiveInterval& li, unsigned reg) const;
 };
 
 } // namespace aurora

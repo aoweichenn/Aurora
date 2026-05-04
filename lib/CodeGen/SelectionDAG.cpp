@@ -82,16 +82,19 @@ void SelectionDAG::buildFromBasicBlock(BasicBlock* airBB, MachineBasicBlock* /*m
     }
 }
 
-void SelectionDAG::dagCombine() {
+void SelectionDAG::dagCombine() const
+{
     // Merge redundant operations
     // Example: shift + add → LEA on x86
 }
 
-void SelectionDAG::legalize() {
+void SelectionDAG::legalize() const
+{
     // Legalize types and operations per target
 }
 
-void SelectionDAG::select(MachineBasicBlock* /*mbb*/) {
+void SelectionDAG::select(MachineBasicBlock* /*mbb*/) const
+{
     // Pattern-match each SDNode to MachineInstr
     for (const auto* node : allNodes_) {
         if (node->isSelected()) continue;

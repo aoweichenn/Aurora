@@ -24,8 +24,8 @@ public:
     [[nodiscard]] virtual unsigned getRegisterSizeForType(Type* ty) const = 0;
 
 protected:
-    void setOperationAction(AIROpcode op, unsigned vtSize, LegalizeAction action);
-    void setTypeLegal(unsigned bits, bool legal);
+    void setOperationAction(AIROpcode op, unsigned vtSize, LegalizeAction action) const;
+    void setTypeLegal(unsigned bits, bool legal) const;
 
 private:
     // 内部使用，由子类通过 setOperationAction 填充

@@ -269,7 +269,8 @@ void X86AsmPrinter::emitFunctionFooter(MachineFunction& mf) {
     AsmPrinter::emitFunctionFooter(mf);
 }
 
-void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) {
+void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) const
+{
     switch (mo.getKind()) {
         case MachineOperandKind::MO_Register: {
             const auto reg = X86RegisterInfo::getReg(mo.getReg());
@@ -294,7 +295,8 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) {
     }
 }
 
-void X86AsmPrinter::printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os) {
+void X86AsmPrinter::printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os) const
+{
     os << offset.getImm() << "(%";
     const auto reg = X86RegisterInfo::getReg(base.getReg());
     os << reg.name << ")";

@@ -6,7 +6,7 @@ class MachineFunction;
 
 class PrologueEpilogueInserter {
 public:
-    void run(MachineFunction& mf);
+    void run(MachineFunction& mf) const;
 };
 
 } // namespace aurora

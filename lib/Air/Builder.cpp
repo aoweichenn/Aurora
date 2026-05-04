@@ -150,19 +150,22 @@ void AIRBuilder::createCondBr(const unsigned cond, BasicBlock* trueBB, BasicBloc
 void AIRBuilder::createUnreachable() {
     insertInstruction(AIRInstruction::createUnreachable());
 }
-void AIRBuilder::setDestVReg(AIRInstruction* inst, const unsigned vreg) {
+void AIRBuilder::setDestVReg(AIRInstruction* inst, const unsigned vreg) const
+{
     inst->setDestVReg(vreg);
 }
 Function* AIRBuilder::getFunction() const {
     return insertBlock_ ? insertBlock_->getParent() : nullptr;
 }
-unsigned AIRBuilder::allocateVReg(Type* ty) {
+unsigned AIRBuilder::allocateVReg(Type* ty) const
+{
     auto* fn = getFunction();
     const unsigned vreg = fn->nextVReg();
     fn->recordVRegType(vreg, ty);
     return vreg;
 }
-void AIRBuilder::insertInstruction(AIRInstruction* inst) {
+void AIRBuilder::insertInstruction(AIRInstruction* inst) const
+{
     if (insertPoint_)
         insertBlock_->insertBefore(insertPoint_, inst);
     else

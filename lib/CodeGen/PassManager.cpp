@@ -19,7 +19,8 @@ void PassManager::addPass(std::unique_ptr<CodeGenPass> pass) {
     passes_.push_back(std::move(pass));
 }
 
-void PassManager::run(MachineFunction& mf) {
+void PassManager::run(MachineFunction& mf) const
+{
     for (const auto& pass : passes_)
         pass->run(mf);
 }
@@ -171,7 +172,8 @@ public:
     const char* getName() const override { return "Instruction Selection"; }
 
 private:
-    void replaceMI(MachineBasicBlock& mbb, MachineInstr* oldMI, MachineInstr* newMI) {
+    void replaceMI(MachineBasicBlock& mbb, MachineInstr* oldMI, MachineInstr* newMI) const
+    {
         mbb.insertBefore(oldMI, newMI);
         mbb.remove(oldMI);
         delete oldMI;
@@ -614,7 +616,8 @@ public:
     const char* getName() const override { return "Register Allocation"; }
 
 private:
-    void rewriteVirtualRegs(MachineFunction& mf) {
+    void rewriteVirtualRegs(MachineFunction& mf) const
+    {
         std::map<unsigned, unsigned> vregToPReg;
         std::map<unsigned, int> spilledVRegs; // vreg → spill slot
 
@@ -740,7 +743,8 @@ public:
 CodeGenContext::CodeGenContext(TargetMachine& tm, Module& module)
     : target_(tm), module_(module) {}
 
-void CodeGenContext::run() {
+void CodeGenContext::run() const
+{
     PassManager pm;
     addStandardPasses(pm, target_);
 
