@@ -14,30 +14,25 @@ X86AsmPrinter::X86AsmPrinter(MCStreamer& streamer, const X86RegisterInfo& /*regI
 void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
     std::ostringstream oss;
 
-    // Use instruction info to get asm string template
-    // For now, do basic formatting
     oss << "\t";
 
-    // Get opcode-level info
     const unsigned opcode = mi.getOpcode();
 
-    // Simple mapping to AT&T syntax for common instructions
-    // In a full implementation, this would use the InstrInfo tables
     switch (opcode) {
         case X86::MOV64rm:
             if (mi.getNumOperands() >= 2) {
                 oss << "movq\t";
-                printOperand(mi.getOperand(1), oss); // src (memory)
+                printOperand(mi.getOperand(1), oss);
                 oss << ", ";
-                printOperand(mi.getOperand(0), oss); // dst (register)
+                printOperand(mi.getOperand(0), oss);
             }
             break;
         case X86::MOV64mr:
             if (mi.getNumOperands() >= 2) {
                 oss << "movq\t";
-                printOperand(mi.getOperand(1), oss); // src (register)
+                printOperand(mi.getOperand(1), oss);
                 oss << ", ";
-                printOperand(mi.getOperand(0), oss); // dst (memory)
+                printOperand(mi.getOperand(0), oss);
             }
             break;
         case X86::MOV32rr:
@@ -190,7 +185,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             oss << "cqo";
             break;
         case X86::SETEr:
-            if (mi.getNumOperands() >= 1) { oss << "sete\t"; printOperand(mi.getOperand(0), oss); }
+            if (mi.getNumOperands() >= 1) { oss << "sete\t"; print8BitOperand(mi.getOperand(0), oss); }
             break;
         case X86::CALL64pcrel32:
             if (mi.getNumOperands() >= 1) {
@@ -313,11 +308,14 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             if (mi.getNumOperands() >= 2) { oss << "xorl\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
             break;
         case X86::NOP: oss << "nop"; break;
-        case X86::SETNEr: if (mi.getNumOperands() >= 1) { oss << "setne\t"; printOperand(mi.getOperand(0), oss); } break;
-        case X86::SETLr:  if (mi.getNumOperands() >= 1) { oss << "setl\t"; printOperand(mi.getOperand(0), oss); } break;
-        case X86::SETGr:  if (mi.getNumOperands() >= 1) { oss << "setg\t"; printOperand(mi.getOperand(0), oss); } break;
-        case X86::SETLEr: if (mi.getNumOperands() >= 1) { oss << "setle\t"; printOperand(mi.getOperand(0), oss); } break;
-        case X86::SETGEr: if (mi.getNumOperands() >= 1) { oss << "setge\t"; printOperand(mi.getOperand(0), oss); } break;
+        case X86::SETNEr: if (mi.getNumOperands() >= 1) { oss << "setne\t"; print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETLr:  if (mi.getNumOperands() >= 1) { oss << "setl\t";  print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETGr:  if (mi.getNumOperands() >= 1) { oss << "setg\t";  print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETLEr: if (mi.getNumOperands() >= 1) { oss << "setle\t"; print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETGEr: if (mi.getNumOperands() >= 1) { oss << "setge\t"; print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETAr:  if (mi.getNumOperands() >= 1) { oss << "seta\t";  print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETBEr: if (mi.getNumOperands() >= 1) { oss << "setbe\t"; print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETAEr: if (mi.getNumOperands() >= 1) { oss << "setae\t"; print8BitOperand(mi.getOperand(0), oss); } break;
         default:
             oss << "# unknown opcode " << opcode << " (0x" << std::hex << opcode << std::dec << ")";
             break;
@@ -328,7 +326,6 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
 
 void X86AsmPrinter::emitFunctionHeader(MachineFunction& mf) {
     AsmPrinter::emitFunctionHeader(mf);
-    // Emit CFI directives for debugging
     getStreamer().emitRawText("\t.cfi_startproc");
 }
 
@@ -363,6 +360,18 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) con
         default:
             os << "?";
             break;
+    }
+}
+
+void X86AsmPrinter::print8BitOperand(const MachineOperand& mo, std::ostream& os) const
+{
+    if (mo.getKind() == MachineOperandKind::MO_Register) {
+        static const char* GPR8[] = {"al","cl","dl","bl","spl","bpl","sil","dil","r8b","r9b","r10b","r11b","r12b","r13b","r14b","r15b"};
+        unsigned id = mo.getReg();
+        if (id < 16) os << "%" << GPR8[id];
+        else os << "%" << X86RegisterInfo::getReg(id).name;
+    } else {
+        printOperand(mo, os);
     }
 }
 

@@ -490,11 +490,12 @@ private:
         }
     }
 
-    void iselSDiv(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode /*airOp*/) {
-        // SDiv on x86:
-        // CQO (sign-extend RAX → RDX:RAX)
-        // IDIV divisor  (quotient → RAX, remainder → RDX)
-        // MOV result to dest vreg
+    void iselSDiv(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
+        // SDiv/UDiv/SRem/URem on x86:
+        //   Signed:   MOV lhs→rax, CQO (sign-extend RAX→RDX:RAX), IDIV divisor
+        //   Unsigned: MOV lhs→rax, XOR RDX,RDX (zero RDX), IDIV divisor
+        //   Quotient in RAX, remainder in RDX
+        // For SRem/URem: need to MOV RDX→result after IDIV
 
         unsigned lhsVReg = ~0U, rhsVReg = ~0U, resultVReg = ~0U;
         if (mi->getNumOperands() >= 2) {
@@ -503,22 +504,40 @@ private:
             if (mi->getNumOperands() > 2)
                 resultVReg = mi->getOperand(2).getVirtualReg();
         }
+        bool isSigned = (airOp == AIROpcode::SDiv || airOp == AIROpcode::SRem);
+        bool isRemainder = (airOp == AIROpcode::SRem || airOp == AIROpcode::URem);
 
-        // MOV lhs → RAX (virtual)
+        // MOV lhs → RAX (use resultVReg which RA will map to RAX)
         auto* movLHS = new MachineInstr(X86::MOV64rr);
         movLHS->addOperand(MachineOperand::createVReg(lhsVReg));
-        movLHS->addOperand(MachineOperand::createVReg(resultVReg));  // will be fixed by RA
-
-        // CQO
-        auto* cqo = new MachineInstr(X86::CQO);
-
-        // IDIV divisor
-        auto* idiv = new MachineInstr(X86::IDIV64r);
-        idiv->addOperand(MachineOperand::createVReg(rhsVReg));
+        movLHS->addOperand(MachineOperand::createVReg(resultVReg));
 
         replaceMI(mbb, mi, movLHS);
-        mbb.pushBack(cqo);
+
+        if (isSigned) {
+            // CQO: sign-extend RAX into RDX:RAX
+            auto* cqo = new MachineInstr(X86::CQO);
+            mbb.pushBack(cqo);
+        } else {
+            // XOR RDX,RDX: zero RDX for unsigned division
+            auto* xorRDX = new MachineInstr(X86::XOR32rr);
+            xorRDX->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
+            xorRDX->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
+            mbb.pushBack(xorRDX);
+        }
+
+        // IDIV divisor (quotient in RAX, remainder in RDX)
+        auto* idiv = new MachineInstr(X86::IDIV64r);
+        idiv->addOperand(MachineOperand::createVReg(rhsVReg));
         mbb.pushBack(idiv);
+
+        // For remainder ops: move RDX → result
+        if (isRemainder) {
+            auto* movRem = new MachineInstr(X86::MOV64rr);
+            movRem->addOperand(MachineOperand::createReg(X86RegisterInfo::RDX));
+            movRem->addOperand(MachineOperand::createVReg(resultVReg));
+            mbb.pushBack(movRem);
+        }
     }
 
     void iselAlloca(MachineFunction& mf, MachineBasicBlock& mbb, MachineInstr* mi) {
@@ -1141,6 +1160,10 @@ private:
         for (auto& mbb : mf.getBlocks()) {
             MachineInstr* mi = mbb->getFirst();
             while (mi) {
+                bool hasSpillDef = false;
+                int spillDefSlot = -1;
+                bool spillDefIsFloat = false;
+
                 for (unsigned i = 0; i < mi->getNumOperands(); ++i) {
                     auto& mo = mi->getOperand(i);
                     if (mo.isVReg()) {
@@ -1148,11 +1171,23 @@ private:
                         auto spillIt = spilledVRegs.find(vreg);
                         if (spillIt != spilledVRegs.end()) {
                             bool isFloat = vregIsFloat.count(vreg) && vregIsFloat[vreg];
+                            // Insert reload before use
                             auto* reload = new MachineInstr(isFloat ? X86::MOV64rm : X86::MOV64rm);
                             reload->addOperand(MachineOperand::createReg(isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX));
                             reload->addOperand(MachineOperand::createFrameIndex(spillIt->second));
                             mbb->insertBefore(mi, reload);
                             mo = MachineOperand::createReg(isFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX);
+
+                            // Track if this is the last vreg operand (likely a def)
+                            bool isLastVReg = true;
+                            for (unsigned j = i + 1; j < mi->getNumOperands(); ++j) {
+                                if (mi->getOperand(j).isVReg()) { isLastVReg = false; break; }
+                            }
+                            if (isLastVReg) {
+                                hasSpillDef = true;
+                                spillDefSlot = spillIt->second;
+                                spillDefIsFloat = isFloat;
+                            }
                         } else {
                             auto it = vregToPReg.find(vreg);
                             if (it != vregToPReg.end() && it->second != ~0U)
@@ -1160,6 +1195,16 @@ private:
                         }
                     }
                 }
+
+                // After rewriting, if the instruction defined a spilled vreg,
+                // insert a store to spill the result to the stack slot
+                if (hasSpillDef) {
+                    auto* spill = new MachineInstr(spillDefIsFloat ? X86::MOV64mr : X86::MOV64mr);
+                    spill->addOperand(MachineOperand::createFrameIndex(spillDefSlot));
+                    spill->addOperand(MachineOperand::createReg(spillDefIsFloat ? X86RegisterInfo::XMM0 : X86RegisterInfo::RAX));
+                    mbb->insertAfter(mi, spill);
+                }
+
                 mi = mi->getNext();
             }
         }

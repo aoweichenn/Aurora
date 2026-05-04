@@ -19,6 +19,7 @@ protected:
 
 private:
     void printOperand(const MachineOperand& mo, std::ostream& os) const;
+    void print8BitOperand(const MachineOperand& mo, std::ostream& os) const;
     void printMemOperand(const MachineOperand& base, const MachineOperand& offset, std::ostream& os) const;
 };
 

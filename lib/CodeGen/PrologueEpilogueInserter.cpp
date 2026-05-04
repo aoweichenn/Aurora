@@ -9,10 +9,13 @@ namespace aurora {
 
 void PrologueEpilogueInserter::run(MachineFunction& mf) const {
     const auto& frameLowering = mf.getTarget().getFrameLowering();
+    bool isEntryBlock = true;
 
     for (auto& mbb : mf.getBlocks()) {
-        if (mbb->predecessors().empty()) {
+        // Emit prologue only for the first (entry) basic block
+        if (isEntryBlock) {
             frameLowering.emitPrologue(mf, *mbb);
+            isEntryBlock = false;
         }
 
         // Find return blocks and emit epilogue
