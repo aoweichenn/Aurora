@@ -185,7 +185,20 @@ void ObjectWriter::encodeInstruction(MachineInstr& mi, std::vector<uint8_t>& out
     case X86::MOV64ri32:
         out.push_back(0x48); out.push_back(0xC7);
         emitModRM(3, 0, getReg(1) & 7);
-        emitImm32(getImm(0));
+        if (numOps >= 1 && mi.getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym) {
+            const char* sym = mi.getOperand(0).getGlobalSym();
+            size_t symIdx = 0;
+            auto it = symbolIndexMap_.find(sym);
+            if (it == symbolIndexMap_.end()) {
+                symbols_.push_back({sym, 0, 0, 0, STB_GLOBAL, 0});
+                symIdx = symbols_.size() - 1;
+                symbolIndexMap_[sym] = symIdx;
+            } else { symIdx = it->second; }
+            emitImm32(0);
+            relocs_.push_back({textBytes_.size() + out.size() - 4, symIdx, R_X86_64_32S, 0});
+        } else {
+            emitImm32(getImm(0));
+        }
         break;
     // ADD64rr
     case X86::ADD64rr:

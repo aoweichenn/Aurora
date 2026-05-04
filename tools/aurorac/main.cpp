@@ -17,32 +17,18 @@ using namespace aurora;
 static std::unique_ptr<Module> buildSampleModule() {
     auto mod = std::make_unique<Module>("sample");
 
-    // Build: int add(int a, int b) { return a + b; }
+    // Build: int main(void) { return 42; } — C-compatible main entry
     SmallVector<Type*, 8> params;
-    params.push_back(Type::getInt64Ty());
-    params.push_back(Type::getInt64Ty());
     auto* fnTy = new FunctionType(Type::getInt64Ty(), params);
 
-    auto* fn = mod->createFunction(fnTy, "add");
+    auto* fn = mod->createFunction(fnTy, "main");
     auto* entry = fn->getEntryBlock();
 
     AIRBuilder builder(entry);
 
-    // Allocate stack slots for locals
-    const unsigned allocaA = builder.createAlloca(Type::getInt64Ty());
-    const unsigned allocaB = builder.createAlloca(Type::getInt64Ty());
-
-    // Store parameters to locals
-    builder.createStore(0, allocaA);  // parameter a
-    builder.createStore(1, allocaB);  // parameter b
-
-    // Load locals and compute
-    const unsigned loadA = builder.createLoad(Type::getInt64Ty(), allocaA);
-    const unsigned loadB = builder.createLoad(Type::getInt64Ty(), allocaB);
-    const unsigned sum = builder.createAdd(Type::getInt64Ty(), loadA, loadB);
-
-    // Return the result
-    builder.createRet(sum);
+    // int main(void) { return 42; }
+    const unsigned result = builder.createConstantInt(42);
+    builder.createRet(result);
 
     return mod;
 }

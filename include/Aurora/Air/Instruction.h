@@ -51,6 +51,9 @@ enum class AIROpcode : uint16_t {
     // Constant
     ConstantInt,
 
+    // Global
+    GlobalAddress,
+
     // Switch
     Switch,
 
@@ -94,6 +97,7 @@ public:
     [[nodiscard]] static AIRInstruction* createSelect(Type* ty, unsigned cond, unsigned tVal, unsigned fVal);
     [[nodiscard]] static AIRInstruction* createCall(Type* retTy, Function* callee, const SmallVector<unsigned, 8>& args);
     [[nodiscard]] static AIRInstruction* createConstantInt(Type* ty, int64_t val);
+    [[nodiscard]] static AIRInstruction* createGlobalAddress(Type* ty, const char* globalName);
     [[nodiscard]] static AIRInstruction* createSwitch(Type* ty, unsigned cond, BasicBlock* defaultBB, const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& cases);
     [[nodiscard]] static AIRInstruction* createExtractValue(Type* ty, unsigned agg, const SmallVector<unsigned, 4>& indices);
     [[nodiscard]] static AIRInstruction* createInsertValue(Type* ty, unsigned agg, unsigned val, const SmallVector<unsigned, 4>& indices);
@@ -110,6 +114,7 @@ public:
     [[nodiscard]] Function* getCalledFunction() const noexcept;
     [[nodiscard]] ICmpCond getICmpCondition() const noexcept;
     [[nodiscard]] int64_t getConstantValue() const noexcept { return constantVal_; }
+    [[nodiscard]] const char* getGlobalName() const noexcept { return globalName_; }
     [[nodiscard]] const SmallVector<unsigned, 4>& getStructIndices() const { return gepIndices_; }
     [[nodiscard]] BasicBlock* getSwitchDefault() const noexcept;
     [[nodiscard]] const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& getSwitchCases() const;
@@ -149,6 +154,7 @@ private:
     SmallVector<std::pair<BasicBlock*, unsigned>, 4> phiIncomings_;
     SmallVector<std::pair<int64_t, BasicBlock*>, 8> switchCases_;
     int64_t constantVal_ = 0;
+    const char* globalName_ = nullptr;
 };
 
 [[nodiscard]] const char* opcodeName(AIROpcode op);

@@ -52,7 +52,10 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
         case X86::MOV64ri32:
             if (mi.getNumOperands() >= 2) {
                 oss << "movq\t";
-                printOperand(mi.getOperand(0), oss);
+                if (mi.getOperand(0).getKind() == MachineOperandKind::MO_GlobalSym)
+                    oss << "$" << mi.getOperand(0).getGlobalSym();
+                else
+                    printOperand(mi.getOperand(0), oss);
                 oss << ", ";
                 printOperand(mi.getOperand(1), oss);
             }

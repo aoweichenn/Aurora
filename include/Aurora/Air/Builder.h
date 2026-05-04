@@ -37,6 +37,7 @@ public:
     [[nodiscard]] unsigned createCall(Function* callee, const SmallVector<unsigned, 8>& args);
     [[nodiscard]]     unsigned createPhi(Type* ty, const SmallVector<std::pair<BasicBlock*, unsigned>, 4>& incomings);
     unsigned createConstantInt(int64_t val);
+    [[nodiscard]] unsigned createGlobalAddress(Type* ty, const char* globalName);
 
     void createRet(unsigned val);
     void createRetVoid();

@@ -132,6 +132,11 @@ unsigned AIRBuilder::createConstantInt(const int64_t val) {
     setResult(AIRInstruction::createConstantInt(ty, val), vreg);
     return vreg;
 }
+unsigned AIRBuilder::createGlobalAddress(Type* ty, const char* globalName) {
+    const unsigned vreg = allocateVReg(ty);
+    setResult(AIRInstruction::createGlobalAddress(ty, globalName), vreg);
+    return vreg;
+}
 void AIRBuilder::createRet(const unsigned val) {
     insertInstruction(AIRInstruction::createRet(val));
 }

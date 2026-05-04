@@ -200,6 +200,9 @@ public:
                 case AIROpcode::SiToFp:
                     iselSiToFp(*mbb, mi);
                     break;
+                case AIROpcode::GlobalAddress:
+                    iselGlobalAddress(*mbb, mi);
+                    break;
                 default:
                     // Leave unknown opcodes as-is (they'll print as "# unknown opcode")
                     break;
@@ -747,6 +750,35 @@ private:
         replaceMI(mbb, mi, movMI);
     }
 
+    void iselGlobalAddress(MachineBasicBlock& mbb, MachineInstr* mi) {
+        // The AIR-to-MachineIR pass puts destVReg as operand[0] for instructions with results
+        unsigned resultVReg = (mi->getNumOperands() >= 1 && mi->getOperand(0).isVReg())
+            ? mi->getOperand(0).getVirtualReg() : ~0U;
+
+        // Look up global name from AIR instruction
+        const char* globalName = nullptr;
+        const auto& airFunc = mbb.getParent()->getAIRFunction();
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::GlobalAddress &&
+                    airInst->hasResult() && airInst->getDestVReg() == resultVReg) {
+                    globalName = airInst->getGlobalName();
+                    break;
+                }
+                airInst = airInst->getNext();
+            }
+        }
+
+        auto* movMI = new MachineInstr(X86::MOV64ri32);
+        if (globalName)
+            movMI->addOperand(MachineOperand::createGlobalSym(globalName));
+        else
+            movMI->addOperand(MachineOperand::createImm(0));
+        movMI->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, movMI);
+    }
+
     void iselCall(MachineBasicBlock& mbb, MachineInstr* mi, MachineFunction& mf) {
         static const unsigned argRegs[] = {
             X86RegisterInfo::RDI, X86RegisterInfo::RSI, X86RegisterInfo::RDX,
@@ -1019,6 +1051,7 @@ public:
         LinearScanRegAlloc allocator(mf);
         allocator.allocateRegisters();
         rewriteVirtualRegs(mf);
+        eliminateRedundantMoves(mf);
     }
     const char* getName() const override { return "Register Allocation"; }
 
@@ -1128,6 +1161,26 @@ private:
                     }
                 }
                 mi = mi->getNext();
+            }
+        }
+    }
+
+    void eliminateRedundantMoves(MachineFunction& mf) const
+    {
+        for (auto& mbb : mf.getBlocks()) {
+            MachineInstr* mi = mbb->getFirst();
+            while (mi) {
+                MachineInstr* next = mi->getNext();
+                // Remove MOV64rr where src == dst (same physical register)
+                if (mi->getOpcode() == X86::MOV64rr && mi->getNumOperands() >= 2) {
+                    const auto& op0 = mi->getOperand(0);
+                    const auto& op1 = mi->getOperand(1);
+                    if (op0.isReg() && op1.isReg() && op0.getReg() == op1.getReg()) {
+                        mbb->remove(mi);
+                        delete mi;
+                    }
+                }
+                mi = next;
             }
         }
     }

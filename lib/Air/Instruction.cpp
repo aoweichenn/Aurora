@@ -169,6 +169,11 @@ AIRInstruction* AIRInstruction::createConstantInt(Type* ty, const int64_t val) {
     i->constantVal_ = val;
     return i;
 }
+AIRInstruction* AIRInstruction::createGlobalAddress(Type* ty, const char* globalName) {
+    auto* i = new AIRInstruction(AIROpcode::GlobalAddress, ty);
+    i->globalName_ = globalName;
+    return i;
+}
 AIRInstruction* AIRInstruction::createSwitch(Type* ty, const unsigned cond, BasicBlock* defaultBB,
                                               const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& cases) {
     auto* i = new AIRInstruction(AIROpcode::Switch, ty);
@@ -223,7 +228,8 @@ unsigned AIRInstruction::getNumOperands() const noexcept {
         case AIROpcode::ICmp:     return 2;
         case AIROpcode::Load:     return 1;
         case AIROpcode::Alloca:   return 0;
-        case AIROpcode::ConstantInt: return 0;
+        case AIROpcode::ConstantInt:  return 0;
+        case AIROpcode::GlobalAddress: return 0;
         case AIROpcode::Switch:   return 1;
         case AIROpcode::ExtractValue: return 1;
         case AIROpcode::InsertValue:  return 2;
@@ -314,6 +320,9 @@ std::string AIRInstruction::toString() const {
             os << " " << (callee_ ? callee_->getName() : "?");
             for (auto& op : operands_) os << " %" << op;
             break;
+        case AIROpcode::GlobalAddress:
+            os << " @" << (globalName_ ? globalName_ : "?");
+            break;
         default:
             break;
     }
@@ -359,6 +368,7 @@ const char* opcodeName(const AIROpcode op) {
         case AIROpcode::Call:         return "call";
         case AIROpcode::ConstantInt:  return "const";
         case AIROpcode::Switch:       return "switch";
+        case AIROpcode::GlobalAddress: return "globaladdr";
         case AIROpcode::ExtractValue: return "extractvalue";
         case AIROpcode::InsertValue:  return "insertvalue";
     }
