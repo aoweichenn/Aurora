@@ -14,11 +14,25 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
     scope[name] = Variable{type, pointer};
 
     if (type.arraySize > 0) {
+        CType elementType = type;
+        elementType.arraySize = 0;
+        if (elementType.kind == CTypeKind::Struct && elementType.pointerDepth == 0 && init)
+            throw std::runtime_error("Struct array initializer is not supported yet: " + name);
         if (init) {
             auto* initList = dynamic_cast<const InitListExpr*>(init);
             if (!initList)
                 throw std::runtime_error("Array initializer must be a braced list: " + name);
             genArrayInitializer(type, pointer, *initList, name);
+        }
+        return;
+    }
+
+    if (type.kind == CTypeKind::Struct && type.pointerDepth == 0) {
+        if (init) {
+            auto* initList = dynamic_cast<const InitListExpr*>(init);
+            if (!initList)
+                throw std::runtime_error("Struct initializer must be a braced list: " + name);
+            genStructInitializer(type, pointer, *initList, name);
         }
         return;
     }
@@ -35,6 +49,30 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
         }
     }
     builder_->createStore(initialValue, pointer);
+}
+
+void CodeGen::genStructInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name) {
+    if (type.kind != CTypeKind::Struct || !type.structInfo || !type.structInfo->complete)
+        throw std::runtime_error("Struct initializer requires a complete struct type: " + name);
+    if (init.values.size() > type.structInfo->fields.size())
+        throw std::runtime_error("Too many values in struct initializer: " + name);
+
+    aurora::SmallVector<unsigned, 4> indices;
+    unsigned base = builder_->createGEP(toAirType(type, false), pointer, indices);
+    for (size_t index = 0; index < type.structInfo->fields.size(); ++index) {
+        const CField& field = type.structInfo->fields[index];
+        unsigned address = base;
+        if (field.offset != 0) {
+            address = builder_->createAdd(
+                aurora::Type::getInt64Ty(),
+                base,
+                builder_->createConstantInt(static_cast<int64_t>(field.offset)));
+        }
+        unsigned value = index < init.values.size()
+            ? genExpr(*init.values[index])
+            : builder_->createConstantInt(0);
+        builder_->createStore(value, address);
+    }
 }
 
 void CodeGen::genArrayInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name) {

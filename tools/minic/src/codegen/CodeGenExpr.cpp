@@ -1,4 +1,5 @@
 #include "minic/codegen/CodeGen.h"
+#include "minic/ast/ASTUtils.h"
 #include "Aurora/Air/BasicBlock.h"
 #include "Aurora/Air/Function.h"
 #include <stdexcept>
@@ -18,6 +19,8 @@ unsigned CodeGen::genExpr(const Expr& node) {
         return genIncDecExpr(*incDec);
     if (auto* index = dynamic_cast<const IndexExpr*>(&node))
         return genIndexExpr(*index);
+    if (auto* member = dynamic_cast<const MemberExpr*>(&node))
+        return genMemberExpr(*member);
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&node))
         return genSizeofExpr(*sizeofExpr);
     if (auto* alignofExpr = dynamic_cast<const AlignofExpr*>(&node))
@@ -49,11 +52,15 @@ unsigned CodeGen::genVarExpr(const VarExpr& ve) {
     if (auto* local = findVariableInScopes(ve.name)) {
         if (local->type.arraySize > 0)
             return genAddressOfVariable(ve);
+        if (local->type.kind == CTypeKind::Struct && local->type.pointerDepth == 0)
+            throw std::runtime_error("Struct values cannot be loaded directly: " + ve.name);
         return builder_->createLoad(toAirType(local->type, false), local->pointerVReg);
     }
     auto& variable = findGlobal(ve.name);
     if (variable.type.arraySize > 0)
         return genGlobalAddress(ve.name);
+    if (variable.type.kind == CTypeKind::Struct && variable.type.pointerDepth == 0)
+        throw std::runtime_error("Struct values cannot be loaded directly: " + ve.name);
     return builder_->createLoad(toAirType(variable.type, false), genGlobalAddress(ve.name));
 }
 
@@ -96,6 +103,9 @@ CodeGen::LValue CodeGen::genLValue(const Expr& expr) {
         unsigned address = builder_->createAdd(aurora::Type::getInt64Ty(), base, offset);
         return {elementType, address};
     }
+
+    if (auto* member = dynamic_cast<const MemberExpr*>(&expr))
+        return genMemberLValue(*member);
 
     throw std::runtime_error("Expression is not assignable");
 }
@@ -290,6 +300,50 @@ unsigned CodeGen::genIncDecExpr(const IncDecExpr& ie) {
 
 unsigned CodeGen::genIndexExpr(const IndexExpr& ie) {
     LValue lvalue = genLValue(ie);
+    return builder_->createLoad(toAirType(lvalue.type, false), lvalue.pointerVReg);
+}
+
+CodeGen::LValue CodeGen::genMemberLValue(const MemberExpr& me) {
+    CType objectType;
+    unsigned baseAddress = 0;
+    if (me.viaPointer) {
+        CType pointerType = inferExprType(*me.base).decayArray();
+        if (!pointerType.isPointerLike())
+            throw std::runtime_error("Member access with -> requires a pointer to struct");
+        objectType = pointerType.pointee();
+        baseAddress = genExpr(*me.base);
+    } else {
+        LValue base = genLValue(*me.base);
+        objectType = base.type;
+        baseAddress = base.pointerVReg;
+    }
+
+    if (objectType.kind != CTypeKind::Struct || objectType.pointerDepth != 0)
+        throw std::runtime_error("Member access requires a struct object");
+    const CField* field = findStructField(objectType, me.field);
+    if (!field)
+        throw std::runtime_error("Unknown struct field: " + me.field);
+
+    unsigned fieldAddress = baseAddress;
+    if (field->offset != 0) {
+        if (!me.viaPointer) {
+            aurora::SmallVector<unsigned, 4> indices;
+            baseAddress = builder_->createGEP(toAirType(objectType, false), baseAddress, indices);
+        }
+        fieldAddress = builder_->createAdd(
+            aurora::Type::getInt64Ty(),
+            baseAddress,
+            builder_->createConstantInt(static_cast<int64_t>(field->offset)));
+    }
+    return {field->type, fieldAddress};
+}
+
+unsigned CodeGen::genMemberExpr(const MemberExpr& me) {
+    LValue lvalue = genMemberLValue(me);
+    if (lvalue.type.arraySize > 0)
+        return lvalue.pointerVReg;
+    if (lvalue.type.kind == CTypeKind::Struct && lvalue.type.pointerDepth == 0)
+        throw std::runtime_error("Struct values cannot be loaded directly");
     return builder_->createLoad(toAirType(lvalue.type, false), lvalue.pointerVReg);
 }
 

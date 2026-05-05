@@ -27,6 +27,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Alignof:return "alignof";
     case TokenKind::Typedef:return "typedef";
     case TokenKind::Enum:   return "enum";
+    case TokenKind::Struct: return "struct";
     case TokenKind::StaticAssert:return "static_assert";
     case TokenKind::True:   return "true";
     case TokenKind::False:  return "false";
@@ -53,6 +54,8 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::RBrace: return "}";
     case TokenKind::LBracket:return "[";
     case TokenKind::RBracket:return "]";
+    case TokenKind::Dot:    return ".";
+    case TokenKind::Arrow:  return "->";
     case TokenKind::Semicolon:return ";";
     case TokenKind::Question:return "?";
     case TokenKind::Colon:  return ":";

@@ -19,6 +19,8 @@ bool CodeGen::containsCall(const Expr& expr) const {
         return containsCall(*incDec->target);
     if (auto* index = dynamic_cast<const IndexExpr*>(&expr))
         return containsCall(*index->base) || containsCall(*index->index);
+    if (auto* member = dynamic_cast<const MemberExpr*>(&expr))
+        return containsCall(*member->base);
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&expr))
         return sizeofExpr->expr && containsCall(*sizeofExpr->expr);
     if (auto* comma = dynamic_cast<const CommaExpr*>(&expr))
@@ -106,6 +108,21 @@ CType CodeGen::inferExprType(const Expr& expr) {
         return cast->targetType;
     if (auto* index = dynamic_cast<const IndexExpr*>(&expr))
         return inferExprType(*index->base).decayArray().pointee();
+    if (auto* member = dynamic_cast<const MemberExpr*>(&expr)) {
+        CType objectType;
+        if (member->viaPointer) {
+            CType pointerType = inferExprType(*member->base).decayArray();
+            if (!pointerType.isPointerLike())
+                throw std::runtime_error("Member access with -> requires a pointer to struct");
+            objectType = pointerType.pointee();
+        } else {
+            objectType = inferExprType(*member->base);
+        }
+        const CField* field = findStructField(objectType, member->field);
+        if (!field)
+            throw std::runtime_error("Unknown struct field: " + member->field);
+        return field->type.decayArray();
+    }
     if (auto* assign = dynamic_cast<const AssignExpr*>(&expr))
         return inferExprType(*assign->target);
     if (auto* incDec = dynamic_cast<const IncDecExpr*>(&expr))

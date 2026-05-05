@@ -154,6 +154,7 @@ Token Lexer::readIdent() {
     else if (lexeme == "alignof" || lexeme == "_Alignof") tok.kind = TokenKind::Alignof;
     else if (lexeme == "typedef") tok.kind = TokenKind::Typedef;
     else if (lexeme == "enum") tok.kind = TokenKind::Enum;
+    else if (lexeme == "struct") tok.kind = TokenKind::Struct;
     else if (lexeme == "static_assert" || lexeme == "_Static_assert") tok.kind = TokenKind::StaticAssert;
     else if (lexeme == "true") tok.kind = TokenKind::True;
     else if (lexeme == "false") tok.kind = TokenKind::False;
@@ -216,6 +217,7 @@ Token Lexer::next() {
     case '-':
         if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::MinusAssign, "-=", 0}; }
         if (pos_ < source_.size() && source_[pos_] == '-') { ++pos_; return {TokenKind::MinusMinus, "--", 0}; }
+        if (pos_ < source_.size() && source_[pos_] == '>') { ++pos_; return {TokenKind::Arrow, "->", 0}; }
         return {TokenKind::Minus, "-", 0};
     case '*':
         if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::StarAssign, "*=", 0}; }
@@ -267,6 +269,7 @@ Token Lexer::next() {
         if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::CaretAssign, "^=", 0}; }
         return {TokenKind::Caret, "^", 0};
     case '~': return {TokenKind::Tilde, "~", 0};
+    case '.': return {TokenKind::Dot, ".", 0};
     }
     return {TokenKind::Invalid, std::string(1, c), 0};
 }

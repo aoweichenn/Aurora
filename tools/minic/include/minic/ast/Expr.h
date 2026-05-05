@@ -75,6 +75,14 @@ struct IndexExpr : Expr {
         : base(std::move(b)), index(std::move(i)) {}
 };
 
+struct MemberExpr : Expr {
+    std::unique_ptr<Expr> base;
+    std::string field;
+    bool viaPointer;
+    MemberExpr(std::unique_ptr<Expr> b, std::string f, bool ptr)
+        : base(std::move(b)), field(std::move(f)), viaPointer(ptr) {}
+};
+
 struct SizeofExpr : Expr {
     CType type;
     std::unique_ptr<Expr> expr;

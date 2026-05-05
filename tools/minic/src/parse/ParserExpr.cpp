@@ -214,6 +214,16 @@ std::unique_ptr<Expr> Parser::parsePostfix() {
             expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
             continue;
         }
+        if (match(TokenKind::Dot)) {
+            std::string field = consume(TokenKind::Ident).lexeme;
+            expr = std::make_unique<MemberExpr>(std::move(expr), std::move(field), false);
+            continue;
+        }
+        if (match(TokenKind::Arrow)) {
+            std::string field = consume(TokenKind::Ident).lexeme;
+            expr = std::make_unique<MemberExpr>(std::move(expr), std::move(field), true);
+            continue;
+        }
         if (current_.kind == TokenKind::PlusPlus || current_.kind == TokenKind::MinusMinus) {
             bool increment = current_.kind == TokenKind::PlusPlus;
             advance();

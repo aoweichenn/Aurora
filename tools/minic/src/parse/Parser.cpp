@@ -48,6 +48,13 @@ Program Parser::parseProgram() {
             parseTopLevelDecl(program, enumType, false);
             continue;
         }
+        if (current_.kind == TokenKind::Struct) {
+            CType structType = parseBaseType();
+            if (match(TokenKind::Semicolon))
+                continue;
+            parseTopLevelDecl(program, structType, false);
+            continue;
+        }
         if (current_.kind == TokenKind::Fn) {
             program.functions.push_back(parseLegacyFunction());
             continue;

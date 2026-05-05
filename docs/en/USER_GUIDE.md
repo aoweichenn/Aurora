@@ -20,10 +20,10 @@ MiniC accepts a `.mini` source file and supports a C-like integer subset:
 
 - function definitions and prototypes: `long name(long a, long b) { ... }`, `extern long name(long);`, with `void` returns, simple pointer parameters / return values, optional prototype parameter names, array parameters that decay to pointers, and common storage-class / qualifier parsing
 - top-level globals: scalar globals such as `long counter = 7;`, `extern long imported;`, and fixed-size one-dimensional arrays such as `long values[3] = {1, 2};`, with reads, writes, indexing, and address-of from functions
-- local variables with optional initializers: scalars, pointers, and fixed-size arrays with one-dimensional braced initializer lists
+- local variables with optional initializers: scalars, pointers, named `struct` objects, and fixed-size arrays with one-dimensional braced initializer lists
 - statements: `return`, blocks, `if` / `else`, `while`, `do` / `while`, `for`, `switch` / `case` / `default`, `break`, and `continue`
-- expressions: assignment, compound assignment, calls, ternary `?:`, short-circuit `&&` / `||`, C-style casts, `sizeof`, `alignof` / `_Alignof`, pointer arithmetic, pointer dereference / address-of, pointer subscripting, prefix/postfix `++` / `--`
-- declarations and constants: `typedef`, `enum`, `static_assert` / `_Static_assert`, `bool` / `_Bool`, `true`, `false`, `nullptr`
+- expressions: assignment, compound assignment, calls, ternary `?:`, short-circuit `&&` / `||`, C-style casts, `sizeof`, `alignof` / `_Alignof`, `.` / `->` struct field access, pointer arithmetic, pointer dereference / address-of, pointer subscripting, prefix/postfix `++` / `--`
+- declarations and constants: `typedef`, `enum`, named `struct` definitions with scalar/pointer/array fields, `static_assert` / `_Static_assert`, `bool` / `_Bool`, `true`, `false`, `nullptr`
 - operators: `+ - * / %`, signed and unsigned comparisons / division / remainder / right shift, logical operators, bitwise operators, shifts, and `&= |= ^= <<= >>=`
 - legacy expression functions: `fn name(a, b) = expr`
 

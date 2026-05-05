@@ -1,16 +1,38 @@
 #include "minic/parse/Parser.h"
 #include "minic/ast/ASTUtils.h"
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
 namespace minic {
+
+namespace {
+
+uint64_t alignTo(uint64_t value, uint64_t alignment) noexcept {
+    if (alignment <= 1)
+        return value;
+    return ((value + alignment - 1) / alignment) * alignment;
+}
+
+bool isCompleteObjectType(CType type) noexcept {
+    if (type.pointerDepth > 0)
+        return true;
+    if (type.arraySize > 0) {
+        type.arraySize = 0;
+        return isCompleteObjectType(type);
+    }
+    return type.kind != CTypeKind::Struct || (type.structInfo && type.structInfo->complete);
+}
+
+} // namespace
 
 bool Parser::isTypeToken(TokenKind kind) const {
     return kind == TokenKind::Int || kind == TokenKind::Long ||
            kind == TokenKind::Short || kind == TokenKind::Char ||
            kind == TokenKind::Bool || kind == TokenKind::Void ||
            kind == TokenKind::Signed || kind == TokenKind::Unsigned ||
-           kind == TokenKind::Enum || isTypeQualifier(kind) ||
+           kind == TokenKind::Enum || kind == TokenKind::Struct ||
+           isTypeQualifier(kind) ||
            (kind == TokenKind::Ident && typedefs_.find(current_.lexeme) != typedefs_.end());
 }
 
@@ -38,6 +60,9 @@ CType Parser::parseBaseType() {
         type.kind = CTypeKind::Int;
         return type;
     }
+
+    if (current_.kind == TokenKind::Struct)
+        return parseStructSpecifier();
 
     if (current_.kind == TokenKind::Ident) {
         auto typedefIt = typedefs_.find(current_.lexeme);
@@ -173,6 +198,74 @@ void Parser::parseEnumBody() {
             break;
     }
     consume(TokenKind::RBrace);
+}
+
+CType Parser::parseStructSpecifier() {
+    consume(TokenKind::Struct);
+    std::string tag;
+    if (current_.kind == TokenKind::Ident)
+        tag = consume(TokenKind::Ident).lexeme;
+
+    std::shared_ptr<CStructInfo> info;
+    if (!tag.empty()) {
+        auto& slot = structs_[tag];
+        if (!slot) {
+            slot = std::make_shared<CStructInfo>();
+            slot->tag = tag;
+        }
+        info = slot;
+    } else if (current_.kind == TokenKind::LBrace) {
+        info = std::make_shared<CStructInfo>();
+    } else {
+        throw std::runtime_error("Expected struct tag or definition");
+    }
+
+    if (match(TokenKind::LBrace)) {
+        if (info->complete)
+            throw std::runtime_error("Redefinition of struct: " + (tag.empty() ? std::string("<anonymous>") : tag));
+        info->fields = parseStructFields();
+        consume(TokenKind::RBrace);
+
+        uint64_t offset = 0;
+        uint64_t maxAlign = 1;
+        for (auto& field : info->fields) {
+            uint64_t fieldSize = sizeOfType(field.type);
+            uint64_t fieldAlign = alignOfType(field.type);
+            if (fieldSize == 0 || !isCompleteObjectType(field.type))
+                throw std::runtime_error("Struct field has incomplete type: " + field.name);
+            maxAlign = std::max(maxAlign, fieldAlign);
+            offset = alignTo(offset, fieldAlign);
+            field.offset = offset;
+            offset += fieldSize;
+        }
+        info->align = maxAlign;
+        info->size = alignTo(offset, maxAlign);
+        info->complete = true;
+    }
+
+    CType type;
+    type.kind = CTypeKind::Struct;
+    type.structInfo = info;
+    return type;
+}
+
+std::vector<CField> Parser::parseStructFields() {
+    std::vector<CField> fields;
+    while (current_.kind != TokenKind::RBrace && current_.kind != TokenKind::Eof) {
+        CType baseType = parseBaseType();
+        do {
+            CType fieldType = parsePointerSuffix(baseType);
+            std::string fieldName = consume(TokenKind::Ident).lexeme;
+            fieldType = parseArraySuffix(fieldType);
+            if (fieldType.isVoid())
+                throw std::runtime_error("Struct field cannot have void type");
+            if (std::any_of(fields.begin(), fields.end(), [&](const CField& field) { return field.name == fieldName; }))
+                throw std::runtime_error("Duplicate struct field: " + fieldName);
+            fields.emplace_back(fieldType, std::move(fieldName));
+        } while (match(TokenKind::Comma));
+        consume(TokenKind::Semicolon);
+    }
+    return fields;
 }
 
 int64_t Parser::evalConstantExpr(const Expr& expr) const {

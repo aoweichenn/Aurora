@@ -7,6 +7,8 @@ bool isAssignableExpr(const Expr& expr) noexcept {
         return true;
     if (dynamic_cast<const IndexExpr*>(&expr))
         return true;
+    if (dynamic_cast<const MemberExpr*>(&expr))
+        return true;
     if (auto* unary = dynamic_cast<const UnaryExpr*>(&expr))
         return unary->op == UnaryExpr::Deref;
     return false;
@@ -27,6 +29,7 @@ uint64_t sizeOfType(CType type) noexcept {
     case CTypeKind::Int: return 4;
     case CTypeKind::Long: return 8;
     case CTypeKind::Void: return 1;
+    case CTypeKind::Struct: return type.structInfo && type.structInfo->complete ? type.structInfo->size : 0;
     }
     return 8;
 }
@@ -46,8 +49,19 @@ uint64_t alignOfType(CType type) noexcept {
     case CTypeKind::Int: return 4;
     case CTypeKind::Long: return 8;
     case CTypeKind::Void: return 1;
+    case CTypeKind::Struct: return type.structInfo && type.structInfo->complete ? type.structInfo->align : 1;
     }
     return 8;
+}
+
+const CField* findStructField(const CType& type, const std::string& name) noexcept {
+    if (type.kind != CTypeKind::Struct || !type.structInfo || !type.structInfo->complete)
+        return nullptr;
+    for (const auto& field : type.structInfo->fields) {
+        if (field.name == name)
+            return &field;
+    }
+    return nullptr;
 }
 
 } // namespace minic

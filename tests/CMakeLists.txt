@@ -77,6 +77,7 @@ add_test(NAME MC_tests COMMAND MC_tests)
 add_executable(MiniC_tests
     MiniC/GlobalTest.cpp
     MiniC/AlignofTest.cpp
+    MiniC/StructTest.cpp
 )
 target_link_libraries(MiniC_tests PRIVATE MiniCFrontend AuroraTestCommon)
 add_test(NAME MiniC_tests COMMAND MiniC_tests)

@@ -53,6 +53,11 @@ std::unique_ptr<BlockStmt> Parser::parseBlock() {
 
 std::unique_ptr<Stmt> Parser::parseDeclStmt(bool consumeSemicolon) {
     CType baseType = parseBaseType();
+    if (current_.kind == TokenKind::Semicolon) {
+        if (consumeSemicolon)
+            consume(TokenKind::Semicolon);
+        return std::make_unique<DeclStmt>(std::vector<DeclStmt::Declarator>{});
+    }
 
     std::vector<DeclStmt::Declarator> declarators;
     do {

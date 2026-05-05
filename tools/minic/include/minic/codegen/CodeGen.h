@@ -67,6 +67,7 @@ private:
     void genBreakStmt();
     void genContinueStmt();
     void genArrayInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
+    void genStructInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
 
     unsigned genExpr(const Expr& node);
 
@@ -76,6 +77,7 @@ private:
     unsigned genAssignExpr(const AssignExpr& ae);
     unsigned genIncDecExpr(const IncDecExpr& ie);
     unsigned genIndexExpr(const IndexExpr& ie);
+    unsigned genMemberExpr(const MemberExpr& me);
     unsigned genSizeofExpr(const SizeofExpr& se);
     unsigned genAlignofExpr(const AlignofExpr& ae);
     unsigned genCommaExpr(const CommaExpr& ce);
@@ -86,6 +88,7 @@ private:
     unsigned genConditionValue(const Expr& expr);
     bool containsCall(const Expr& expr) const;
     LValue genLValue(const Expr& expr);
+    LValue genMemberLValue(const MemberExpr& me);
     unsigned genAddressOfVariable(const VarExpr& ve);
     uint64_t sizeOfType(CType type) const;
     uint64_t alignOfType(CType type) const;

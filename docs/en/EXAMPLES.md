@@ -73,6 +73,11 @@ enum Mode {
 static_assert(MODE_ONE == 4, "enum constants work");
 static_assert(alignof(long) == 8, "alignment constants work");
 
+struct Pair {
+    long first;
+    long second;
+};
+
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
@@ -93,6 +98,13 @@ long use_global_array() {
     global_values[2] = global_counter;
     return global_values[0] + global_values[1] + global_values[2];
 }
+
+long use_struct_fields() {
+    struct Pair pair = {4, 5};
+    struct Pair *cursor = &pair;
+    cursor->second = pair.first + cursor->second;
+    return pair.second + sizeof(struct Pair);
+}
 ```
 
 This exercises:
@@ -103,6 +115,7 @@ This exercises:
 - function prototypes / external declarations that stay callable without emitting bodies
 - scalar and one-dimensional array global definitions plus `extern` global declarations
 - C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
+- named `struct` layout, ordered local struct initialization, and `.` / `->` field access
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File
