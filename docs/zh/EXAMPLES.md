@@ -95,6 +95,7 @@ struct Outer {
 };
 
 struct Outer global_outer = {{1, 2}, {.second = 8, .first = 4}, {.value = 9}};
+struct Outer global_outers[2] = {[1].pair.second = 12, [0].values[1] = 3};
 
 long use_c23_bits(usize value) {
     bool ok = true;
@@ -129,6 +130,10 @@ long use_global_nested_record() {
     return global_outer.values[1] + global_outer.pair.second + global_outer.slot.value;
 }
 
+long use_global_nested_designators() {
+    return global_outers[0].values[1] + global_outers[1].pair.second;
+}
+
 long use_struct_fields() {
     struct Pair pair = {.second = 5, .first = 4};
     alignas(16) struct Pair *cursor = &pair;
@@ -137,7 +142,7 @@ long use_struct_fields() {
 }
 
 long use_nested_records() {
-    struct Outer outer = {{1, 2}, {.second = 5, .first = 4}, {.value = 7}};
+    struct Outer outer = {.values[1] = 2, .pair.second = 5, .pair.first = 4, .slot.value = 7};
     return outer.values[1] + outer.pair.first + outer.slot.value;
 }
 
@@ -149,7 +154,8 @@ long use_union_fields() {
 
 long use_compound_literals() {
     long *values = (long[3]){[1] = 5, [0] = 2};
-    return values[0] + values[1] + ((struct Pair){.second = 11, .first = 3}).second;
+    struct Pair *pairs = (struct Pair[2]){[1].second = 13, [0] = {.first = 3, .second = 11}};
+    return values[0] + values[1] + pairs[0].second + pairs[1].second;
 }
 ```
 
@@ -163,8 +169,8 @@ long use_compound_literals() {
 - 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
 - 通过 `alignas(n)` 和 `_Alignas(type)` 描述对齐要求的 C23 写法
 - 命名 `struct` / `union` 布局、包括嵌套数组和 record 字段在内的全局 / 局部记录类型初始化，以及 `.` / `->` 字段访问
-- 数组和记录类型 designated initializer，包括全局整数数组
-- 标量、数组、`struct` 和 `union` 临时对象的 compound literal
+- 数组和记录类型 designated initializer path，包括全局整数数组和 record 数组
+- 标量、数组、record 数组、`struct` 和 `union` 临时对象的 compound literal
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件

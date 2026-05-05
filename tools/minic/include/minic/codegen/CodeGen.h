@@ -73,7 +73,9 @@ private:
     void genStructInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
     void genRecordInitializerAtAddress(CType type, unsigned base, const InitListExpr& init, const std::string& name);
     void genInitializerAtAddress(CType type, unsigned address, const Expr& init, const std::string& name);
+    void genDesignatedInitializerAtAddress(CType type, unsigned address, const InitListExpr::Designator& designator, size_t partIndex, const Expr& init, const std::string& name);
     void genZeroInitializerAtAddress(CType type, unsigned address);
+    unsigned addByteOffset(unsigned base, uint64_t offset);
 
     unsigned genExpr(const Expr& node);
 
@@ -110,8 +112,10 @@ private:
     Global& findGlobal(const std::string& name);
     unsigned genGlobalAddress(const std::string& name);
     void declareGlobal(const GlobalDecl& decl);
-    aurora::Constant* buildGlobalRecordInitializer(CType type, const InitListExpr& init, const std::string& name);
+    aurora::Constant* buildGlobalInitializer(CType type, const Expr& init, const std::string& name);
+    aurora::Constant* buildGlobalConstantFromBytes(CType type, const std::vector<uint8_t>& bytes, uint64_t offset);
     void storeGlobalInitializerBytes(CType type, std::vector<uint8_t>& bytes, uint64_t offset, const Expr& init, const std::string& name);
+    void storeGlobalDesignatedInitializerBytes(CType type, std::vector<uint8_t>& bytes, uint64_t offset, const InitListExpr::Designator& designator, size_t partIndex, const Expr& init, const std::string& name);
     void declareVariable(const std::string& name, CType type, const Expr* init);
     void pushScope();
     void popScope();

@@ -98,12 +98,32 @@ struct AlignofExpr : Expr {
 struct InitListExpr : Expr {
     struct Designator {
         enum Kind { None, Index, Field } kind = None;
+        struct Part {
+            Kind kind = None;
+            uint64_t index = 0;
+            std::string field;
+
+            explicit Part(uint64_t i) : kind(Index), index(i) {}
+            explicit Part(std::string f) : kind(Field), field(std::move(f)) {}
+        };
+
         uint64_t index = 0;
         std::string field;
+        std::vector<Part> parts;
 
         Designator() = default;
-        explicit Designator(uint64_t i) : kind(Index), index(i) {}
-        explicit Designator(std::string f) : kind(Field), field(std::move(f)) {}
+        explicit Designator(uint64_t i) : kind(Index), index(i), parts{Part(i)} {}
+        explicit Designator(std::string f) : kind(Field), field(f), parts{Part(std::move(f))} {}
+        explicit Designator(std::vector<Part> p) : parts(std::move(p)) {
+            if (!parts.empty()) {
+                kind = parts.front().kind;
+                index = parts.front().index;
+                field = parts.front().field;
+            }
+        }
+
+        [[nodiscard]] bool empty() const noexcept { return parts.empty(); }
+        [[nodiscard]] const Part& first() const noexcept { return parts.front(); }
     };
 
     struct Entry {

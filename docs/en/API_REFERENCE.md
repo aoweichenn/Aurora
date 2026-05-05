@@ -82,7 +82,7 @@ This document lists the main public interfaces exposed by the current headers. T
 ## tools/minic
 
 - `TokenKind` / `Token` / `Lexer`: lexical-analysis interfaces.
-- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, top-level scalar, fixed-size array, named record, and record-array globals, named `struct` / `union` definitions, `alignas` / `_Alignas`, nested braced initializers, designated initializers, compound literals, expressions, comparisons, arithmetic, `sizeof`, `alignof` / `_Alignof`, `if`, calls, literals, and variables.
+- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, top-level scalar, fixed-size array, named record, and record-array globals, named `struct` / `union` definitions, `alignas` / `_Alignas`, nested braced initializers, nested designator paths, compound literals, expressions, comparisons, arithmetic, `sizeof`, `alignof` / `_Alignof`, `if`, calls, literals, and variables.
 - AST nodes: expression, statement, function, and declaration nodes including `SizeofExpr`, `AlignofExpr`, `MemberExpr`, `CompoundLiteralExpr`, `Function`, and `GlobalDecl`.
 - `CodeGen`: `generate()` turns AST into `aurora::Module`, including global and local lowering for nested array/record initializers.
 

@@ -89,6 +89,25 @@ long main() {
     EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 13));
 }
 
+TEST(MiniCCompoundLiteralTest, SupportsRecordArrayCompoundLiterals) {
+    auto module = generateMiniC(R"mini(
+struct Pair {
+    long first;
+    long second;
+};
+
+long main() {
+    struct Pair *pairs = (struct Pair[2]){[1].second = 9, [0] = {.first = 2, .second = 3}};
+    return pairs[0].second + pairs[1].second;
+}
+)mini");
+
+    ASSERT_EQ(module->getFunctions().size(), 1u);
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 2));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 3));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 9));
+}
+
 TEST(MiniCCompoundLiteralTest, SupportsScalarCompoundLiteralLValues) {
     auto module = generateMiniC(R"mini(
 long main() {

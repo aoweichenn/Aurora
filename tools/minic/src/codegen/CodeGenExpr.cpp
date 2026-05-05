@@ -359,10 +359,6 @@ unsigned CodeGen::genCompoundLiteralStorage(const CompoundLiteralExpr& cle) {
     unsigned pointer = builder_->createAlloca(toAirType(type, false));
 
     if (type.arraySize > 0) {
-        CType elementType = type;
-        elementType.arraySize = 0;
-        if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0)
-            throw std::runtime_error("Record array compound literal is not supported yet");
         genArrayInitializer(type, pointer, *cle.init, "compound literal");
         return pointer;
     }
@@ -377,7 +373,7 @@ unsigned CodeGen::genCompoundLiteralStorage(const CompoundLiteralExpr& cle) {
         throw std::runtime_error("Scalar compound literal has too many values");
     if (!cle.init->entries.empty()) {
         const auto& entry = cle.init->entries.front();
-        if (entry.designator.kind != InitListExpr::Designator::None)
+        if (!entry.designator.empty())
             throw std::runtime_error("Scalar compound literal cannot use a designator");
         initialValue = genExpr(*entry.value);
     }

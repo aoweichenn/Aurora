@@ -1,6 +1,7 @@
 #include "minic/parse/Parser.h"
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace minic {
 
@@ -196,17 +197,24 @@ std::unique_ptr<Expr> Parser::parseInitializer() {
         do {
             if (current_.kind == TokenKind::RBrace)
                 break;
+            std::vector<InitListExpr::Designator::Part> designatorParts;
+            while (current_.kind == TokenKind::Dot || current_.kind == TokenKind::LBracket) {
+                if (match(TokenKind::Dot)) {
+                    designatorParts.emplace_back(consume(TokenKind::Ident).lexeme);
+                } else {
+                    consume(TokenKind::LBracket);
+                    int64_t index = evalConstantExpr(*parseAssignment());
+                    if (index < 0)
+                        throw std::runtime_error("Initializer array designator cannot be negative");
+                    consume(TokenKind::RBracket);
+                    designatorParts.emplace_back(static_cast<uint64_t>(index));
+                }
+            }
+
             InitListExpr::Designator designator;
-            if (match(TokenKind::Dot)) {
-                designator = InitListExpr::Designator(consume(TokenKind::Ident).lexeme);
+            if (!designatorParts.empty()) {
                 consume(TokenKind::Assign);
-            } else if (match(TokenKind::LBracket)) {
-                int64_t index = evalConstantExpr(*parseAssignment());
-                if (index < 0)
-                    throw std::runtime_error("Initializer array designator cannot be negative");
-                consume(TokenKind::RBracket);
-                consume(TokenKind::Assign);
-                designator = InitListExpr::Designator(static_cast<uint64_t>(index));
+                designator = InitListExpr::Designator(std::move(designatorParts));
             }
             entries.emplace_back(std::move(designator), parseInitializer());
         } while (match(TokenKind::Comma));

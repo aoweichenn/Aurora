@@ -82,7 +82,7 @@
 ## tools/minic
 
 - `TokenKind` / `Token` / `Lexer`：词法分析接口。
-- `Parser`：`parseProgram()`，以及函数定义 / 原型、顶层标量、定长数组、命名 record 和 record 数组全局变量、命名 `struct` / `union` 定义、`alignas` / `_Alignas`、嵌套大括号初始化、designated initializer、compound literal、表达式、比较、加减乘除、`sizeof`、`alignof` / `_Alignof`、`if`、`call`、字面量、变量解析。
+- `Parser`：`parseProgram()`，以及函数定义 / 原型、顶层标量、定长数组、命名 record 和 record 数组全局变量、命名 `struct` / `union` 定义、`alignas` / `_Alignas`、嵌套大括号初始化、嵌套 designator path、compound literal、表达式、比较、加减乘除、`sizeof`、`alignof` / `_Alignof`、`if`、`call`、字面量、变量解析。
 - AST 结构：表达式、语句、函数和声明节点，包括 `SizeofExpr`、`AlignofExpr`、`MemberExpr`、`CompoundLiteralExpr`、`Function`、`GlobalDecl`。
 - `CodeGen`：`generate()` 将 AST 转成 `aurora::Module`，包括全局和局部嵌套数组 / record 初始化 lowering。
 

@@ -55,7 +55,7 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
             if (initList->entries.size() > 1)
                 throw std::runtime_error("Scalar initializer has too many values: " + name);
             if (!initList->entries.empty()) {
-                if (initList->entries.front().designator.kind != InitListExpr::Designator::None)
+                if (!initList->entries.front().designator.empty())
                     throw std::runtime_error("Scalar initializer cannot use a designator: " + name);
                 initialValue = genExpr(*initList->entries.front().value);
             }
@@ -79,15 +79,7 @@ void CodeGen::genRecordInitializerAtAddress(CType type, unsigned base, const Ini
         throw std::runtime_error("Too many values in union initializer: " + name);
 
     auto fieldAddress = [&](size_t index) {
-        const CField& field = type.structInfo->fields[index];
-        unsigned address = base;
-        if (field.offset != 0) {
-            address = builder_->createAdd(
-                aurora::Type::getInt64Ty(),
-                base,
-                builder_->createConstantInt(static_cast<int64_t>(field.offset)));
-        }
-        return address;
+        return addByteOffset(base, type.structInfo->fields[index].offset);
     };
 
     genZeroInitializerAtAddress(type, base);
@@ -98,29 +90,31 @@ void CodeGen::genRecordInitializerAtAddress(CType type, unsigned base, const Ini
         size_t fieldIndex = 0;
         if (!init.entries.empty()) {
             const auto& entry = init.entries.front();
-            if (entry.designator.kind == InitListExpr::Designator::Index)
-                throw std::runtime_error("Union initializer cannot use an array designator: " + name);
-            if (entry.designator.kind == InitListExpr::Designator::Field) {
-                fieldIndex = findFieldIndex(*type.structInfo, entry.designator.field);
-                if (fieldIndex == type.structInfo->fields.size())
-                    throw std::runtime_error("Unknown union initializer field: " + entry.designator.field);
+            if (!entry.designator.empty()) {
+                if (entry.designator.first().kind == InitListExpr::Designator::Index)
+                    throw std::runtime_error("Union initializer cannot use an array designator: " + name);
+                genDesignatedInitializerAtAddress(type, base, entry.designator, 0, *entry.value, name);
+            } else {
+                genInitializerAtAddress(type.structInfo->fields[fieldIndex].type, fieldAddress(fieldIndex), *entry.value, name);
             }
-            genInitializerAtAddress(type.structInfo->fields[fieldIndex].type, fieldAddress(fieldIndex), *entry.value, name);
         }
         return;
     }
 
     size_t nextField = 0;
     for (const auto& entry : init.entries) {
-        if (entry.designator.kind == InitListExpr::Designator::Index)
-            throw std::runtime_error("Struct initializer cannot use an array designator: " + name);
+        if (!entry.designator.empty()) {
+            if (entry.designator.first().kind == InitListExpr::Designator::Index)
+                throw std::runtime_error("Struct initializer cannot use an array designator: " + name);
+            size_t fieldIndex = findFieldIndex(*type.structInfo, entry.designator.first().field);
+            if (fieldIndex == type.structInfo->fields.size())
+                throw std::runtime_error("Unknown struct initializer field: " + entry.designator.first().field);
+            genDesignatedInitializerAtAddress(type, base, entry.designator, 0, *entry.value, name);
+            nextField = fieldIndex + 1;
+            continue;
+        }
 
         size_t fieldIndex = nextField;
-        if (entry.designator.kind == InitListExpr::Designator::Field) {
-            fieldIndex = findFieldIndex(*type.structInfo, entry.designator.field);
-            if (fieldIndex == type.structInfo->fields.size())
-                throw std::runtime_error("Unknown struct initializer field: " + entry.designator.field);
-        }
         if (fieldIndex >= type.structInfo->fields.size())
             throw std::runtime_error("Too many values in record initializer: " + name);
         genInitializerAtAddress(type.structInfo->fields[fieldIndex].type, fieldAddress(fieldIndex), *entry.value, name);
@@ -140,28 +134,25 @@ void CodeGen::genArrayInitializerAtAddress(CType type, unsigned base, const Init
 
     auto elementAddress = [&](uint64_t index) {
         const uint64_t offset = index * sizeOfType(elementType);
-        unsigned address = base;
-        if (offset != 0) {
-            address = builder_->createAdd(
-                aurora::Type::getInt64Ty(),
-                base,
-                builder_->createConstantInt(static_cast<int64_t>(offset)));
-        }
-        return address;
+        return addByteOffset(base, offset);
     };
 
     genZeroInitializerAtAddress(type, base);
 
     uint64_t nextIndex = 0;
     for (const auto& entry : init.entries) {
-        if (entry.designator.kind == InitListExpr::Designator::Field)
-            throw std::runtime_error("Array initializer cannot use a field designator: " + name);
-        uint64_t targetIndex = entry.designator.kind == InitListExpr::Designator::Index
-            ? entry.designator.index
-            : nextIndex;
+        uint64_t targetIndex = nextIndex;
+        if (!entry.designator.empty()) {
+            if (entry.designator.first().kind == InitListExpr::Designator::Field)
+                throw std::runtime_error("Array initializer cannot use a field designator: " + name);
+            targetIndex = entry.designator.first().index;
+        }
         if (targetIndex >= type.arraySize)
             throw std::runtime_error("Too many values in array initializer: " + name);
-        genInitializerAtAddress(elementType, elementAddress(targetIndex), *entry.value, name);
+        if (entry.designator.empty())
+            genInitializerAtAddress(elementType, elementAddress(targetIndex), *entry.value, name);
+        else
+            genDesignatedInitializerAtAddress(type, base, entry.designator, 0, *entry.value, name);
         nextIndex = targetIndex + 1;
     }
 }
@@ -188,12 +179,62 @@ void CodeGen::genInitializerAtAddress(CType type, unsigned address, const Expr& 
             builder_->createStore(builder_->createConstantInt(0), address);
             return;
         }
-        if (initList->entries.front().designator.kind != InitListExpr::Designator::None)
+        if (!initList->entries.front().designator.empty())
             throw std::runtime_error("Scalar initializer cannot use a designator: " + name);
         genInitializerAtAddress(type, address, *initList->entries.front().value, name);
         return;
     }
     builder_->createStore(genExpr(init), address);
+}
+
+void CodeGen::genDesignatedInitializerAtAddress(
+    CType type,
+    unsigned address,
+    const InitListExpr::Designator& designator,
+    size_t partIndex,
+    const Expr& init,
+    const std::string& name) {
+    if (partIndex >= designator.parts.size()) {
+        genInitializerAtAddress(type, address, init, name);
+        return;
+    }
+
+    const auto& part = designator.parts[partIndex];
+    if (type.arraySize > 0) {
+        if (part.kind != InitListExpr::Designator::Index)
+            throw std::runtime_error("Array initializer cannot use a field designator: " + name);
+        if (part.index >= type.arraySize)
+            throw std::runtime_error("Too many values in array initializer: " + name);
+        CType elementType = type;
+        elementType.arraySize = 0;
+        unsigned elementAddress = addByteOffset(address, part.index * sizeOfType(elementType));
+        genDesignatedInitializerAtAddress(elementType, elementAddress, designator, partIndex + 1, init, name);
+        return;
+    }
+
+    if (isRecordObject(type)) {
+        if (part.kind != InitListExpr::Designator::Field)
+            throw std::runtime_error("Record initializer cannot use an array designator: " + name);
+        if (!type.structInfo || !type.structInfo->complete)
+            throw std::runtime_error("Record initializer requires a complete record type: " + name);
+        size_t fieldIndex = findFieldIndex(*type.structInfo, part.field);
+        if (fieldIndex == type.structInfo->fields.size())
+            throw std::runtime_error("Unknown record initializer field: " + part.field);
+        const CField& field = type.structInfo->fields[fieldIndex];
+        genDesignatedInitializerAtAddress(field.type, addByteOffset(address, field.offset), designator, partIndex + 1, init, name);
+        return;
+    }
+
+    throw std::runtime_error("Scalar initializer cannot use a nested designator: " + name);
+}
+
+unsigned CodeGen::addByteOffset(unsigned base, uint64_t offset) {
+    if (offset == 0)
+        return base;
+    return builder_->createAdd(
+        aurora::Type::getInt64Ty(),
+        base,
+        builder_->createConstantInt(static_cast<int64_t>(offset)));
 }
 
 void CodeGen::genZeroInitializerAtAddress(CType type, unsigned address) {
@@ -203,10 +244,7 @@ void CodeGen::genZeroInitializerAtAddress(CType type, unsigned address) {
         unsigned slotAddress = address;
         const uint64_t offset = slot * 8;
         if (offset != 0) {
-            slotAddress = builder_->createAdd(
-                aurora::Type::getInt64Ty(),
-                address,
-                builder_->createConstantInt(static_cast<int64_t>(offset)));
+            slotAddress = addByteOffset(address, offset);
         }
         builder_->createStore(builder_->createConstantInt(0), slotAddress);
     }
