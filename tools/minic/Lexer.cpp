@@ -11,6 +11,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Ident:  return "Identifier";
     case TokenKind::IntLit: return "Integer";
     case TokenKind::CharLit:return "Character";
+    case TokenKind::StringLit:return "String";
     case TokenKind::Invalid:return "Invalid";
     case TokenKind::Fn:     return "fn";
     case TokenKind::If:     return "if";
@@ -26,10 +27,28 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Case:   return "case";
     case TokenKind::Default:return "default";
     case TokenKind::Sizeof: return "sizeof";
+    case TokenKind::Typedef:return "typedef";
+    case TokenKind::Enum:   return "enum";
+    case TokenKind::StaticAssert:return "static_assert";
+    case TokenKind::True:   return "true";
+    case TokenKind::False:  return "false";
+    case TokenKind::Nullptr:return "nullptr";
     case TokenKind::Int:    return "int";
     case TokenKind::Long:   return "long";
+    case TokenKind::Short:  return "short";
     case TokenKind::Char:   return "char";
+    case TokenKind::Bool:   return "bool";
     case TokenKind::Void:   return "void";
+    case TokenKind::Signed: return "signed";
+    case TokenKind::Unsigned:return "unsigned";
+    case TokenKind::Const:  return "const";
+    case TokenKind::Volatile:return "volatile";
+    case TokenKind::Restrict:return "restrict";
+    case TokenKind::Static: return "static";
+    case TokenKind::Extern: return "extern";
+    case TokenKind::Auto:   return "auto";
+    case TokenKind::Register:return "register";
+    case TokenKind::Inline: return "inline";
     case TokenKind::LParen: return "(";
     case TokenKind::RParen: return ")";
     case TokenKind::LBrace: return "{";
@@ -185,6 +204,22 @@ Token Lexer::readCharLiteral() {
     return {TokenKind::CharLit, std::string(source_.substr(start, pos_ - start)), value};
 }
 
+Token Lexer::readStringLiteral() {
+    size_t start = pos_;
+    ++pos_;
+    while (pos_ < source_.size() && source_[pos_] != '"') {
+        if (source_[pos_] == '\\' && pos_ + 1 < source_.size()) {
+            pos_ += 2;
+        } else {
+            ++pos_;
+        }
+    }
+    if (pos_ >= source_.size())
+        return {TokenKind::Invalid, std::string(source_.substr(start, pos_ - start)), 0};
+    ++pos_;
+    return {TokenKind::StringLit, std::string(source_.substr(start, pos_ - start)), 0};
+}
+
 Token Lexer::readIdent() {
     size_t start = pos_;
     while (pos_ < source_.size() && (std::isalnum(static_cast<unsigned char>(source_[pos_])) || source_[pos_] == '_'))
@@ -207,10 +242,28 @@ Token Lexer::readIdent() {
     else if (lexeme == "case") tok.kind = TokenKind::Case;
     else if (lexeme == "default") tok.kind = TokenKind::Default;
     else if (lexeme == "sizeof") tok.kind = TokenKind::Sizeof;
+    else if (lexeme == "typedef") tok.kind = TokenKind::Typedef;
+    else if (lexeme == "enum") tok.kind = TokenKind::Enum;
+    else if (lexeme == "static_assert" || lexeme == "_Static_assert") tok.kind = TokenKind::StaticAssert;
+    else if (lexeme == "true") tok.kind = TokenKind::True;
+    else if (lexeme == "false") tok.kind = TokenKind::False;
+    else if (lexeme == "nullptr") tok.kind = TokenKind::Nullptr;
     else if (lexeme == "int") tok.kind = TokenKind::Int;
     else if (lexeme == "long") tok.kind = TokenKind::Long;
+    else if (lexeme == "short") tok.kind = TokenKind::Short;
     else if (lexeme == "char") tok.kind = TokenKind::Char;
+    else if (lexeme == "bool" || lexeme == "_Bool") tok.kind = TokenKind::Bool;
     else if (lexeme == "void") tok.kind = TokenKind::Void;
+    else if (lexeme == "signed") tok.kind = TokenKind::Signed;
+    else if (lexeme == "unsigned") tok.kind = TokenKind::Unsigned;
+    else if (lexeme == "const") tok.kind = TokenKind::Const;
+    else if (lexeme == "volatile") tok.kind = TokenKind::Volatile;
+    else if (lexeme == "restrict") tok.kind = TokenKind::Restrict;
+    else if (lexeme == "static") tok.kind = TokenKind::Static;
+    else if (lexeme == "extern") tok.kind = TokenKind::Extern;
+    else if (lexeme == "auto") tok.kind = TokenKind::Auto;
+    else if (lexeme == "register") tok.kind = TokenKind::Register;
+    else if (lexeme == "inline") tok.kind = TokenKind::Inline;
     else {
         tok.kind = TokenKind::Ident;
         tok.intValue = 0;
@@ -226,6 +279,7 @@ Token Lexer::next() {
 
     if (std::isdigit(static_cast<unsigned char>(c))) return readNumber();
     if (c == '\'') return readCharLiteral();
+    if (c == '"') return readStringLiteral();
     if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') return readIdent();
 
     ++pos_;

@@ -47,6 +47,15 @@ long classify(long value) {
 long first(long *items) {
     return items[0];
 }
+
+long array_sum() {
+    long values[2];
+    long *cursor = values;
+    cursor[0] = 3;
+    cursor += 1;
+    *cursor = 4;
+    return values[0] + values[1];
+}
 ```
 
 This exercises:

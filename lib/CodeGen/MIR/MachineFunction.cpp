@@ -1,5 +1,6 @@
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/Air/Function.h"
+#include <algorithm>
 
 namespace aurora {
 
@@ -35,7 +36,9 @@ Type* MachineFunction::getVRegType(const unsigned vreg) const noexcept {
 }
 
 int MachineFunction::createStackSlot(const unsigned size, const unsigned alignment) {
-    const int idx = ++nextFrameIndex_;
+    const unsigned slotUnits = std::max(1u, (size + 7u) / 8u);
+    nextFrameIndex_ += static_cast<int>(slotUnits);
+    const int idx = nextFrameIndex_;
     stackObjects_.push_back({size, alignment, idx});
     return idx;
 }

@@ -4,6 +4,7 @@
 #include "AST.h"
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace minic {
@@ -16,16 +17,25 @@ public:
 private:
     Lexer& lexer_;
     Token current_;
+    std::unordered_map<std::string, CType> typedefs_;
+    std::unordered_map<std::string, int64_t> enumConstants_;
     void advance();
     Token consume(TokenKind expected);
     bool match(TokenKind kind);
 
     Function parseFunction();
+    Function parseFunctionRest(CType returnType);
     Function parseLegacyFunction();
     CType parseBaseType();
     CType parseType();
     CType parsePointerSuffix(CType type);
     bool isTypeToken(TokenKind kind) const;
+    bool isTypeQualifier(TokenKind kind) const;
+    void consumeTypeQualifiers();
+    void parseTypedefDecl();
+    void parseStaticAssertDecl();
+    void parseEnumBody();
+    int64_t evalConstantExpr(const Expr& expr) const;
 
     std::vector<Param> parseParamList();
     std::unique_ptr<Stmt> parseStmt();

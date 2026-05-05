@@ -7,11 +7,14 @@
 namespace minic {
 
 enum class TokenKind {
-    Eof, Ident, IntLit, CharLit,
+    Eof, Ident, IntLit, CharLit, StringLit,
     Invalid,
     Fn, If, Then, Else, Return, While, Do, For, Break, Continue,
-    Switch, Case, Default, Sizeof,
-    Int, Long, Char, Void,
+    Switch, Case, Default, Sizeof, Typedef, Enum, StaticAssert,
+    True, False, Nullptr,
+    Int, Long, Short, Char, Bool, Void,
+    Signed, Unsigned, Const, Volatile, Restrict,
+    Static, Extern, Auto, Register, Inline,
     LParen, RParen, LBrace, RBrace, LBracket, RBracket,
     Semicolon, Comma, Question, Colon,
     Assign, PlusAssign, MinusAssign, StarAssign, SlashAssign, PercentAssign,
@@ -43,6 +46,7 @@ private:
     void skipWhitespace();
     Token readNumber();
     Token readCharLiteral();
+    Token readStringLiteral();
     Token readIdent();
     char readEscapedChar();
 };

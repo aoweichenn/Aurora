@@ -58,6 +58,7 @@ private:
 
     unsigned genBinaryExpr(const BinaryExpr& be);
     unsigned genUnaryExpr(const UnaryExpr& ue);
+    unsigned genCastExpr(const CastExpr& ce);
     unsigned genAssignExpr(const AssignExpr& ae);
     unsigned genIncDecExpr(const IncDecExpr& ie);
     unsigned genIndexExpr(const IndexExpr& ie);
@@ -74,6 +75,7 @@ private:
     uint64_t sizeOfType(CType type) const;
     int64_t evalConstantExpr(const Expr& expr) const;
     CType inferExprType(const Expr& expr);
+    unsigned scalePointerOffset(CType pointerType, unsigned value);
 
     Variable& findVariable(const std::string& name);
     void declareVariable(const std::string& name, CType type, const Expr* init);

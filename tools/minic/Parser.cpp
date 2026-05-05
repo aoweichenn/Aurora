@@ -15,6 +15,25 @@ bool isAssignableExpr(const Expr* expr) {
     return false;
 }
 
+uint64_t parserSizeOfType(CType type) {
+    if (type.arraySize > 0) {
+        CType elementType = type;
+        elementType.arraySize = 0;
+        return type.arraySize * parserSizeOfType(elementType);
+    }
+    if (type.pointerDepth > 0)
+        return 8;
+    switch (type.kind) {
+    case CTypeKind::Bool: return 1;
+    case CTypeKind::Char: return 1;
+    case CTypeKind::Short: return 2;
+    case CTypeKind::Int: return 4;
+    case CTypeKind::Long: return 8;
+    case CTypeKind::Void: return 1;
+    }
+    return 8;
+}
+
 } // namespace
 
 Parser::Parser(Lexer& lexer) : lexer_(lexer), current_(lexer.next()) {}
@@ -46,6 +65,21 @@ bool Parser::match(TokenKind kind) {
 std::vector<Function> Parser::parseProgram() {
     std::vector<Function> functions;
     while (current_.kind != TokenKind::Eof) {
+        if (match(TokenKind::Typedef)) {
+            parseTypedefDecl();
+            continue;
+        }
+        if (current_.kind == TokenKind::StaticAssert) {
+            parseStaticAssertDecl();
+            continue;
+        }
+        if (current_.kind == TokenKind::Enum) {
+            CType enumType = parseType();
+            if (match(TokenKind::Semicolon))
+                continue;
+            functions.push_back(parseFunctionRest(enumType));
+            continue;
+        }
         functions.push_back(parseFunction());
     }
     return functions;
@@ -53,34 +87,100 @@ std::vector<Function> Parser::parseProgram() {
 
 bool Parser::isTypeToken(TokenKind kind) const {
     return kind == TokenKind::Int || kind == TokenKind::Long ||
-           kind == TokenKind::Char || kind == TokenKind::Void;
+           kind == TokenKind::Short || kind == TokenKind::Char ||
+           kind == TokenKind::Bool || kind == TokenKind::Void ||
+           kind == TokenKind::Signed || kind == TokenKind::Unsigned ||
+           kind == TokenKind::Enum || isTypeQualifier(kind) ||
+           (kind == TokenKind::Ident && typedefs_.find(current_.lexeme) != typedefs_.end());
+}
+
+bool Parser::isTypeQualifier(TokenKind kind) const {
+    return kind == TokenKind::Const || kind == TokenKind::Volatile ||
+           kind == TokenKind::Restrict || kind == TokenKind::Static ||
+           kind == TokenKind::Extern || kind == TokenKind::Auto ||
+           kind == TokenKind::Register || kind == TokenKind::Inline;
+}
+
+void Parser::consumeTypeQualifiers() {
+    while (isTypeQualifier(current_.kind))
+        advance();
 }
 
 CType Parser::parseBaseType() {
     CType type;
+    consumeTypeQualifiers();
+
+    if (match(TokenKind::Enum)) {
+        if (current_.kind == TokenKind::Ident)
+            advance();
+        if (current_.kind == TokenKind::LBrace)
+            parseEnumBody();
+        type.kind = CTypeKind::Int;
+        return type;
+    }
+
+    if (current_.kind == TokenKind::Ident) {
+        auto typedefIt = typedefs_.find(current_.lexeme);
+        if (typedefIt != typedefs_.end()) {
+            type = typedefIt->second;
+            advance();
+            return type;
+        }
+    }
+
+    bool sawSignedness = false;
+    while (current_.kind == TokenKind::Signed || current_.kind == TokenKind::Unsigned) {
+        sawSignedness = true;
+        if (current_.kind == TokenKind::Unsigned)
+            type.isUnsigned = true;
+        advance();
+        consumeTypeQualifiers();
+    }
+
+    if (match(TokenKind::Bool)) {
+        type.kind = CTypeKind::Bool;
+        consumeTypeQualifiers();
+        return type;
+    }
     if (match(TokenKind::Int)) {
         type.kind = CTypeKind::Int;
+        consumeTypeQualifiers();
+        return type;
+    }
+    if (match(TokenKind::Short)) {
+        type.kind = CTypeKind::Short;
+        (void)match(TokenKind::Int);
+        consumeTypeQualifiers();
         return type;
     }
     if (match(TokenKind::Long)) {
         type.kind = CTypeKind::Long;
         (void)match(TokenKind::Int);
+        consumeTypeQualifiers();
         return type;
     }
     if (match(TokenKind::Char)) {
         type.kind = CTypeKind::Char;
+        consumeTypeQualifiers();
         return type;
     }
     if (match(TokenKind::Void)) {
         type.kind = CTypeKind::Void;
+        consumeTypeQualifiers();
+        return type;
+    }
+    if (sawSignedness) {
+        type.kind = CTypeKind::Int;
         return type;
     }
     throw std::runtime_error("Expected type name");
 }
 
 CType Parser::parsePointerSuffix(CType type) {
-    while (match(TokenKind::Star))
+    while (match(TokenKind::Star)) {
         ++type.pointerDepth;
+        consumeTypeQualifiers();
+    }
     return type;
 }
 
@@ -92,7 +192,11 @@ Function Parser::parseFunction() {
     if (current_.kind == TokenKind::Fn)
         return parseLegacyFunction();
 
-    CType returnType = parsePointerSuffix(parseBaseType());
+    CType returnType = parseType();
+    return parseFunctionRest(returnType);
+}
+
+Function Parser::parseFunctionRest(CType returnType) {
     std::string name = consume(TokenKind::Ident).lexeme;
     consume(TokenKind::LParen);
     std::vector<Param> params = parseParamList();
@@ -119,6 +223,107 @@ Function Parser::parseLegacyFunction() {
     block->statements.push_back(std::make_unique<ReturnStmt>(parseExpr()));
     (void)match(TokenKind::Semicolon);
     return Function(CType{CTypeKind::Long}, std::move(name), std::move(params), std::move(block));
+}
+
+void Parser::parseTypedefDecl() {
+    CType baseType = parseBaseType();
+    do {
+        CType type = parsePointerSuffix(baseType);
+        std::string name = consume(TokenKind::Ident).lexeme;
+        if (match(TokenKind::LBracket)) {
+            Token size = consume(TokenKind::IntLit);
+            if (size.intValue <= 0)
+                throw std::runtime_error("Typedef array size must be positive");
+            type.arraySize = static_cast<uint64_t>(size.intValue);
+            consume(TokenKind::RBracket);
+        }
+        typedefs_[name] = type;
+    } while (match(TokenKind::Comma));
+    consume(TokenKind::Semicolon);
+}
+
+void Parser::parseStaticAssertDecl() {
+    consume(TokenKind::StaticAssert);
+    consume(TokenKind::LParen);
+    auto expr = parseAssignment();
+    if (match(TokenKind::Comma)) {
+        if (current_.kind == TokenKind::StringLit)
+            advance();
+        else
+            (void)parseAssignment();
+    }
+    consume(TokenKind::RParen);
+    consume(TokenKind::Semicolon);
+    if (evalConstantExpr(*expr) == 0)
+        throw std::runtime_error("static_assert failed");
+}
+
+void Parser::parseEnumBody() {
+    consume(TokenKind::LBrace);
+    int64_t nextValue = 0;
+    while (current_.kind != TokenKind::RBrace && current_.kind != TokenKind::Eof) {
+        std::string name = consume(TokenKind::Ident).lexeme;
+        int64_t value = nextValue;
+        if (match(TokenKind::Assign))
+            value = evalConstantExpr(*parseAssignment());
+        enumConstants_[name] = value;
+        nextValue = value + 1;
+        if (!match(TokenKind::Comma))
+            break;
+        if (current_.kind == TokenKind::RBrace)
+            break;
+    }
+    consume(TokenKind::RBrace);
+}
+
+int64_t Parser::evalConstantExpr(const Expr& expr) const {
+    if (auto* literal = dynamic_cast<const IntLitExpr*>(&expr))
+        return literal->value;
+    if (auto* unary = dynamic_cast<const UnaryExpr*>(&expr)) {
+        int64_t value = evalConstantExpr(*unary->operand);
+        switch (unary->op) {
+        case UnaryExpr::Plus: return value;
+        case UnaryExpr::Neg: return -value;
+        case UnaryExpr::LogicalNot: return value == 0;
+        case UnaryExpr::BitNot: return ~value;
+        case UnaryExpr::AddressOf:
+        case UnaryExpr::Deref:
+            break;
+        }
+    }
+    if (auto* cast = dynamic_cast<const CastExpr*>(&expr))
+        return evalConstantExpr(*cast->operand);
+    if (auto* binary = dynamic_cast<const BinaryExpr*>(&expr)) {
+        int64_t lhs = evalConstantExpr(*binary->lhs);
+        int64_t rhs = evalConstantExpr(*binary->rhs);
+        switch (binary->op) {
+        case BinaryExpr::Add: return lhs + rhs;
+        case BinaryExpr::Sub: return lhs - rhs;
+        case BinaryExpr::Mul: return lhs * rhs;
+        case BinaryExpr::Div: return rhs == 0 ? 0 : lhs / rhs;
+        case BinaryExpr::Rem: return rhs == 0 ? 0 : lhs % rhs;
+        case BinaryExpr::Eq: return lhs == rhs;
+        case BinaryExpr::Ne: return lhs != rhs;
+        case BinaryExpr::Lt: return lhs < rhs;
+        case BinaryExpr::Le: return lhs <= rhs;
+        case BinaryExpr::Gt: return lhs > rhs;
+        case BinaryExpr::Ge: return lhs >= rhs;
+        case BinaryExpr::BitAnd: return lhs & rhs;
+        case BinaryExpr::BitOr: return lhs | rhs;
+        case BinaryExpr::BitXor: return lhs ^ rhs;
+        case BinaryExpr::Shl: return lhs << rhs;
+        case BinaryExpr::Shr: return lhs >> rhs;
+        case BinaryExpr::LogAnd: return lhs && rhs;
+        case BinaryExpr::LogOr: return lhs || rhs;
+        }
+    }
+    if (auto* conditional = dynamic_cast<const ConditionalExpr*>(&expr))
+        return evalConstantExpr(*(evalConstantExpr(*conditional->cond) ? conditional->trueExpr : conditional->falseExpr));
+    if (auto* comma = dynamic_cast<const CommaExpr*>(&expr))
+        return evalConstantExpr(*comma->rhs);
+    if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&expr))
+        return static_cast<int64_t>(sizeofExpr->expr ? 8 : parserSizeOfType(sizeofExpr->type));
+    throw std::runtime_error("Expected integer constant expression");
 }
 
 std::vector<Param> Parser::parseParamList() {
@@ -149,6 +354,14 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
         return parseBlock();
     if (isTypeToken(current_.kind))
         return parseDeclStmt();
+    if (match(TokenKind::Typedef)) {
+        parseTypedefDecl();
+        return std::make_unique<ExprStmt>(nullptr);
+    }
+    if (current_.kind == TokenKind::StaticAssert) {
+        parseStaticAssertDecl();
+        return std::make_unique<ExprStmt>(nullptr);
+    }
     if (current_.kind == TokenKind::Return)
         return parseReturnStmt();
     if (current_.kind == TokenKind::If)
@@ -543,9 +756,17 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         return std::make_unique<IntLitExpr>(value);
     }
 
+    if (match(TokenKind::True))
+        return std::make_unique<IntLitExpr>(1);
+    if (match(TokenKind::False) || match(TokenKind::Nullptr))
+        return std::make_unique<IntLitExpr>(0);
+
     if (current_.kind == TokenKind::Ident) {
         std::string name = current_.lexeme;
         advance();
+        auto enumConstantIt = enumConstants_.find(name);
+        if (enumConstantIt != enumConstants_.end())
+            return std::make_unique<IntLitExpr>(enumConstantIt->second);
         if (match(TokenKind::LParen)) {
             std::vector<std::unique_ptr<Expr>> args;
             if (current_.kind != TokenKind::RParen) {
@@ -570,6 +791,11 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     }
 
     if (match(TokenKind::LParen)) {
+        if (isTypeToken(current_.kind)) {
+            CType type = parseType();
+            consume(TokenKind::RParen);
+            return std::make_unique<CastExpr>(type, parseUnary());
+        }
         auto expr = parseExpr();
         consume(TokenKind::RParen);
         return expr;

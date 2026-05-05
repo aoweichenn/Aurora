@@ -8,12 +8,13 @@
 
 namespace minic {
 
-enum class CTypeKind { Void, Int, Long, Char };
+enum class CTypeKind { Void, Bool, Char, Short, Int, Long };
 
 struct CType {
     CTypeKind kind = CTypeKind::Long;
     unsigned pointerDepth = 0;
     uint64_t arraySize = 0;
+    bool isUnsigned = false;
 
     [[nodiscard]] bool isVoid() const noexcept { return kind == CTypeKind::Void && pointerDepth == 0 && arraySize == 0; }
     [[nodiscard]] bool isPointerLike() const noexcept { return pointerDepth > 0 || arraySize > 0; }
@@ -75,6 +76,13 @@ struct UnaryExpr : Expr {
     Op op;
     std::unique_ptr<Expr> operand;
     UnaryExpr(Op o, std::unique_ptr<Expr> e) : op(o), operand(std::move(e)) {}
+};
+
+struct CastExpr : Expr {
+    CType targetType;
+    std::unique_ptr<Expr> operand;
+    CastExpr(CType t, std::unique_ptr<Expr> e)
+        : targetType(t), operand(std::move(e)) {}
 };
 
 struct AssignExpr : Expr {

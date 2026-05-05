@@ -935,9 +935,18 @@ private:
         // Alloca creates a stack slot; result vreg becomes a frame index
         // On x86, the alloca itself generates no code (stack is managed later)
         // We just create a stack slot and record the mapping
-        int frameIdx = mf.createStackSlot(8, 8);
+        unsigned sizeBytes = 8;
+        unsigned alignBytes = 8;
         if (mi->getNumOperands() > 0) {
             unsigned resultVReg = mi->getOperand(0).getVirtualReg();
+            if (Type* pointerTy = getAIRType(mbb, resultVReg)) {
+                if (pointerTy->isPointer() && pointerTy->getElementType()) {
+                    Type* objectTy = pointerTy->getElementType();
+                    sizeBytes = std::max(1u, (objectTy->getSizeInBits() + 7u) / 8u);
+                    alignBytes = std::max(1u, objectTy->getAlignInBits() / 8u);
+                }
+            }
+            int frameIdx = mf.createStackSlot(sizeBytes, alignBytes);
             frameIndexMap_[resultVReg] = frameIdx;
         }
         // Remove the alloca MI (no corresponding x86 instruction at ISel time)
