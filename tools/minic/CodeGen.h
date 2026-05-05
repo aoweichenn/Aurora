@@ -53,6 +53,7 @@ private:
     void genExprStmt(const ExprStmt& stmt);
     void genBreakStmt();
     void genContinueStmt();
+    void genArrayInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
 
     unsigned genExpr(const Expr& node);
 
@@ -76,6 +77,7 @@ private:
     int64_t evalConstantExpr(const Expr& expr) const;
     CType inferExprType(const Expr& expr);
     unsigned scalePointerOffset(CType pointerType, unsigned value);
+    unsigned genRemainder(CType lhsType, CType rhsType, unsigned lhs, unsigned rhs);
 
     Variable& findVariable(const std::string& name);
     void declareVariable(const std::string& name, CType type, const Expr* init);

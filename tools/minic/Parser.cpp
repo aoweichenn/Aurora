@@ -184,6 +184,28 @@ CType Parser::parsePointerSuffix(CType type) {
     return type;
 }
 
+CType Parser::parseArraySuffix(CType type) {
+    if (!match(TokenKind::LBracket))
+        return type;
+    Token size = consume(TokenKind::IntLit);
+    if (size.intValue <= 0)
+        throw std::runtime_error("Array size must be positive");
+    type.arraySize = static_cast<uint64_t>(size.intValue);
+    consume(TokenKind::RBracket);
+    return type;
+}
+
+CType Parser::parseParamArraySuffix(CType type) {
+    if (!match(TokenKind::LBracket))
+        return type;
+    consumeTypeQualifiers();
+    if (current_.kind != TokenKind::RBracket)
+        (void)parseAssignment();
+    consume(TokenKind::RBracket);
+    ++type.pointerDepth;
+    return type;
+}
+
 CType Parser::parseType() {
     return parsePointerSuffix(parseBaseType());
 }
@@ -230,13 +252,7 @@ void Parser::parseTypedefDecl() {
     do {
         CType type = parsePointerSuffix(baseType);
         std::string name = consume(TokenKind::Ident).lexeme;
-        if (match(TokenKind::LBracket)) {
-            Token size = consume(TokenKind::IntLit);
-            if (size.intValue <= 0)
-                throw std::runtime_error("Typedef array size must be positive");
-            type.arraySize = static_cast<uint64_t>(size.intValue);
-            consume(TokenKind::RBracket);
-        }
+        type = parseArraySuffix(type);
         typedefs_[name] = type;
     } while (match(TokenKind::Comma));
     consume(TokenKind::Semicolon);
@@ -331,20 +347,17 @@ std::vector<Param> Parser::parseParamList() {
     if (current_.kind == TokenKind::RParen)
         return params;
 
-    if (current_.kind == TokenKind::Void) {
-        CType voidType = parseBaseType();
-        if (current_.kind == TokenKind::RParen)
-            return params;
-        voidType = parsePointerSuffix(voidType);
-        params.push_back({voidType, consume(TokenKind::Ident).lexeme});
-    } else {
-        CType type = parsePointerSuffix(parseBaseType());
-        params.push_back({type, consume(TokenKind::Ident).lexeme});
-    }
+    CType type = parseBaseType();
+    if (type.isVoid() && current_.kind == TokenKind::RParen)
+        return params;
+    type = parsePointerSuffix(type);
+    std::string name = consume(TokenKind::Ident).lexeme;
+    params.push_back({parseParamArraySuffix(type), std::move(name)});
 
     while (match(TokenKind::Comma)) {
-        CType type = parsePointerSuffix(parseBaseType());
-        params.push_back({type, consume(TokenKind::Ident).lexeme});
+        CType nextType = parsePointerSuffix(parseBaseType());
+        std::string nextName = consume(TokenKind::Ident).lexeme;
+        params.push_back({parseParamArraySuffix(nextType), std::move(nextName)});
     }
     return params;
 }
@@ -403,18 +416,12 @@ std::unique_ptr<Stmt> Parser::parseDeclStmt(bool consumeSemicolon) {
     do {
         CType type = parsePointerSuffix(baseType);
         std::string name = consume(TokenKind::Ident).lexeme;
-        if (match(TokenKind::LBracket)) {
-            Token size = consume(TokenKind::IntLit);
-            if (size.intValue <= 0)
-                throw std::runtime_error("Array size must be positive");
-            type.arraySize = static_cast<uint64_t>(size.intValue);
-            consume(TokenKind::RBracket);
-        }
+        type = parseArraySuffix(type);
         if (type.isVoid())
             throw std::runtime_error("Variables cannot have void type");
         std::unique_ptr<Expr> init;
         if (match(TokenKind::Assign))
-            init = parseAssignment();
+            init = parseInitializer();
         declarators.emplace_back(type, std::move(name), std::move(init));
     } while (match(TokenKind::Comma));
 
@@ -531,6 +538,22 @@ std::unique_ptr<Stmt> Parser::parseExprStmt() {
     auto expr = parseExpr();
     consume(TokenKind::Semicolon);
     return std::make_unique<ExprStmt>(std::move(expr));
+}
+
+std::unique_ptr<Expr> Parser::parseInitializer() {
+    if (!match(TokenKind::LBrace))
+        return parseAssignment();
+
+    std::vector<std::unique_ptr<Expr>> values;
+    if (current_.kind != TokenKind::RBrace) {
+        do {
+            if (current_.kind == TokenKind::RBrace)
+                break;
+            values.push_back(parseAssignment());
+        } while (match(TokenKind::Comma));
+    }
+    consume(TokenKind::RBrace);
+    return std::make_unique<InitListExpr>(std::move(values));
 }
 
 std::unique_ptr<Expr> Parser::parseExpr() {

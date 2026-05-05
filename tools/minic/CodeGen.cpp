@@ -49,7 +49,7 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
 
         aurora::SmallVector<aurora::Type*, 8> paramTypes;
         for (const auto& param : function.params)
-            paramTypes.push_back(toAirType(param.type, false));
+            paramTypes.push_back(toAirType(param.type.decayArray(), false));
 
         auto* functionType = new aurora::FunctionType(toAirType(function.returnType), paramTypes);
         functionMap_[function.name] = module_->createFunction(functionType, function.name);
@@ -72,11 +72,12 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
 
         for (size_t paramIndex = 0; paramIndex < function.params.size(); ++paramIndex) {
             const auto& param = function.params[paramIndex];
-            if (param.type.isVoid())
+            CType paramType = param.type.decayArray();
+            if (paramType.isVoid())
                 throw std::runtime_error("Parameter cannot have void type: " + param.name);
-            unsigned pointer = builder_->createAlloca(toAirType(param.type, false));
+            unsigned pointer = builder_->createAlloca(toAirType(paramType, false));
             builder_->createStore(static_cast<unsigned>(paramIndex), pointer);
-            scopes_.back()[param.name] = Variable{param.type, pointer};
+            scopes_.back()[param.name] = Variable{paramType, pointer};
         }
 
         if (auto* block = dynamic_cast<const BlockStmt*>(function.body.get()))
@@ -136,13 +137,52 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
     scope[name] = Variable{type, pointer};
 
     if (type.arraySize > 0) {
-        if (init)
-            throw std::runtime_error("Array initializers are not supported yet: " + name);
+        if (init) {
+            auto* initList = dynamic_cast<const InitListExpr*>(init);
+            if (!initList)
+                throw std::runtime_error("Array initializer must be a braced list: " + name);
+            genArrayInitializer(type, pointer, *initList, name);
+        }
         return;
     }
 
-    unsigned initialValue = init ? genExpr(*init) : builder_->createConstantInt(0);
+    unsigned initialValue = builder_->createConstantInt(0);
+    if (init) {
+        if (auto* initList = dynamic_cast<const InitListExpr*>(init)) {
+            if (initList->values.size() > 1)
+                throw std::runtime_error("Scalar initializer has too many values: " + name);
+            if (!initList->values.empty())
+                initialValue = genExpr(*initList->values.front());
+        } else {
+            initialValue = genExpr(*init);
+        }
+    }
     builder_->createStore(initialValue, pointer);
+}
+
+void CodeGen::genArrayInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name) {
+    if (init.values.size() > type.arraySize)
+        throw std::runtime_error("Too many values in array initializer: " + name);
+
+    CType elementType = type;
+    elementType.arraySize = 0;
+    aurora::SmallVector<unsigned, 4> indices;
+    unsigned base = builder_->createGEP(toAirType(type.decayArray(), false), pointer, indices);
+
+    for (uint64_t index = 0; index < type.arraySize; ++index) {
+        unsigned value = index < init.values.size()
+            ? genExpr(*init.values[static_cast<size_t>(index)])
+            : builder_->createConstantInt(0);
+        const uint64_t offset = index * sizeOfType(elementType);
+        unsigned address = base;
+        if (offset != 0) {
+            address = builder_->createAdd(
+                aurora::Type::getInt64Ty(),
+                base,
+                builder_->createConstantInt(static_cast<int64_t>(offset)));
+        }
+        builder_->createStore(value, address);
+    }
 }
 
 void CodeGen::genStmt(const Stmt& stmt) {
@@ -605,7 +645,11 @@ CType CodeGen::inferExprType(const Expr& expr) {
         }
         if (binary->op == BinaryExpr::Sub && lhsType.isPointerLike() && !rhsType.isPointerLike())
             return lhsType;
-        return CType{CTypeKind::Long};
+        if (binary->op == BinaryExpr::Shl || binary->op == BinaryExpr::Shr)
+            return lhsType;
+        CType result{CTypeKind::Long};
+        result.isUnsigned = lhsType.isUnsigned || rhsType.isUnsigned;
+        return result;
     }
     if (auto* call = dynamic_cast<const CallExpr*>(&expr)) {
         auto it = functionReturnTypes_.find(call->callee);
@@ -615,12 +659,22 @@ CType CodeGen::inferExprType(const Expr& expr) {
     return CType{CTypeKind::Long};
 }
 
+unsigned CodeGen::genRemainder(CType lhsType, CType rhsType, unsigned lhs, unsigned rhs) {
+    auto* intTy = aurora::Type::getInt64Ty();
+    const bool useUnsigned = lhsType.isUnsigned || rhsType.isUnsigned;
+    unsigned quotient = useUnsigned ? builder_->createUDiv(intTy, lhs, rhs) : builder_->createSDiv(intTy, lhs, rhs);
+    unsigned product = builder_->createMul(intTy, quotient, rhs);
+    return builder_->createSub(intTy, lhs, product);
+}
+
 unsigned CodeGen::genBinaryExpr(const BinaryExpr& be) {
     auto* intTy = aurora::Type::getInt64Ty();
     CType lhsType = inferExprType(*be.lhs).decayArray();
     CType rhsType = inferExprType(*be.rhs).decayArray();
     const bool lhsPointer = lhsType.isPointerLike();
     const bool rhsPointer = rhsType.isPointerLike();
+    const bool useUnsigned = lhsType.isUnsigned || rhsType.isUnsigned;
+    const bool useUnsignedCompare = lhsPointer || rhsPointer || useUnsigned;
 
     if (be.op == BinaryExpr::LogAnd || be.op == BinaryExpr::LogOr) {
         auto* function = builder_->getInsertBlock()->getParent();
@@ -692,23 +746,19 @@ unsigned CodeGen::genBinaryExpr(const BinaryExpr& be) {
             throw std::runtime_error("Cannot subtract a pointer from an integer");
         return builder_->createSub(intTy, lhs, rhs);
     case BinaryExpr::Mul: return builder_->createMul(intTy, lhs, rhs);
-    case BinaryExpr::Div: return builder_->createSDiv(intTy, lhs, rhs);
-    case BinaryExpr::Rem: {
-        unsigned quotient = builder_->createSDiv(intTy, lhs, rhs);
-        unsigned product = builder_->createMul(intTy, quotient, rhs);
-        return builder_->createSub(intTy, lhs, product);
-    }
+    case BinaryExpr::Div: return useUnsigned ? builder_->createUDiv(intTy, lhs, rhs) : builder_->createSDiv(intTy, lhs, rhs);
+    case BinaryExpr::Rem: return genRemainder(lhsType, rhsType, lhs, rhs);
     case BinaryExpr::Eq: return builder_->createICmp(aurora::ICmpCond::EQ, lhs, rhs);
     case BinaryExpr::Ne: return builder_->createICmp(aurora::ICmpCond::NE, lhs, rhs);
-    case BinaryExpr::Lt: return builder_->createICmp(aurora::ICmpCond::SLT, lhs, rhs);
-    case BinaryExpr::Le: return builder_->createICmp(aurora::ICmpCond::SLE, lhs, rhs);
-    case BinaryExpr::Gt: return builder_->createICmp(aurora::ICmpCond::SGT, lhs, rhs);
-    case BinaryExpr::Ge: return builder_->createICmp(aurora::ICmpCond::SGE, lhs, rhs);
+    case BinaryExpr::Lt: return builder_->createICmp(useUnsignedCompare ? aurora::ICmpCond::ULT : aurora::ICmpCond::SLT, lhs, rhs);
+    case BinaryExpr::Le: return builder_->createICmp(useUnsignedCompare ? aurora::ICmpCond::ULE : aurora::ICmpCond::SLE, lhs, rhs);
+    case BinaryExpr::Gt: return builder_->createICmp(useUnsignedCompare ? aurora::ICmpCond::UGT : aurora::ICmpCond::SGT, lhs, rhs);
+    case BinaryExpr::Ge: return builder_->createICmp(useUnsignedCompare ? aurora::ICmpCond::UGE : aurora::ICmpCond::SGE, lhs, rhs);
     case BinaryExpr::BitAnd: return builder_->createAnd(intTy, lhs, rhs);
     case BinaryExpr::BitOr: return builder_->createOr(intTy, lhs, rhs);
     case BinaryExpr::BitXor: return builder_->createXor(intTy, lhs, rhs);
     case BinaryExpr::Shl: return builder_->createShl(intTy, lhs, rhs);
-    case BinaryExpr::Shr: return builder_->createAShr(intTy, lhs, rhs);
+    case BinaryExpr::Shr: return lhsType.isUnsigned ? builder_->createLShr(intTy, lhs, rhs) : builder_->createAShr(intTy, lhs, rhs);
     case BinaryExpr::LogAnd:
     case BinaryExpr::LogOr:
         break;
@@ -774,18 +824,13 @@ unsigned CodeGen::genAssignExpr(const AssignExpr& ae) {
             result = builder_->createSub(intTy, lhs, lhsType.isPointerLike() ? scalePointerOffset(lhsType, rhs) : rhs);
             break;
         case AssignExpr::MulAssign: result = builder_->createMul(intTy, lhs, rhs); break;
-        case AssignExpr::DivAssign: result = builder_->createSDiv(intTy, lhs, rhs); break;
-        case AssignExpr::RemAssign: {
-            unsigned quotient = builder_->createSDiv(intTy, lhs, rhs);
-            unsigned product = builder_->createMul(intTy, quotient, rhs);
-            result = builder_->createSub(intTy, lhs, product);
-            break;
-        }
+        case AssignExpr::DivAssign: result = lhsType.isUnsigned ? builder_->createUDiv(intTy, lhs, rhs) : builder_->createSDiv(intTy, lhs, rhs); break;
+        case AssignExpr::RemAssign: result = genRemainder(lhsType, rhsType, lhs, rhs); break;
         case AssignExpr::BitAndAssign: result = builder_->createAnd(intTy, lhs, rhs); break;
         case AssignExpr::BitOrAssign: result = builder_->createOr(intTy, lhs, rhs); break;
         case AssignExpr::BitXorAssign: result = builder_->createXor(intTy, lhs, rhs); break;
         case AssignExpr::ShlAssign: result = builder_->createShl(intTy, lhs, rhs); break;
-        case AssignExpr::ShrAssign: result = builder_->createAShr(intTy, lhs, rhs); break;
+        case AssignExpr::ShrAssign: result = lhsType.isUnsigned ? builder_->createLShr(intTy, lhs, rhs) : builder_->createAShr(intTy, lhs, rhs); break;
         case AssignExpr::Assign:
             break;
         }

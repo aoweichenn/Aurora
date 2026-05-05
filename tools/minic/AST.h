@@ -119,6 +119,12 @@ struct SizeofExpr : Expr {
     explicit SizeofExpr(std::unique_ptr<Expr> e) : expr(std::move(e)) {}
 };
 
+struct InitListExpr : Expr {
+    std::vector<std::unique_ptr<Expr>> values;
+    explicit InitListExpr(std::vector<std::unique_ptr<Expr>> v)
+        : values(std::move(v)) {}
+};
+
 struct CommaExpr : Expr {
     std::unique_ptr<Expr> lhs;
     std::unique_ptr<Expr> rhs;

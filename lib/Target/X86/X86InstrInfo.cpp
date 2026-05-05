@@ -121,6 +121,7 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::IMUL64rr, "imulq\t$src, $dst", 2, false, false, false, false, false, false, false);
     setDesc(X86::IDIV32r,  "idivl\t$src", 1, false, false, false, false, false, false, true);
     setDesc(X86::IDIV64r,  "idivq\t$src", 1, false, false, false, false, false, false, true);
+    setDesc(X86::DIV64r,   "divq\t$src",  1, false, false, false, false, false, false, true);
     setDesc(X86::CQO,      "cqo", 0, false, false, false, false, false, false, false);
 
     // Bitwise
@@ -164,6 +165,10 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::SETGr, "setg\t$dst", 1, false, false, false, false, false, false, false);
     setDesc(X86::SETLEr,"setle\t$dst",1, false, false, false, false, false, false, false);
     setDesc(X86::SETGEr,"setge\t$dst",1, false, false, false, false, false, false, false);
+    setDesc(X86::SETAr, "seta\t$dst", 1, false, false, false, false, false, false, false);
+    setDesc(X86::SETBr, "setb\t$dst", 1, false, false, false, false, false, false, false);
+    setDesc(X86::SETBEr,"setbe\t$dst",1, false, false, false, false, false, false, false);
+    setDesc(X86::SETAEr,"setae\t$dst",1, false, false, false, false, false, false, false);
 
     // Branches
     setDesc(X86::JMP_1, "jmp\t$dst", 1, true, true, false, false, false, false, true);

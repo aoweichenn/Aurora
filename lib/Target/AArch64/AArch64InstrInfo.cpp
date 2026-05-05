@@ -78,6 +78,7 @@ void AArch64InstrInfo::buildOpcodeTable() {
     setDesc(AArch64::SUBri, "sub\t$dst, $lhs, #$imm", 3, false, false, false, false, false, false, false);
     setDesc(AArch64::MULrr, "mul\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
     setDesc(AArch64::SDIVrr, "sdiv\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
+    setDesc(AArch64::UDIVrr, "udiv\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
     setDesc(AArch64::ANDrr, "and\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
     setDesc(AArch64::ORRrr, "orr\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
     setDesc(AArch64::EORrr, "eor\t$dst, $lhs, $rhs", 3, false, false, false, false, false, false, false);
@@ -92,6 +93,10 @@ void AArch64InstrInfo::buildOpcodeTable() {
     setDesc(AArch64::CSETLE, "cset\t$dst, le", 1, false, false, false, false, false, false, false);
     setDesc(AArch64::CSETGT, "cset\t$dst, gt", 1, false, false, false, false, false, false, false);
     setDesc(AArch64::CSETGE, "cset\t$dst, ge", 1, false, false, false, false, false, false, false);
+    setDesc(AArch64::CSETLO, "cset\t$dst, lo", 1, false, false, false, false, false, false, false);
+    setDesc(AArch64::CSETLS, "cset\t$dst, ls", 1, false, false, false, false, false, false, false);
+    setDesc(AArch64::CSETHI, "cset\t$dst, hi", 1, false, false, false, false, false, false, false);
+    setDesc(AArch64::CSETHS, "cset\t$dst, hs", 1, false, false, false, false, false, false, false);
     setDesc(AArch64::B, "b\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(AArch64::BEQ, "b.eq\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(AArch64::BNE, "b.ne\t$dst", 1, true, true, false, false, false, false, true);
@@ -99,6 +104,10 @@ void AArch64InstrInfo::buildOpcodeTable() {
     setDesc(AArch64::BLE, "b.le\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(AArch64::BGT, "b.gt\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(AArch64::BGE, "b.ge\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(AArch64::BLO, "b.lo\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(AArch64::BLS, "b.ls\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(AArch64::BHI, "b.hi\t$dst", 1, true, true, false, false, false, false, true);
+    setDesc(AArch64::BHS, "b.hs\t$dst", 1, true, true, false, false, false, false, true);
     setDesc(AArch64::BL, "bl\t$dst", 1, false, false, true, false, false, false, true);
     setDesc(AArch64::RET, "ret", 0, true, false, false, true, false, false, true);
     setDesc(AArch64::LDRfi, "ldr\t$dst, [$base]", 2, false, false, false, false, true, false, false);

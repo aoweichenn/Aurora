@@ -29,6 +29,8 @@ private:
     CType parseBaseType();
     CType parseType();
     CType parsePointerSuffix(CType type);
+    CType parseArraySuffix(CType type);
+    CType parseParamArraySuffix(CType type);
     bool isTypeToken(TokenKind kind) const;
     bool isTypeQualifier(TokenKind kind) const;
     void consumeTypeQualifiers();
@@ -48,6 +50,7 @@ private:
     std::unique_ptr<Stmt> parseForStmt();
     std::unique_ptr<Stmt> parseSwitchStmt();
     std::unique_ptr<Stmt> parseExprStmt();
+    std::unique_ptr<Expr> parseInitializer();
 
     std::unique_ptr<Expr> parseExpr();
     std::unique_ptr<Expr> parseComma();

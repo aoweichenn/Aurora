@@ -21,7 +21,7 @@ enum Opcode : uint16_t {
     ADD64rr, ADD64ri8, ADD64ri32, ADD64rm, ADD64mr,
     SUB32rr, SUB32ri, SUB64rr, SUB64ri8, SUB64ri32,
     IMUL32rr, IMUL64rr,
-    IDIV32r, IDIV64r,
+    IDIV32r, IDIV64r, DIV64r,
     INC32r, INC64r, DEC32r, DEC64r,
     NEG32r, NEG64r,
     CQO,
@@ -42,7 +42,7 @@ enum Opcode : uint16_t {
     TEST32rr, TEST64rr,
 
     // SetCC
-    SETEr, SETNEr, SETLr, SETGr, SETLEr, SETGEr, SETAr, SETBEr,
+    SETEr, SETNEr, SETLr, SETGr, SETLEr, SETGEr, SETAr, SETBr, SETBEr,
     SETAEr,
 
     // Branches
@@ -99,4 +99,3 @@ private:
 };
 
 } // namespace aurora
-

@@ -18,12 +18,12 @@ The build produces:
 
 MiniC accepts a `.mini` source file and supports a C-like integer subset:
 
-- function definitions: `long name(long a, long b) { ... }`, with `void` returns, simple pointer parameters / return values, and common storage-class / qualifier parsing
-- local variables with optional initializers: scalars, pointers, and syntax-level fixed-size array declarations
+- function definitions: `long name(long a, long b) { ... }`, with `void` returns, simple pointer parameters / return values, array parameters that decay to pointers, and common storage-class / qualifier parsing
+- local variables with optional initializers: scalars, pointers, and fixed-size arrays with one-dimensional braced initializer lists
 - statements: `return`, blocks, `if` / `else`, `while`, `do` / `while`, `for`, `switch` / `case` / `default`, `break`, and `continue`
 - expressions: assignment, compound assignment, calls, ternary `?:`, short-circuit `&&` / `||`, C-style casts, `sizeof`, pointer arithmetic, pointer dereference / address-of, pointer subscripting, prefix/postfix `++` / `--`
 - declarations and constants: `typedef`, `enum`, `static_assert` / `_Static_assert`, `bool` / `_Bool`, `true`, `false`, `nullptr`
-- operators: `+ - * / %`, comparisons, logical operators, bitwise operators, shifts, and `&= |= ^= <<= >>=`
+- operators: `+ - * / %`, signed and unsigned comparisons / division / remainder / right shift, logical operators, bitwise operators, shifts, and `&= |= ^= <<= >>=`
 - legacy expression functions: `fn name(a, b) = expr`
 
 Example:

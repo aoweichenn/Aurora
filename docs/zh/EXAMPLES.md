@@ -44,17 +44,16 @@ long classify(long value) {
     }
 }
 
-long first(long *items) {
+long first(long items[]) {
     return items[0];
 }
 
 long array_sum() {
-    long values[2];
+    long values[3] = {3, 4};
     long *cursor = values;
-    cursor[0] = 3;
-    cursor += 1;
-    *cursor = 4;
-    return values[0] + values[1];
+    cursor += 2;
+    *cursor = 5;
+    return values[0] + values[1] + values[2];
 }
 
 typedef unsigned long usize;
@@ -69,7 +68,8 @@ static_assert(MODE_ONE == 4, "enum constants work");
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
-    return ok && nullptr == 0 ? casted + MODE_ONE : 0;
+    usize high = value >> 63;
+    return ok && nullptr == 0 ? casted + high + MODE_ONE : 0;
 }
 ```
 

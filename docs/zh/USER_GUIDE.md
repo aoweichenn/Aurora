@@ -18,12 +18,12 @@ ctest --test-dir build
 
 MiniC 接受一个 `.mini` 源文件，支持 C-like 整数子集：
 
-- 函数定义：`long name(long a, long b) { ... }`，支持 `void` 返回值、简单指针形参 / 返回值，以及常见存储类 / 限定符解析
-- 局部变量和可选初始化：标量、指针，以及语法级定长数组声明
+- 函数定义：`long name(long a, long b) { ... }`，支持 `void` 返回值、简单指针形参 / 返回值、会退化为指针的数组形参，以及常见存储类 / 限定符解析
+- 局部变量和可选初始化：标量、指针，以及带一维大括号初始化列表的定长数组
 - 语句：`return`、块、`if` / `else`、`while`、`do` / `while`、`for`、`switch` / `case` / `default`、`break`、`continue`
 - 表达式：赋值、复合赋值、函数调用、三元 `?:`、短路 `&&` / `||`、C 风格 cast、`sizeof`、指针算术、指针解引用 / 取地址、指针下标、前后缀 `++` / `--`
 - 声明和常量：`typedef`、`enum`、`static_assert` / `_Static_assert`、`bool` / `_Bool`、`true`、`false`、`nullptr`
-- 运算符：`+ - * / %`、比较、逻辑运算、位运算、移位，以及 `&= |= ^= <<= >>=`
+- 运算符：`+ - * / %`、有符号和无符号比较 / 除法 / 取余 / 右移、逻辑运算、位运算、移位，以及 `&= |= ^= <<= >>=`
 - 兼容旧表达式函数：`fn name(a, b) = expr`
 
 示例：

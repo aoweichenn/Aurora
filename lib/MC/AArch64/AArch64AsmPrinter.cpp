@@ -95,8 +95,9 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
         }
         break;
     case AArch64::SDIVrr:
+    case AArch64::UDIVrr:
         if (mi.getNumOperands() >= 3) {
-            oss << "sdiv\t";
+            oss << (mi.getOpcode() == AArch64::UDIVrr ? "udiv\t" : "sdiv\t");
             printOperand(mi.getOperand(2), oss);
             oss << ", ";
             printOperand(mi.getOperand(0), oss);
@@ -142,6 +143,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
         break;
     case AArch64::CSETEQ: case AArch64::CSETNE: case AArch64::CSETLT:
     case AArch64::CSETLE: case AArch64::CSETGT: case AArch64::CSETGE:
+    case AArch64::CSETLO: case AArch64::CSETLS: case AArch64::CSETHI: case AArch64::CSETHS:
         if (mi.getNumOperands() >= 1) {
             const char* cond = "eq";
             switch (mi.getOpcode()) {
@@ -150,6 +152,10 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
             case AArch64::CSETLE: cond = "le"; break;
             case AArch64::CSETGT: cond = "gt"; break;
             case AArch64::CSETGE: cond = "ge"; break;
+            case AArch64::CSETLO: cond = "lo"; break;
+            case AArch64::CSETLS: cond = "ls"; break;
+            case AArch64::CSETHI: cond = "hi"; break;
+            case AArch64::CSETHS: cond = "hs"; break;
             default: break;
             }
             oss << "cset\t";
@@ -159,6 +165,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
         break;
     case AArch64::B: case AArch64::BEQ: case AArch64::BNE:
     case AArch64::BLT: case AArch64::BLE: case AArch64::BGT: case AArch64::BGE:
+    case AArch64::BLO: case AArch64::BLS: case AArch64::BHI: case AArch64::BHS:
         if (mi.getNumOperands() >= 1) {
             const char* mnemonic = "b";
             switch (mi.getOpcode()) {
@@ -168,6 +175,10 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
             case AArch64::BLE: mnemonic = "b.le"; break;
             case AArch64::BGT: mnemonic = "b.gt"; break;
             case AArch64::BGE: mnemonic = "b.ge"; break;
+            case AArch64::BLO: mnemonic = "b.lo"; break;
+            case AArch64::BLS: mnemonic = "b.ls"; break;
+            case AArch64::BHI: mnemonic = "b.hi"; break;
+            case AArch64::BHS: mnemonic = "b.hs"; break;
             default: break;
             }
             oss << mnemonic << "\t";

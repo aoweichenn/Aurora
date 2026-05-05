@@ -156,6 +156,7 @@ void X86ObjectEncoder::encode(const MachineInstr& mi,
     case X86::CQO: out.push_back(0x48); out.push_back(0x99); break;
     case X86::MOVSX64rr32: emitREX(1, 0); out.push_back(0x63); emitModRM(3, getReg(1), getReg(0)); break;
     case X86::IDIV64r: emitREXForRM(0); out.push_back(0xF7); emitModRM(3, 7, getReg(0)); break;
+    case X86::DIV64r: emitREXForRM(0); out.push_back(0xF7); emitModRM(3, 6, getReg(0)); break;
     case X86::ADDSDrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x58); emitModRM(3, getReg(1), getReg(0)); break;
     case X86::SUBSDrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x5C); emitModRM(3, getReg(1), getReg(0)); break;
     case X86::MULSDrr: out.push_back(0xF2); out.push_back(0x0F); out.push_back(0x59); emitModRM(3, getReg(1), getReg(0)); break;
@@ -186,6 +187,7 @@ void X86ObjectEncoder::encode(const MachineInstr& mi,
     case X86::MOVZX32rr8_op: emitOptionalREX32(1, 0); out.push_back(0x0F); out.push_back(0xB6); emitModRM(3, getReg(1), getReg(0)); break;
     case X86::SETAEr: out.push_back(0x0F); out.push_back(0x93); emitModRM(3, 0, getReg(0)); break;
     case X86::SETAr: out.push_back(0x0F); out.push_back(0x97); emitModRM(3, 0, getReg(0)); break;
+    case X86::SETBr: out.push_back(0x0F); out.push_back(0x92); emitModRM(3, 0, getReg(0)); break;
     case X86::SETBEr: out.push_back(0x0F); out.push_back(0x96); emitModRM(3, 0, getReg(0)); break;
     default: throw std::runtime_error("unsupported x86 opcode: " + std::to_string(opc));
     }

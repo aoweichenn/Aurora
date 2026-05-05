@@ -190,6 +190,12 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(0), oss);
             }
             break;
+        case X86::DIV64r:
+            if (mi.getNumOperands() >= 1) {
+                oss << "divq\t";
+                printOperand(mi.getOperand(0), oss);
+            }
+            break;
         case X86::AND64ri32:
             if (mi.getNumOperands() >= 2) { oss << "andq\t"; printOperand(mi.getOperand(0), oss); oss << ", "; printOperand(mi.getOperand(1), oss); }
             break;
@@ -349,6 +355,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
         case X86::SETLEr: if (mi.getNumOperands() >= 1) { oss << "setle\t"; print8BitOperand(mi.getOperand(0), oss); } break;
         case X86::SETGEr: if (mi.getNumOperands() >= 1) { oss << "setge\t"; print8BitOperand(mi.getOperand(0), oss); } break;
         case X86::SETAr:  if (mi.getNumOperands() >= 1) { oss << "seta\t";  print8BitOperand(mi.getOperand(0), oss); } break;
+        case X86::SETBr:  if (mi.getNumOperands() >= 1) { oss << "setb\t";  print8BitOperand(mi.getOperand(0), oss); } break;
         case X86::SETBEr: if (mi.getNumOperands() >= 1) { oss << "setbe\t"; print8BitOperand(mi.getOperand(0), oss); } break;
         case X86::SETAEr: if (mi.getNumOperands() >= 1) { oss << "setae\t"; print8BitOperand(mi.getOperand(0), oss); } break;
         default:

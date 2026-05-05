@@ -37,13 +37,17 @@ uint16_t getAArch64BccForCond(const ICmpCond cond) {
     case ICmpCond::EQ: return AArch64::BEQ;
     case ICmpCond::NE: return AArch64::BNE;
     case ICmpCond::SLT:
-    case ICmpCond::ULT: return AArch64::BLT;
+        return AArch64::BLT;
     case ICmpCond::SLE:
-    case ICmpCond::ULE: return AArch64::BLE;
+        return AArch64::BLE;
     case ICmpCond::SGT:
-    case ICmpCond::UGT: return AArch64::BGT;
+        return AArch64::BGT;
     case ICmpCond::SGE:
-    case ICmpCond::UGE: return AArch64::BGE;
+        return AArch64::BGE;
+    case ICmpCond::ULT: return AArch64::BLO;
+    case ICmpCond::ULE: return AArch64::BLS;
+    case ICmpCond::UGT: return AArch64::BHI;
+    case ICmpCond::UGE: return AArch64::BHS;
     }
     return AArch64::BNE;
 }
@@ -53,13 +57,17 @@ uint16_t getAArch64CSetForCond(const ICmpCond cond) {
     case ICmpCond::EQ: return AArch64::CSETEQ;
     case ICmpCond::NE: return AArch64::CSETNE;
     case ICmpCond::SLT:
-    case ICmpCond::ULT: return AArch64::CSETLT;
+        return AArch64::CSETLT;
     case ICmpCond::SLE:
-    case ICmpCond::ULE: return AArch64::CSETLE;
+        return AArch64::CSETLE;
     case ICmpCond::SGT:
-    case ICmpCond::UGT: return AArch64::CSETGT;
+        return AArch64::CSETGT;
     case ICmpCond::SGE:
-    case ICmpCond::UGE: return AArch64::CSETGE;
+        return AArch64::CSETGE;
+    case ICmpCond::ULT: return AArch64::CSETLO;
+    case ICmpCond::ULE: return AArch64::CSETLS;
+    case ICmpCond::UGT: return AArch64::CSETHI;
+    case ICmpCond::UGE: return AArch64::CSETHS;
     }
     return AArch64::CSETNE;
 }
@@ -302,7 +310,8 @@ private:
                 case AIROpcode::Shl:
                 case AIROpcode::LShr:
                 case AIROpcode::AShr:
-                case AIROpcode::SDiv: a64BinOp(*mbb, mi, airOp); break;
+                case AIROpcode::SDiv:
+                case AIROpcode::UDiv: a64BinOp(*mbb, mi, airOp); break;
                 case AIROpcode::ConstantInt: a64Constant(mf, *mbb, mi); break;
                 case AIROpcode::Phi: collectPhi(mf, airFunc, *mbb, mi); break;
                 case AIROpcode::Alloca: iselAlloca(mf, *mbb, mi); break;
@@ -484,6 +493,7 @@ private:
         case AIROpcode::LShr: opcode = AArch64::LSRrr; break;
         case AIROpcode::AShr: opcode = AArch64::ASRrr; break;
         case AIROpcode::SDiv: opcode = AArch64::SDIVrr; break;
+        case AIROpcode::UDiv: opcode = AArch64::UDIVrr; break;
         default: break;
         }
 
@@ -736,7 +746,7 @@ private:
         case ICmpCond::SLE: setOp = X86::SETLEr; break;
         case ICmpCond::SGT: setOp = X86::SETGr; break;
         case ICmpCond::SGE: setOp = X86::SETGEr; break;
-        case ICmpCond::ULT: setOp = X86::SETAr; break;
+        case ICmpCond::ULT: setOp = X86::SETBr; break;
         case ICmpCond::ULE: setOp = X86::SETBEr; break;
         case ICmpCond::UGT: setOp = X86::SETAr; break;
         case ICmpCond::UGE: setOp = X86::SETAEr; break;
@@ -883,7 +893,7 @@ private:
     void iselSDiv(MachineBasicBlock& mbb, MachineInstr* mi, AIROpcode airOp) {
         // SDiv/UDiv/SRem/URem on x86:
         //   Signed:   MOV lhs→rax, CQO (sign-extend RAX→RDX:RAX), IDIV divisor
-        //   Unsigned: MOV lhs→rax, XOR RDX,RDX (zero RDX), IDIV divisor
+        //   Unsigned: MOV lhs→rax, XOR RDX,RDX (zero RDX), DIV divisor
         //   Quotient in RAX, remainder in RDX
         // For SRem/URem: need to MOV RDX→result after IDIV
 
@@ -919,8 +929,8 @@ private:
             cursor = xorRDX;
         }
 
-        // IDIV divisor (quotient in RAX, remainder in RDX)
-        auto* idiv = new MachineInstr(X86::IDIV64r);
+        // DIV/IDIV divisor (quotient in RAX, remainder in RDX)
+        auto* idiv = new MachineInstr(isSigned ? X86::IDIV64r : X86::DIV64r);
         idiv->addOperand(MachineOperand::createVReg(rhsVReg));
         mbb.insertAfter(cursor, idiv);
         cursor = idiv;
