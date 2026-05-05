@@ -1,4 +1,4 @@
-#include "minic/ASTUtils.h"
+#include "minic/ast/ASTUtils.h"
 
 namespace minic {
 

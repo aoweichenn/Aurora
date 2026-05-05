@@ -1,8 +1,7 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
-#include <string_view>
-#include <optional>
 
 namespace minic {
 
@@ -34,21 +33,5 @@ struct Token {
 };
 
 const char* tokenName(TokenKind kind);
-
-class Lexer {
-public:
-    explicit Lexer(std::string_view source);
-    Token next();
-
-private:
-    std::string_view source_;
-    size_t pos_;
-    void skipWhitespace();
-    Token readNumber();
-    Token readCharLiteral();
-    Token readStringLiteral();
-    Token readIdent();
-    char readEscapedChar();
-};
 
 } // namespace minic

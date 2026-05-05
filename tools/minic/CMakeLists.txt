@@ -1,15 +1,16 @@
 add_library(MiniCFrontend STATIC
-    src/ASTUtils.cpp
-    src/Lexer.cpp
-    src/Parser.cpp
-    src/ParserTypes.cpp
-    src/ParserStmts.cpp
-    src/ParserExpr.cpp
-    src/CodeGen.cpp
-    src/CodeGenDecl.cpp
-    src/CodeGenStmts.cpp
-    src/CodeGenExpr.cpp
-    src/CodeGenAnalysis.cpp
+    src/ast/ASTUtils.cpp
+    src/lex/Token.cpp
+    src/lex/Lexer.cpp
+    src/parse/Parser.cpp
+    src/parse/ParserTypes.cpp
+    src/parse/ParserStmts.cpp
+    src/parse/ParserExpr.cpp
+    src/codegen/CodeGen.cpp
+    src/codegen/CodeGenDecl.cpp
+    src/codegen/CodeGenStmts.cpp
+    src/codegen/CodeGenExpr.cpp
+    src/codegen/CodeGenAnalysis.cpp
 )
 
 target_include_directories(MiniCFrontend PUBLIC
@@ -21,7 +22,7 @@ target_link_libraries(MiniCFrontend PUBLIC
 )
 
 add_executable(minic
-    src/main.cpp
+    src/driver/main.cpp
 )
 
 target_link_libraries(minic PRIVATE

@@ -1,5 +1,5 @@
-#include "minic/CodeGen.h"
-#include "minic/ASTUtils.h"
+#include "minic/codegen/CodeGen.h"
+#include "minic/ast/ASTUtils.h"
 #include <stdexcept>
 
 namespace minic {

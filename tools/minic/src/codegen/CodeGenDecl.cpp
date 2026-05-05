@@ -1,4 +1,4 @@
-#include "minic/CodeGen.h"
+#include "minic/codegen/CodeGen.h"
 #include <stdexcept>
 
 namespace minic {

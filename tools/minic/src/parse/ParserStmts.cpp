@@ -1,4 +1,4 @@
-#include "minic/Parser.h"
+#include "minic/parse/Parser.h"
 #include <stdexcept>
 #include <utility>
 

@@ -48,9 +48,9 @@
 
 ## 6. 添加新的前端语法
 
-1. 扩展 `tools/minic/Lexer.h` 与 `tools/minic/Lexer.cpp`。
-2. 扩展 `tools/minic/Parser.h` 与 `tools/minic/Parser.cpp`。
-3. 更新 `tools/minic/AST.h` 和 `tools/minic/CodeGen.cpp`。
+1. 扩展 `tools/minic/include/minic/lex/` 与 `tools/minic/src/lex/`。
+2. 扩展 `tools/minic/include/minic/parse/` 与 `tools/minic/src/parse/`。
+3. 更新 `tools/minic/include/minic/ast/` 与 `tools/minic/src/codegen/`。
 4. 为新语法写 `tests/` 覆盖。
 
 ## 7. 调试建议

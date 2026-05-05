@@ -1,5 +1,5 @@
-#include "minic/Parser.h"
-#include "minic/ASTUtils.h"
+#include "minic/parse/Parser.h"
+#include "minic/ast/ASTUtils.h"
 #include <stdexcept>
 #include <utility>
 

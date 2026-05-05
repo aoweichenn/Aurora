@@ -48,9 +48,9 @@
 
 ## 6. Adding Front-End Syntax
 
-1. Extend `tools/minic/Lexer.h` and `tools/minic/Lexer.cpp`.
-2. Extend `tools/minic/Parser.h` and `tools/minic/Parser.cpp`.
-3. Update `tools/minic/AST.h` and `tools/minic/CodeGen.cpp`.
+1. Extend `tools/minic/include/minic/lex/` and `tools/minic/src/lex/`.
+2. Extend `tools/minic/include/minic/parse/` and `tools/minic/src/parse/`.
+3. Update `tools/minic/include/minic/ast/` and `tools/minic/src/codegen/`.
 4. Add test coverage for the new syntax.
 
 ## 7. Debugging Tips

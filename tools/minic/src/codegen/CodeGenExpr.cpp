@@ -1,4 +1,4 @@
-#include "minic/CodeGen.h"
+#include "minic/codegen/CodeGen.h"
 #include "Aurora/Air/BasicBlock.h"
 #include "Aurora/Air/Function.h"
 #include <stdexcept>

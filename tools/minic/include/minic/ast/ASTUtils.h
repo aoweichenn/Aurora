@@ -1,6 +1,6 @@
 #pragma once
 
-#include "minic/AST.h"
+#include "minic/ast/AST.h"
 #include <cstdint>
 
 namespace minic {
