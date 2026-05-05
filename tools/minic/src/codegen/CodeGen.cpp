@@ -2,9 +2,32 @@
 #include "Aurora/Air/BasicBlock.h"
 #include "Aurora/Air/Function.h"
 #include <stdexcept>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace minic {
+
+namespace {
+
+bool sameType(CType lhs, CType rhs) {
+    lhs = lhs.decayArray();
+    rhs = rhs.decayArray();
+    return lhs.kind == rhs.kind && lhs.pointerDepth == rhs.pointerDepth &&
+           lhs.arraySize == rhs.arraySize && lhs.isUnsigned == rhs.isUnsigned;
+}
+
+bool sameSignature(const Function& lhs, const Function& rhs) {
+    if (!sameType(lhs.returnType, rhs.returnType) || lhs.params.size() != rhs.params.size())
+        return false;
+    for (size_t index = 0; index < lhs.params.size(); ++index) {
+        if (!sameType(lhs.params[index].type, rhs.params[index].type))
+            return false;
+    }
+    return true;
+}
+
+} // namespace
 
 CodeGen::CodeGen() : builder_(nullptr) {}
 
@@ -43,22 +66,41 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
     module_ = std::make_unique<aurora::Module>("minic");
     functionMap_.clear();
     functionReturnTypes_.clear();
+    std::unordered_map<std::string, const Function*> functionSignatures;
+    std::unordered_set<std::string> definedFunctions;
 
     for (const auto& function : functions) {
-        if (functionMap_.find(function.name) != functionMap_.end())
-            throw std::runtime_error("Duplicate function: " + function.name);
+        auto signatureIt = functionSignatures.find(function.name);
+        if (signatureIt != functionSignatures.end()) {
+            if (!sameSignature(*signatureIt->second, function))
+                throw std::runtime_error("Conflicting function declaration: " + function.name);
+            if (function.body) {
+                if (!definedFunctions.insert(function.name).second)
+                    throw std::runtime_error("Duplicate function definition: " + function.name);
+                functionMap_.at(function.name)->setDeclaration(false);
+            }
+            continue;
+        }
 
         aurora::SmallVector<aurora::Type*, 8> paramTypes;
         for (const auto& param : function.params)
             paramTypes.push_back(toAirType(param.type.decayArray(), false));
 
         auto* functionType = new aurora::FunctionType(toAirType(function.returnType), paramTypes);
-        functionMap_[function.name] = module_->createFunction(functionType, function.name);
+        auto* airFunction = module_->createFunction(functionType, function.name);
+        airFunction->setDeclaration(function.body == nullptr);
+        functionMap_[function.name] = airFunction;
         functionReturnTypes_[function.name] = function.returnType;
+        functionSignatures[function.name] = &function;
+        if (function.body)
+            definedFunctions.insert(function.name);
     }
 
     for (const auto& function : functions) {
+        if (!function.body)
+            continue;
         auto* airFunction = functionMap_.at(function.name);
+        airFunction->setDeclaration(false);
         aurora::AIRBuilder builder(airFunction->getEntryBlock());
         builder_ = &builder;
         currentReturnType_ = function.returnType;
@@ -76,6 +118,8 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
             CType paramType = param.type.decayArray();
             if (paramType.isVoid())
                 throw std::runtime_error("Parameter cannot have void type: " + param.name);
+            if (param.name.empty())
+                continue;
             unsigned pointer = builder_->createAlloca(toAirType(paramType, false));
             builder_->createStore(static_cast<unsigned>(paramIndex), pointer);
             scopes_.back()[param.name] = Variable{paramType, pointer};

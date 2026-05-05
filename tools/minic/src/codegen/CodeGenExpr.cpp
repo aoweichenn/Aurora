@@ -301,6 +301,9 @@ unsigned CodeGen::genCallExpr(const CallExpr& ce) {
     auto functionIt = functionMap_.find(ce.callee);
     if (functionIt == functionMap_.end())
         throw std::runtime_error("Unknown function: " + ce.callee);
+    auto* functionType = functionIt->second->getFunctionType();
+    if (!functionType->isVarArg() && ce.args.size() != functionType->getNumParams())
+        throw std::runtime_error("Wrong number of arguments in call to: " + ce.callee);
 
     aurora::SmallVector<unsigned, 8> args;
     for (const auto& arg : ce.args)

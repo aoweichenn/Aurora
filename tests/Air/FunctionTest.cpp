@@ -53,6 +53,18 @@ TEST(FunctionTest, FunctionTypeAccess) {
     EXPECT_EQ(fn.getFunctionType()->getReturnType(), Type::getInt32Ty());
 }
 
+TEST(FunctionTest, DeclarationFlag) {
+    auto* fnTy = makeTestFnType();
+    Function fn(fnTy, "declared_func");
+    EXPECT_FALSE(fn.isDeclaration());
+
+    fn.setDeclaration();
+    EXPECT_TRUE(fn.isDeclaration());
+
+    fn.setDeclaration(false);
+    EXPECT_FALSE(fn.isDeclaration());
+}
+
 TEST(FunctionTest, ConstantTypePreservesVarArg) {
     SmallVector<Type*, 8> params;
     params.push_back(Type::getInt32Ty());

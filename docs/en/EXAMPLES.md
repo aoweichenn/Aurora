@@ -58,6 +58,10 @@ long array_sum() {
 
 typedef unsigned long usize;
 
+extern long imported(long);
+
+long declared_later(long);
+
 enum Mode {
     MODE_ZERO,
     MODE_ONE = 4,
@@ -71,6 +75,10 @@ long use_c23_bits(usize value) {
     usize high = value >> 63;
     return ok && nullptr == 0 ? casted + high + MODE_ONE : 0;
 }
+
+long declared_later(long value) {
+    return value + 1;
+}
 ```
 
 This exercises:
@@ -78,6 +86,7 @@ This exercises:
 - `Lexer` keyword and operator recognition
 - `Parser` AST construction for functions, statements, and expressions
 - `tools/minic/CodeGen` emission of AIR local variables, calls, branches, and loops
+- function prototypes / external declarations that stay callable without emitting bodies
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

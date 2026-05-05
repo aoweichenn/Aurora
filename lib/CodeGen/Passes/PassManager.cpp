@@ -1831,6 +1831,8 @@ void CodeGenContext::run() const
     addStandardPasses(pm, target_);
 
     for (auto& fn : module_.getFunctions()) {
+        if (fn->isDeclaration())
+            continue;
         MachineFunction mf(*fn, target_);
         pm.run(mf);
     }

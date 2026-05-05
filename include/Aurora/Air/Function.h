@@ -31,6 +31,8 @@ public:
     [[nodiscard]] const std::string& getName() const noexcept { return name_; }
     [[nodiscard]] Module* getParent() const noexcept { return module_; }
     [[nodiscard]] FunctionType* getFunctionType() const noexcept { return fnType_; }
+    [[nodiscard]] bool isDeclaration() const noexcept { return isDeclaration_; }
+    void setDeclaration(bool value = true) noexcept { isDeclaration_ = value; }
 
     [[nodiscard]] BasicBlock* createBasicBlock(const std::string& name = "");
     [[nodiscard]] const SmallVector<std::unique_ptr<BasicBlock>, 8>& getBlocks() const noexcept { return blocks_; }
@@ -49,8 +51,8 @@ private:
     SmallVector<std::unique_ptr<BasicBlock>, 8> blocks_;
     BasicBlock* entryBlock_;
     unsigned nextVReg_;
+    bool isDeclaration_;
     SmallVector<Type*, 64> vregTypes_;
 };
 
 } // namespace aurora
-

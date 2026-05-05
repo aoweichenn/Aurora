@@ -8,7 +8,7 @@ FunctionType::FunctionType(Type* retTy, const SmallVector<Type*, 8>& params, boo
 Function::Function(FunctionType* ty, const std::string& name, Module* parent)
     : Constant(Type::getFunctionTy(ty->getReturnType(), ty->getParamTypes(), ty->isVarArg())),
       fnType_(ty), name_(name), module_(parent),
-      entryBlock_(nullptr), nextVReg_(0) {
+      entryBlock_(nullptr), nextVReg_(0), isDeclaration_(false) {
     // Create parameter vregs
     for (unsigned i = 0; i < ty->getNumParams(); ++i) {
         nextVReg_++;

@@ -88,10 +88,14 @@ int main(int argc, char** argv) {
         std::cout << "; === AIR IR ===\n";
         for (auto& fn : module->getFunctions()) {
             auto* fnTy = fn->getFunctionType();
-            std::cout << "define " << fnTy->getReturnType()->toString() << " @" << fn->getName() << "(";
+            std::cout << (fn->isDeclaration() ? "declare " : "define ") << fnTy->getReturnType()->toString() << " @" << fn->getName() << "(";
             for (size_t i = 0; i < fnTy->getNumParams(); ++i) {
                 if (i > 0) std::cout << ", ";
                 std::cout << fnTy->getParamTypes()[i]->toString();
+            }
+            if (fn->isDeclaration()) {
+                std::cout << ")\n\n";
+                continue;
             }
             std::cout << ") {\n";
             for (auto& bb : fn->getBlocks()) {
@@ -114,6 +118,8 @@ int main(int argc, char** argv) {
             const auto& ri = dynamic_cast<const AArch64RegisterInfo&>(tm->getRegisterInfo());
             AArch64AsmPrinter printer(streamer, ri);
             for (auto& fn : module->getFunctions()) {
+                if (fn->isDeclaration())
+                    continue;
                 MachineFunction mf(*fn, *tm);
                 PassManager pm;
                 CodeGenContext::addStandardPasses(pm, *tm);
@@ -124,6 +130,8 @@ int main(int argc, char** argv) {
             const auto& ri = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
             X86AsmPrinter printer(streamer, ri);
             for (auto& fn : module->getFunctions()) {
+                if (fn->isDeclaration())
+                    continue;
                 MachineFunction mf(*fn, *tm);
                 PassManager pm;
                 CodeGenContext::addStandardPasses(pm, *tm);

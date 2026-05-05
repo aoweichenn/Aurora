@@ -234,12 +234,16 @@ std::vector<Param> Parser::parseParamList() {
     if (type.isVoid() && current_.kind == TokenKind::RParen)
         return params;
     type = parsePointerSuffix(type);
-    std::string name = consume(TokenKind::Ident).lexeme;
+    std::string name;
+    if (current_.kind == TokenKind::Ident)
+        name = consume(TokenKind::Ident).lexeme;
     params.push_back({parseParamArraySuffix(type), std::move(name)});
 
     while (match(TokenKind::Comma)) {
         CType nextType = parsePointerSuffix(parseBaseType());
-        std::string nextName = consume(TokenKind::Ident).lexeme;
+        std::string nextName;
+        if (current_.kind == TokenKind::Ident)
+            nextName = consume(TokenKind::Ident).lexeme;
         params.push_back({parseParamArraySuffix(nextType), std::move(nextName)});
     }
     return params;

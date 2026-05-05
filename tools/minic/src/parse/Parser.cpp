@@ -66,6 +66,8 @@ Function Parser::parseFunctionRest(CType returnType) {
     consume(TokenKind::LParen);
     std::vector<Param> params = parseParamList();
     consume(TokenKind::RParen);
+    if (match(TokenKind::Semicolon))
+        return Function(returnType, std::move(name), std::move(params), nullptr);
     auto body = parseBlock();
     return Function(returnType, std::move(name), std::move(params), std::move(body));
 }
