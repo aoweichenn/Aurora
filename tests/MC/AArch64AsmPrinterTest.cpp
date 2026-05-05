@@ -59,6 +59,30 @@ TEST(AArch64AsmPrinterTest, EmitsDarwinGlobalSymbols) {
     EXPECT_NE(asmText.find("\t.quad 42"), std::string::npos);
 }
 
+TEST(AArch64AsmPrinterTest, EmitsDarwinArrayGlobalSymbols) {
+    Module module("a64-array-globals");
+    auto* arrayType = Type::getArrayTy(Type::getInt64Ty(), 3);
+    auto* global = module.createGlobal(arrayType, "values");
+    global->setInitializer(ConstantArray::get(arrayType, {
+        ConstantInt::getInt64(3),
+        ConstantInt::getInt64(4),
+        ConstantInt::getInt64(0),
+    }));
+
+    auto tm = TargetMachine::createAArch64_Apple();
+    std::ostringstream out;
+    AsmTextStreamer streamer(out);
+    const auto& ri = dynamic_cast<const AArch64RegisterInfo&>(tm->getRegisterInfo());
+    AArch64AsmPrinter printer(streamer, ri);
+    printer.emitGlobals(module);
+
+    const std::string asmText = out.str();
+    EXPECT_NE(asmText.find(".globl _values"), std::string::npos);
+    EXPECT_NE(asmText.find("\t.quad 3"), std::string::npos);
+    EXPECT_NE(asmText.find("\t.quad 4"), std::string::npos);
+    EXPECT_NE(asmText.find("\t.quad 0"), std::string::npos);
+}
+
 TEST(AArch64AsmPrinterTest, LowersGlobalAddressReferences) {
     Module module("a64-global-load");
     (void)module.createGlobal(Type::getInt64Ty(), "counter");

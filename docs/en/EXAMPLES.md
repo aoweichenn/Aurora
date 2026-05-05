@@ -63,6 +63,7 @@ extern long imported_counter;
 
 long declared_later(long);
 long global_counter = 7;
+long global_values[3] = {1, 2};
 
 enum Mode {
     MODE_ZERO,
@@ -70,12 +71,13 @@ enum Mode {
 };
 
 static_assert(MODE_ONE == 4, "enum constants work");
+static_assert(alignof(long) == 8, "alignment constants work");
 
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
     usize high = value >> 63;
-    return ok && nullptr == 0 ? casted + high + MODE_ONE : 0;
+    return ok && nullptr == 0 ? casted + high + MODE_ONE + alignof(usize) : 0;
 }
 
 long declared_later(long value) {
@@ -86,6 +88,11 @@ long use_global_counter() {
     global_counter = global_counter + imported_counter;
     return global_counter;
 }
+
+long use_global_array() {
+    global_values[2] = global_counter;
+    return global_values[0] + global_values[1] + global_values[2];
+}
 ```
 
 This exercises:
@@ -94,7 +101,8 @@ This exercises:
 - `Parser` AST construction for functions, statements, and expressions
 - `tools/minic/CodeGen` emission of AIR local variables, calls, branches, and loops
 - function prototypes / external declarations that stay callable without emitting bodies
-- scalar global definitions and `extern` global declarations
+- scalar and one-dimensional array global definitions plus `extern` global declarations
+- C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

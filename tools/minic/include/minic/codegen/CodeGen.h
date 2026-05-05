@@ -77,6 +77,7 @@ private:
     unsigned genIncDecExpr(const IncDecExpr& ie);
     unsigned genIndexExpr(const IndexExpr& ie);
     unsigned genSizeofExpr(const SizeofExpr& se);
+    unsigned genAlignofExpr(const AlignofExpr& ae);
     unsigned genCommaExpr(const CommaExpr& ce);
     unsigned genCallExpr(const CallExpr& ce);
     unsigned genConditionalExpr(const ConditionalExpr& ce);
@@ -87,6 +88,7 @@ private:
     LValue genLValue(const Expr& expr);
     unsigned genAddressOfVariable(const VarExpr& ve);
     uint64_t sizeOfType(CType type) const;
+    uint64_t alignOfType(CType type) const;
     int64_t evalConstantExpr(const Expr& expr) const;
     CType inferExprType(const Expr& expr);
     unsigned scalePointerOffset(CType pointerType, unsigned value);

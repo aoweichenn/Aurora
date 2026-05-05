@@ -7,5 +7,6 @@ namespace minic {
 
 [[nodiscard]] bool isAssignableExpr(const Expr& expr) noexcept;
 [[nodiscard]] uint64_t sizeOfType(CType type) noexcept;
+[[nodiscard]] uint64_t alignOfType(CType type) noexcept;
 
 } // namespace minic

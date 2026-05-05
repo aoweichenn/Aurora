@@ -93,6 +93,25 @@ TEST(ConstantFpTest, FloatNegative) {
     EXPECT_FLOAT_EQ(cf->getFloatValue(), -1.5f);
 }
 
+TEST(ConstantArrayTest, ConstructionAndElements) {
+    auto* arrayType = Type::getArrayTy(Type::getInt64Ty(), 3);
+    std::vector<Constant*> elements = {
+        ConstantInt::getInt64(1),
+        ConstantInt::getInt64(2),
+        ConstantInt::getInt64(0),
+    };
+    auto* array = ConstantArray::get(arrayType, elements);
+
+    ASSERT_NE(array, nullptr);
+    EXPECT_EQ(array->getType(), arrayType);
+    EXPECT_EQ(array->getNumElements(), 3u);
+    ASSERT_NE(array->getElement(1), nullptr);
+    auto* second = dynamic_cast<ConstantInt*>(array->getElement(1));
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(second->getSExtValue(), 2);
+    EXPECT_EQ(array->getElement(4), nullptr);
+}
+
 TEST(GlobalVariableTest, Construction) {
     GlobalVariable gv(Type::getInt32Ty(), "my_global");
     EXPECT_EQ(gv.getType(), Type::getInt32Ty());

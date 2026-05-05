@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
+#include <vector>
 #include "Aurora/Air/Type.h"
 
 namespace aurora {
@@ -49,6 +51,19 @@ private:
     union { float f; double d; } value_;
 };
 
+class ConstantArray : public Constant {
+public:
+    [[nodiscard]] static ConstantArray* get(Type* ty, std::vector<Constant*> elements);
+
+    [[nodiscard]] const std::vector<Constant*>& getElements() const noexcept { return elements_; }
+    [[nodiscard]] Constant* getElement(size_t index) const noexcept;
+    [[nodiscard]] size_t getNumElements() const noexcept { return elements_.size(); }
+
+private:
+    ConstantArray(Type* ty, std::vector<Constant*> elements);
+    std::vector<Constant*> elements_;
+};
+
 class GlobalVariable : public Constant {
 public:
     GlobalVariable(Type* ty, const std::string& name, Constant* init = nullptr);
@@ -61,4 +76,3 @@ private:
 };
 
 } // namespace aurora
-

@@ -24,6 +24,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Case:   return "case";
     case TokenKind::Default:return "default";
     case TokenKind::Sizeof: return "sizeof";
+    case TokenKind::Alignof:return "alignof";
     case TokenKind::Typedef:return "typedef";
     case TokenKind::Enum:   return "enum";
     case TokenKind::StaticAssert:return "static_assert";

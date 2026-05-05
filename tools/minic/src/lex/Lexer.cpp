@@ -151,6 +151,7 @@ Token Lexer::readIdent() {
     else if (lexeme == "case") tok.kind = TokenKind::Case;
     else if (lexeme == "default") tok.kind = TokenKind::Default;
     else if (lexeme == "sizeof") tok.kind = TokenKind::Sizeof;
+    else if (lexeme == "alignof" || lexeme == "_Alignof") tok.kind = TokenKind::Alignof;
     else if (lexeme == "typedef") tok.kind = TokenKind::Typedef;
     else if (lexeme == "enum") tok.kind = TokenKind::Enum;
     else if (lexeme == "static_assert" || lexeme == "_Static_assert") tok.kind = TokenKind::StaticAssert;

@@ -12,6 +12,42 @@
 
 namespace aurora {
 
+namespace {
+
+void emitIntegerData(MCStreamer& streamer, int64_t value) {
+    streamer.emitRawText("\t.quad " + std::to_string(value));
+}
+
+void emitZeroDataForType(MCStreamer& streamer, Type* type) {
+    if (type && type->isArray()) {
+        for (unsigned index = 0; index < type->getNumElements(); ++index)
+            emitZeroDataForType(streamer, type->getElementType());
+        return;
+    }
+    emitIntegerData(streamer, 0);
+}
+
+void emitConstantData(MCStreamer& streamer, Constant* init, Type* type) {
+    if (auto* array = dynamic_cast<ConstantArray*>(init)) {
+        Type* elementType = type && type->isArray() ? type->getElementType() : nullptr;
+        const size_t count = type && type->isArray() ? type->getNumElements() : array->getNumElements();
+        for (size_t index = 0; index < count; ++index) {
+            if (auto* element = array->getElement(index))
+                emitConstantData(streamer, element, elementType);
+            else
+                emitZeroDataForType(streamer, elementType);
+        }
+        return;
+    }
+    if (auto* ci = dynamic_cast<ConstantInt*>(init)) {
+        emitIntegerData(streamer, ci->getSExtValue());
+        return;
+    }
+    emitZeroDataForType(streamer, type);
+}
+
+} // namespace
+
 AArch64AsmPrinter::AArch64AsmPrinter(MCStreamer& streamer, const AArch64RegisterInfo& /*regInfo*/)
     : AsmPrinter(streamer) {}
 
@@ -265,14 +301,7 @@ void AArch64AsmPrinter::emitGlobals(Module& mod) {
         getStreamer().emitRawText(".p2align 3");
         getStreamer().emitGlobalSymbol(symbol);
         getStreamer().emitLabel(symbol);
-        if (auto* init = gv->getInitializer()) {
-            if (auto* ci = dynamic_cast<ConstantInt*>(init))
-                getStreamer().emitRawText("\t.quad " + std::to_string(ci->getSExtValue()));
-            else
-                getStreamer().emitRawText("\t.quad 0");
-        } else {
-            getStreamer().emitRawText("\t.quad 0");
-        }
+        emitConstantData(getStreamer(), gv->getInitializer(), gv->getType());
     }
 }
 

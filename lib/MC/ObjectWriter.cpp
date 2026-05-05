@@ -6,6 +6,7 @@
 #include "Aurora/Target/X86/X86InstrInfo.h"
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Constant.h"
+#include <algorithm>
 #include <fstream>
 #include <cstring>
 #include <stdexcept>
@@ -43,6 +44,51 @@ struct Elf64_Rela {
     int64_t addend;
 };
 #pragma pack(pop)
+
+namespace {
+
+unsigned byteSize(Type* type) {
+    if (!type)
+        return 8;
+    return std::max(1u, (type->getSizeInBits() + 7u) / 8u);
+}
+
+void appendLittleEndian(std::vector<uint8_t>& out, uint64_t value, unsigned bytes) {
+    for (unsigned index = 0; index < bytes; ++index) {
+        out.push_back(static_cast<uint8_t>(value & 0xFFu));
+        value >>= 8;
+    }
+}
+
+void appendZeroDataForType(std::vector<uint8_t>& out, Type* type) {
+    if (type && type->isArray()) {
+        for (unsigned index = 0; index < type->getNumElements(); ++index)
+            appendZeroDataForType(out, type->getElementType());
+        return;
+    }
+    appendLittleEndian(out, 0, byteSize(type));
+}
+
+void appendConstantData(std::vector<uint8_t>& out, Constant* init, Type* type) {
+    if (auto* array = dynamic_cast<ConstantArray*>(init)) {
+        Type* elementType = type && type->isArray() ? type->getElementType() : nullptr;
+        const size_t count = type && type->isArray() ? type->getNumElements() : array->getNumElements();
+        for (size_t index = 0; index < count; ++index) {
+            if (auto* element = array->getElement(index))
+                appendConstantData(out, element, elementType);
+            else
+                appendZeroDataForType(out, elementType);
+        }
+        return;
+    }
+    if (auto* ci = dynamic_cast<ConstantInt*>(init)) {
+        appendLittleEndian(out, ci->getZExtValue(), byteSize(type));
+        return;
+    }
+    appendZeroDataForType(out, type);
+}
+
+} // namespace
 
 ObjectWriter::ObjectWriter() : functionCount_(0) {
     // Add the null symbol (index 0)
@@ -139,17 +185,9 @@ void ObjectWriter::addFunction(MachineFunction& mf) {
 }
 
 void ObjectWriter::addGlobal(const GlobalVariable& gv) {
-    uint64_t val = 0;
-    if (auto* init = gv.getInitializer()) {
-        if (auto* ci = dynamic_cast<const ConstantInt*>(init))
-            val = ci->getZExtValue();
-    }
     size_t off = dataBytes_.size();
-    for (unsigned i = 0; i < (gv.getType()->getSizeInBits() / 8); i++) {
-        dataBytes_.push_back(static_cast<uint8_t>(val & 0xFF));
-        val >>= 8;
-    }
-    defineSymbol(gv.getName(), off, gv.getType()->getSizeInBits() / 8, STT_OBJECT, STB_GLOBAL, 2);
+    appendConstantData(dataBytes_, gv.getInitializer(), gv.getType());
+    defineSymbol(gv.getName(), off, dataBytes_.size() - off, STT_OBJECT, STB_GLOBAL, 2);
 }
 
 void ObjectWriter::addExternSymbol(const std::string& name) {

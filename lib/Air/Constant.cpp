@@ -1,4 +1,5 @@
 #include "Aurora/Air/Constant.h"
+#include <utility>
 
 namespace aurora {
 
@@ -34,6 +35,17 @@ ConstantFP::ConstantFP(Type* ty, const double val) : Constant(ty) {
     if (ty->getSizeInBits() == 32) value_.f = static_cast<float>(val);
     else value_.d = val;
 }
+
+ConstantArray* ConstantArray::get(Type* ty, std::vector<Constant*> elements) {
+    return new ConstantArray(ty, std::move(elements));
+}
+
+Constant* ConstantArray::getElement(size_t index) const noexcept {
+    return index < elements_.size() ? elements_[index] : nullptr;
+}
+
+ConstantArray::ConstantArray(Type* ty, std::vector<Constant*> elements)
+    : Constant(ty), elements_(std::move(elements)) {}
 
 GlobalVariable::GlobalVariable(Type* ty, const std::string& name, Constant* init)
     : Constant(ty), name_(name), init_(init) {}

@@ -45,6 +45,29 @@ TEST(CoverageBoostTest, AsmPrinterEmitGlobals) {
     EXPECT_NE(out.find("counter"), std::string::npos);
 }
 
+TEST(CoverageBoostTest, AsmPrinterEmitArrayGlobals) {
+    auto mod = std::make_unique<Module>("em-array");
+    auto* arrayType = Type::getArrayTy(Type::getInt64Ty(), 3);
+    auto* gv = mod->createGlobal(arrayType, "values");
+    gv->setInitializer(ConstantArray::get(arrayType, {
+        ConstantInt::getInt64(1),
+        ConstantInt::getInt64(2),
+        ConstantInt::getInt64(0),
+    }));
+
+    auto tm = TargetMachine::createX86_64();
+    std::ostringstream oss;
+    AsmTextStreamer s(oss);
+    X86AsmPrinter printer(s, static_cast<const X86RegisterInfo&>(tm->getRegisterInfo()));
+    printer.emitGlobals(*mod);
+
+    std::string out = oss.str();
+    EXPECT_NE(out.find("values"), std::string::npos);
+    EXPECT_NE(out.find("\t.quad 1"), std::string::npos);
+    EXPECT_NE(out.find("\t.quad 2"), std::string::npos);
+    EXPECT_NE(out.find("\t.quad 0"), std::string::npos);
+}
+
 // ---- MCStreamer edge cases ----
 TEST(CoverageBoostTest, MCStreamerEmitAll) {
     std::ostringstream oss;

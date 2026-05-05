@@ -63,6 +63,7 @@ extern long imported_counter;
 
 long declared_later(long);
 long global_counter = 7;
+long global_values[3] = {1, 2};
 
 enum Mode {
     MODE_ZERO,
@@ -70,12 +71,13 @@ enum Mode {
 };
 
 static_assert(MODE_ONE == 4, "enum constants work");
+static_assert(alignof(long) == 8, "alignment constants work");
 
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
     usize high = value >> 63;
-    return ok && nullptr == 0 ? casted + high + MODE_ONE : 0;
+    return ok && nullptr == 0 ? casted + high + MODE_ONE + alignof(usize) : 0;
 }
 
 long declared_later(long value) {
@@ -86,6 +88,11 @@ long use_global_counter() {
     global_counter = global_counter + imported_counter;
     return global_counter;
 }
+
+long use_global_array() {
+    global_values[2] = global_counter;
+    return global_values[0] + global_values[1] + global_values[2];
+}
 ```
 
 这会触发：
@@ -94,7 +101,8 @@ long use_global_counter() {
 - `Parser` 为函数、语句和表达式生成 AST
 - `tools/minic/CodeGen` 生成 AIR 局部变量、调用、分支和循环
 - 函数原型 / 外部声明保持可调用，但不会生成函数体
-- 标量全局变量定义和 `extern` 全局变量声明
+- 标量和一维数组全局变量定义，以及 `extern` 全局变量声明
+- 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件

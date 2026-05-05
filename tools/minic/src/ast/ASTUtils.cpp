@@ -31,4 +31,23 @@ uint64_t sizeOfType(CType type) noexcept {
     return 8;
 }
 
+uint64_t alignOfType(CType type) noexcept {
+    if (type.arraySize > 0) {
+        CType elementType = type;
+        elementType.arraySize = 0;
+        return alignOfType(elementType);
+    }
+    if (type.pointerDepth > 0)
+        return 8;
+    switch (type.kind) {
+    case CTypeKind::Bool: return 1;
+    case CTypeKind::Char: return 1;
+    case CTypeKind::Short: return 2;
+    case CTypeKind::Int: return 4;
+    case CTypeKind::Long: return 8;
+    case CTypeKind::Void: return 1;
+    }
+    return 8;
+}
+
 } // namespace minic

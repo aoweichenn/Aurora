@@ -20,6 +20,8 @@ unsigned CodeGen::genExpr(const Expr& node) {
         return genIndexExpr(*index);
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&node))
         return genSizeofExpr(*sizeofExpr);
+    if (auto* alignofExpr = dynamic_cast<const AlignofExpr*>(&node))
+        return genAlignofExpr(*alignofExpr);
     if (auto* comma = dynamic_cast<const CommaExpr*>(&node))
         return genCommaExpr(*comma);
     if (auto* call = dynamic_cast<const CallExpr*>(&node))
@@ -51,7 +53,7 @@ unsigned CodeGen::genVarExpr(const VarExpr& ve) {
     }
     auto& variable = findGlobal(ve.name);
     if (variable.type.arraySize > 0)
-        throw std::runtime_error("Global arrays are not supported yet: " + ve.name);
+        return genGlobalAddress(ve.name);
     return builder_->createLoad(toAirType(variable.type, false), genGlobalAddress(ve.name));
 }
 
@@ -304,6 +306,10 @@ unsigned CodeGen::genSizeofExpr(const SizeofExpr& se) {
         }
     }
     return builder_->createConstantInt(static_cast<int64_t>(sizeOfType(type)));
+}
+
+unsigned CodeGen::genAlignofExpr(const AlignofExpr& ae) {
+    return builder_->createConstantInt(static_cast<int64_t>(alignOfType(ae.type)));
 }
 
 unsigned CodeGen::genCommaExpr(const CommaExpr& ce) {

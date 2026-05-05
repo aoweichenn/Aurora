@@ -180,6 +180,12 @@ std::unique_ptr<Expr> Parser::parseUnary() {
         }
         return std::make_unique<SizeofExpr>(parseUnary());
     }
+    if (match(TokenKind::Alignof)) {
+        consume(TokenKind::LParen);
+        CType type = parseType();
+        consume(TokenKind::RParen);
+        return std::make_unique<AlignofExpr>(type);
+    }
     if (match(TokenKind::Plus))
         return std::make_unique<UnaryExpr>(UnaryExpr::Plus, parseUnary());
     if (match(TokenKind::Minus))

@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace minic {
 
@@ -152,8 +153,6 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const Program& program) {
 void CodeGen::declareGlobal(const GlobalDecl& decl) {
     if (decl.type.isVoid())
         throw std::runtime_error("Global variable cannot have void type: " + decl.name);
-    if (decl.type.arraySize > 0)
-        throw std::runtime_error("Global arrays are not supported yet: " + decl.name);
     if (functionMap_.find(decl.name) != functionMap_.end())
         throw std::runtime_error("Global variable conflicts with function: " + decl.name);
 
@@ -175,12 +174,45 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
         globalIt = globals_.find(decl.name);
     }
 
+    if (decl.type.arraySize > 0) {
+        if (decl.init) {
+            auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get());
+            if (!initList)
+                throw std::runtime_error("Global array initializer must be a braced list: " + decl.name);
+            if (initList->values.size() > decl.type.arraySize)
+                throw std::runtime_error("Too many values in global array initializer: " + decl.name);
+
+            std::vector<aurora::Constant*> elements;
+            elements.reserve(static_cast<size_t>(decl.type.arraySize));
+            for (uint64_t index = 0; index < decl.type.arraySize; ++index) {
+                int64_t value = 0;
+                if (index < initList->values.size()) {
+                    try {
+                        value = evalConstantExpr(*initList->values[static_cast<size_t>(index)]);
+                    } catch (const std::exception&) {
+                        throw std::runtime_error("Global array initializer must contain integer constant expressions: " + decl.name);
+                    }
+                }
+                elements.push_back(aurora::ConstantInt::getInt64(value));
+            }
+            globalIt->second.variable->setInitializer(aurora::ConstantArray::get(toAirType(decl.type, false), std::move(elements)));
+        }
+        return;
+    }
+
     if (decl.init) {
         if (!globalIt->second.variable)
             throw std::runtime_error("Extern global declaration cannot have an initializer: " + decl.name);
         int64_t value = 0;
         try {
-            value = evalConstantExpr(*decl.init);
+            if (auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get())) {
+                if (initList->values.size() > 1)
+                    throw std::runtime_error("Global scalar initializer has too many values: " + decl.name);
+                if (!initList->values.empty())
+                    value = evalConstantExpr(*initList->values.front());
+            } else {
+                value = evalConstantExpr(*decl.init);
+            }
         } catch (const std::exception&) {
             throw std::runtime_error("Global initializer must be an integer constant expression: " + decl.name);
         }
@@ -220,8 +252,9 @@ CodeGen::Global& CodeGen::findGlobal(const std::string& name) {
 
 unsigned CodeGen::genGlobalAddress(const std::string& name) {
     auto& global = findGlobal(name);
-    CType addressType = global.type;
-    ++addressType.pointerDepth;
+    CType addressType = global.type.arraySize > 0 ? global.type.decayArray() : global.type;
+    if (global.type.arraySize == 0)
+        ++addressType.pointerDepth;
     return builder_->createGlobalAddress(toAirType(addressType, false), global.name.c_str());
 }
 

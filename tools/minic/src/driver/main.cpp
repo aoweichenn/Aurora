@@ -19,6 +19,31 @@
 
 using namespace aurora;
 
+namespace {
+
+void printGlobalInitializer(const Constant* init) {
+    if (auto* array = dynamic_cast<const ConstantArray*>(init)) {
+        std::cout << " {";
+        for (size_t index = 0; index < array->getNumElements(); ++index) {
+            if (index > 0)
+                std::cout << ",";
+            if (auto* value = dynamic_cast<const ConstantInt*>(array->getElement(index)))
+                std::cout << " " << value->getSExtValue();
+            else
+                std::cout << " 0";
+        }
+        std::cout << " }";
+        return;
+    }
+    if (auto* value = dynamic_cast<const ConstantInt*>(init)) {
+        std::cout << " " << value->getSExtValue();
+        return;
+    }
+    std::cout << " 0";
+}
+
+} // namespace
+
 enum class BackendTarget {
     X86_64,
     AArch64Apple,
@@ -89,14 +114,7 @@ int main(int argc, char** argv) {
         std::cout << "; === AIR IR ===\n";
         for (auto& gv : module->getGlobals()) {
             std::cout << "@" << gv->getName() << " = global " << gv->getType()->toString();
-            if (auto* init = gv->getInitializer()) {
-                if (auto* value = dynamic_cast<ConstantInt*>(init))
-                    std::cout << " " << value->getSExtValue();
-                else
-                    std::cout << " 0";
-            } else {
-                std::cout << " 0";
-            }
+            printGlobalInitializer(gv->getInitializer());
             std::cout << "\n";
         }
         if (!module->getGlobals().empty())

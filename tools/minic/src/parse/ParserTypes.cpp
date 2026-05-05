@@ -127,7 +127,7 @@ CType Parser::parseParamArraySuffix(CType type) {
 }
 
 CType Parser::parseType() {
-    return parsePointerSuffix(parseBaseType());
+    return parseArraySuffix(parsePointerSuffix(parseBaseType()));
 }
 
 void Parser::parseTypedefDecl() {
@@ -222,6 +222,8 @@ int64_t Parser::evalConstantExpr(const Expr& expr) const {
         return evalConstantExpr(*comma->rhs);
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&expr))
         return static_cast<int64_t>(sizeofExpr->expr ? 8 : sizeOfType(sizeofExpr->type));
+    if (auto* alignofExpr = dynamic_cast<const AlignofExpr*>(&expr))
+        return static_cast<int64_t>(alignOfType(alignofExpr->type));
     throw std::runtime_error("Expected integer constant expression");
 }
 

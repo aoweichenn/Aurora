@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <vector>
 
 using namespace aurora;
 
@@ -55,6 +56,70 @@ TEST(ObjectWriterTest, WriteWithGlobalOnly) {
     EXPECT_TRUE(w.write("/tmp/aurora_data.o"));
     delete gv;
     std::remove("/tmp/aurora_data.o");
+}
+
+TEST(ObjectWriterTest, WriteWithArrayGlobalData) {
+    ObjectWriter w;
+    auto* arrayType = Type::getArrayTy(Type::getInt64Ty(), 3);
+    auto* gv = new GlobalVariable(arrayType, "values", ConstantArray::get(arrayType, {
+        ConstantInt::getInt64(1),
+        ConstantInt::getInt64(2),
+        ConstantInt::getInt64(0),
+    }));
+    w.addGlobal(*gv);
+    EXPECT_TRUE(w.write("/tmp/aurora_array_data.o"));
+
+    std::ifstream file("/tmp/aurora_array_data.o", std::ios::binary);
+    ASSERT_TRUE(file.good());
+
+    struct Elf64_Ehdr {
+        uint8_t ident[16];
+        uint16_t type;
+        uint16_t machine;
+        uint32_t version;
+        uint64_t entry;
+        uint64_t phoff;
+        uint64_t shoff;
+        uint32_t flags;
+        uint16_t ehsize;
+        uint16_t phentsize;
+        uint16_t phnum;
+        uint16_t shentsize;
+        uint16_t shnum;
+        uint16_t shstrndx;
+    };
+    struct Elf64_Shdr {
+        uint32_t name;
+        uint32_t type;
+        uint64_t flags;
+        uint64_t addr;
+        uint64_t offset;
+        uint64_t size;
+        uint32_t link;
+        uint32_t info;
+        uint64_t addralign;
+        uint64_t entsize;
+    };
+
+    Elf64_Ehdr ehdr{};
+    file.read(reinterpret_cast<char*>(&ehdr), sizeof(ehdr));
+    ASSERT_TRUE(file.good());
+    file.seekg(static_cast<std::streamoff>(ehdr.shoff), std::ios::beg);
+    std::vector<Elf64_Shdr> shdrs(ehdr.shnum);
+    file.read(reinterpret_cast<char*>(shdrs.data()), static_cast<std::streamsize>(shdrs.size() * sizeof(Elf64_Shdr)));
+    ASSERT_TRUE(file.good());
+
+    std::vector<uint8_t> data(shdrs[2].size);
+    file.seekg(static_cast<std::streamoff>(shdrs[2].offset), std::ios::beg);
+    file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size()));
+    ASSERT_TRUE(file.good());
+    ASSERT_GE(data.size(), 24u);
+    EXPECT_EQ(data[0], 1u);
+    EXPECT_EQ(data[8], 2u);
+    EXPECT_EQ(data[16], 0u);
+
+    delete gv;
+    std::remove("/tmp/aurora_array_data.o");
 }
 
 TEST(ObjectWriterTest, AlignsSectionOffsets) {

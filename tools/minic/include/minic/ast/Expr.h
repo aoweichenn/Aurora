@@ -82,6 +82,11 @@ struct SizeofExpr : Expr {
     explicit SizeofExpr(std::unique_ptr<Expr> e) : expr(std::move(e)) {}
 };
 
+struct AlignofExpr : Expr {
+    CType type;
+    explicit AlignofExpr(CType t) : type(t) {}
+};
+
 struct InitListExpr : Expr {
     std::vector<std::unique_ptr<Expr>> values;
     explicit InitListExpr(std::vector<std::unique_ptr<Expr>> v)
