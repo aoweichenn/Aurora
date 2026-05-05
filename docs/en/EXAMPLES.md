@@ -63,7 +63,7 @@ extern long imported_counter;
 
 long declared_later(long);
 long global_counter = 7;
-long global_values[3] = {1, 2};
+long global_values[3] = {[2] = 3, [0] = 1};
 
 enum Mode {
     MODE_ZERO,
@@ -105,14 +105,14 @@ long use_global_array() {
 }
 
 long use_struct_fields() {
-    struct Pair pair = {4, 5};
+    struct Pair pair = {.second = 5, .first = 4};
     struct Pair *cursor = &pair;
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
 }
 
 long use_union_fields() {
-    union Slot slot = {7};
+    union Slot slot = {.value = 7};
     slot.value = slot.value + alignof(union Slot);
     return slot.value;
 }
@@ -127,6 +127,7 @@ This exercises:
 - scalar and one-dimensional array global definitions plus `extern` global declarations
 - C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
 - named `struct` / `union` layout, ordered local record initialization, and `.` / `->` field access
+- designated initializers for arrays and records, including global integer arrays
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

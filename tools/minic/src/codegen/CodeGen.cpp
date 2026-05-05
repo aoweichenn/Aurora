@@ -198,20 +198,27 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
             auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get());
             if (!initList)
                 throw std::runtime_error("Global array initializer must be a braced list: " + decl.name);
-            if (initList->values.size() > decl.type.arraySize)
-                throw std::runtime_error("Too many values in global array initializer: " + decl.name);
+            std::vector<int64_t> values(static_cast<size_t>(decl.type.arraySize), 0);
+            uint64_t nextIndex = 0;
+            for (const auto& entry : initList->entries) {
+                if (entry.designator.kind == InitListExpr::Designator::Field)
+                    throw std::runtime_error("Global array initializer cannot use a field designator: " + decl.name);
+                uint64_t targetIndex = entry.designator.kind == InitListExpr::Designator::Index
+                    ? entry.designator.index
+                    : nextIndex;
+                if (targetIndex >= decl.type.arraySize)
+                    throw std::runtime_error("Too many values in global array initializer: " + decl.name);
+                try {
+                    values[static_cast<size_t>(targetIndex)] = evalConstantExpr(*entry.value);
+                } catch (const std::exception&) {
+                    throw std::runtime_error("Global array initializer must contain integer constant expressions: " + decl.name);
+                }
+                nextIndex = targetIndex + 1;
+            }
 
             std::vector<aurora::Constant*> elements;
             elements.reserve(static_cast<size_t>(decl.type.arraySize));
-            for (uint64_t index = 0; index < decl.type.arraySize; ++index) {
-                int64_t value = 0;
-                if (index < initList->values.size()) {
-                    try {
-                        value = evalConstantExpr(*initList->values[static_cast<size_t>(index)]);
-                    } catch (const std::exception&) {
-                        throw std::runtime_error("Global array initializer must contain integer constant expressions: " + decl.name);
-                    }
-                }
+            for (int64_t value : values) {
                 elements.push_back(aurora::ConstantInt::getInt64(value));
             }
             globalIt->second.variable->setInitializer(aurora::ConstantArray::get(toAirType(decl.type, false), std::move(elements)));
@@ -231,10 +238,13 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
         int64_t value = 0;
         try {
             if (auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get())) {
-                if (initList->values.size() > 1)
+                if (initList->entries.size() > 1)
                     throw std::runtime_error("Global scalar initializer has too many values: " + decl.name);
-                if (!initList->values.empty())
-                    value = evalConstantExpr(*initList->values.front());
+                if (!initList->entries.empty()) {
+                    if (initList->entries.front().designator.kind != InitListExpr::Designator::None)
+                        throw std::runtime_error("Global scalar initializer cannot use a designator: " + decl.name);
+                    value = evalConstantExpr(*initList->entries.front().value);
+                }
             } else {
                 value = evalConstantExpr(*decl.init);
             }

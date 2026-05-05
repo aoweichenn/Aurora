@@ -63,7 +63,7 @@ extern long imported_counter;
 
 long declared_later(long);
 long global_counter = 7;
-long global_values[3] = {1, 2};
+long global_values[3] = {[2] = 3, [0] = 1};
 
 enum Mode {
     MODE_ZERO,
@@ -105,14 +105,14 @@ long use_global_array() {
 }
 
 long use_struct_fields() {
-    struct Pair pair = {4, 5};
+    struct Pair pair = {.second = 5, .first = 4};
     struct Pair *cursor = &pair;
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
 }
 
 long use_union_fields() {
-    union Slot slot = {7};
+    union Slot slot = {.value = 7};
     slot.value = slot.value + alignof(union Slot);
     return slot.value;
 }
@@ -127,6 +127,7 @@ long use_union_fields() {
 - 标量和一维数组全局变量定义，以及 `extern` 全局变量声明
 - 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
 - 命名 `struct` / `union` 布局、有序局部记录类型初始化，以及 `.` / `->` 字段访问
+- 数组和记录类型 designated initializer，包括全局整数数组
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件

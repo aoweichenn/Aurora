@@ -82,7 +82,7 @@ This document lists the main public interfaces exposed by the current headers. T
 ## tools/minic
 
 - `TokenKind` / `Token` / `Lexer`: lexical-analysis interfaces.
-- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, top-level scalar and fixed-size array globals, named `struct` / `union` definitions, expressions, comparisons, arithmetic, `sizeof`, `alignof` / `_Alignof`, `if`, calls, literals, and variables.
+- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, top-level scalar and fixed-size array globals, named `struct` / `union` definitions, designated initializers, expressions, comparisons, arithmetic, `sizeof`, `alignof` / `_Alignof`, `if`, calls, literals, and variables.
 - AST nodes: expression, statement, function, and declaration nodes including `SizeofExpr`, `AlignofExpr`, `MemberExpr`, `Function`, and `GlobalDecl`.
 - `CodeGen`: `generate()` turns AST into `aurora::Module`.
 
