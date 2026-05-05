@@ -4,12 +4,14 @@
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Builder.h"
 #include "Aurora/Air/Type.h"
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace aurora {
+class Constant;
 class GlobalVariable;
 }
 
@@ -67,7 +69,11 @@ private:
     void genBreakStmt();
     void genContinueStmt();
     void genArrayInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
+    void genArrayInitializerAtAddress(CType type, unsigned base, const InitListExpr& init, const std::string& name);
     void genStructInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name);
+    void genRecordInitializerAtAddress(CType type, unsigned base, const InitListExpr& init, const std::string& name);
+    void genInitializerAtAddress(CType type, unsigned address, const Expr& init, const std::string& name);
+    void genZeroInitializerAtAddress(CType type, unsigned address);
 
     unsigned genExpr(const Expr& node);
 
@@ -104,6 +110,8 @@ private:
     Global& findGlobal(const std::string& name);
     unsigned genGlobalAddress(const std::string& name);
     void declareGlobal(const GlobalDecl& decl);
+    aurora::Constant* buildGlobalRecordInitializer(CType type, const InitListExpr& init, const std::string& name);
+    void storeGlobalInitializerBytes(CType type, std::vector<uint8_t>& bytes, uint64_t offset, const Expr& init, const std::string& name);
     void declareVariable(const std::string& name, CType type, const Expr* init);
     void pushScope();
     void popScope();

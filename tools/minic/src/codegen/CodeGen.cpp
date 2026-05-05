@@ -2,6 +2,7 @@
 #include "Aurora/Air/BasicBlock.h"
 #include "Aurora/Air/Constant.h"
 #include "Aurora/Air/Function.h"
+#include <cstdint>
 #include <exception>
 #include <stdexcept>
 #include <unordered_map>
@@ -32,6 +33,40 @@ bool sameSignature(const Function& lhs, const Function& rhs) {
             return false;
     }
     return true;
+}
+
+size_t findFieldIndex(const CStructInfo& info, const std::string& fieldName) {
+    for (size_t index = 0; index < info.fields.size(); ++index) {
+        if (info.fields[index].name == fieldName)
+            return index;
+    }
+    return info.fields.size();
+}
+
+bool isRecordObject(CType type) noexcept {
+    return (type.kind == CTypeKind::Struct || type.kind == CTypeKind::Union) && type.pointerDepth == 0;
+}
+
+void storeGlobalRecordValue(std::vector<uint8_t>& bytes, uint64_t offset, int64_t value) {
+    for (uint64_t byteIndex = 0; byteIndex < 8 && offset + byteIndex < bytes.size(); ++byteIndex) {
+        bytes[static_cast<size_t>(offset + byteIndex)] = static_cast<uint8_t>(
+            (static_cast<uint64_t>(value) >> (byteIndex * 8)) & 0xff);
+    }
+}
+
+std::vector<aurora::Constant*> recordBytesToConstants(const std::vector<uint8_t>& bytes, uint64_t slots) {
+    std::vector<aurora::Constant*> elements;
+    elements.reserve(static_cast<size_t>(slots));
+    for (uint64_t slot = 0; slot < slots; ++slot) {
+        uint64_t value = 0;
+        for (uint64_t byteIndex = 0; byteIndex < 8; ++byteIndex) {
+            size_t offset = static_cast<size_t>(slot * 8 + byteIndex);
+            if (offset < bytes.size())
+                value |= static_cast<uint64_t>(bytes[offset]) << (byteIndex * 8);
+        }
+        elements.push_back(aurora::ConstantInt::getInt64(static_cast<int64_t>(value)));
+    }
+    return elements;
 }
 
 } // namespace
@@ -165,6 +200,117 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const Program& program) {
     return std::move(module_);
 }
 
+aurora::Constant* CodeGen::buildGlobalRecordInitializer(CType type, const InitListExpr& init, const std::string& name) {
+    if (!type.structInfo || !type.structInfo->complete)
+        throw std::runtime_error("Global record initializer requires a complete record type: " + name);
+
+    const uint64_t slots = (sizeOfType(type) + 7) / 8;
+    std::vector<uint8_t> bytes(static_cast<size_t>((slots == 0 ? 1 : slots) * 8), 0);
+    storeGlobalInitializerBytes(type, bytes, 0, init, name);
+    return aurora::ConstantArray::get(
+        toAirType(type, false),
+        recordBytesToConstants(bytes, slots == 0 ? 1 : slots));
+}
+
+void CodeGen::storeGlobalInitializerBytes(CType type, std::vector<uint8_t>& bytes, uint64_t offset, const Expr& init, const std::string& name) {
+    if (type.arraySize > 0) {
+        auto* initList = dynamic_cast<const InitListExpr*>(&init);
+        if (!initList)
+            throw std::runtime_error("Global array initializer must be a braced list: " + name);
+        CType elementType = type;
+        elementType.arraySize = 0;
+        uint64_t nextIndex = 0;
+        for (const auto& entry : initList->entries) {
+            if (entry.designator.kind == InitListExpr::Designator::Field)
+                throw std::runtime_error("Global array initializer cannot use a field designator: " + name);
+            uint64_t targetIndex = entry.designator.kind == InitListExpr::Designator::Index
+                ? entry.designator.index
+                : nextIndex;
+            if (targetIndex >= type.arraySize)
+                throw std::runtime_error("Too many values in global array initializer: " + name);
+            storeGlobalInitializerBytes(
+                elementType,
+                bytes,
+                offset + targetIndex * sizeOfType(elementType),
+                *entry.value,
+                name);
+            nextIndex = targetIndex + 1;
+        }
+        return;
+    }
+
+    if (!isRecordObject(type)) {
+        if (auto* initList = dynamic_cast<const InitListExpr*>(&init)) {
+            if (initList->entries.size() > 1)
+                throw std::runtime_error("Global scalar initializer has too many values: " + name);
+            if (initList->entries.empty())
+                return;
+            if (initList->entries.front().designator.kind != InitListExpr::Designator::None)
+                throw std::runtime_error("Global scalar initializer cannot use a designator: " + name);
+            storeGlobalInitializerBytes(type, bytes, offset, *initList->entries.front().value, name);
+            return;
+        }
+        int64_t value = 0;
+        try {
+            value = evalConstantExpr(init);
+        } catch (const std::exception&) {
+            throw std::runtime_error("Global initializer must be an integer constant expression: " + name);
+        }
+        storeGlobalRecordValue(bytes, offset, value);
+        return;
+    }
+
+    auto* initList = dynamic_cast<const InitListExpr*>(&init);
+    if (!initList)
+        throw std::runtime_error("Global record initializer must be a braced list: " + name);
+    if (!type.structInfo || !type.structInfo->complete)
+        throw std::runtime_error("Global record initializer requires a complete record type: " + name);
+
+    if (type.kind == CTypeKind::Union) {
+        if (initList->entries.size() > 1)
+            throw std::runtime_error("Too many values in global union initializer: " + name);
+        if (!initList->entries.empty()) {
+            const auto& entry = initList->entries.front();
+            if (entry.designator.kind == InitListExpr::Designator::Index)
+                throw std::runtime_error("Global union initializer cannot use an array designator: " + name);
+            size_t fieldIndex = 0;
+            if (entry.designator.kind == InitListExpr::Designator::Field) {
+                fieldIndex = findFieldIndex(*type.structInfo, entry.designator.field);
+                if (fieldIndex == type.structInfo->fields.size())
+                    throw std::runtime_error("Unknown global union initializer field: " + entry.designator.field);
+            }
+            if (fieldIndex < type.structInfo->fields.size())
+                storeGlobalInitializerBytes(
+                    type.structInfo->fields[fieldIndex].type,
+                    bytes,
+                    offset + type.structInfo->fields[fieldIndex].offset,
+                    *entry.value,
+                    name);
+        }
+    } else {
+        size_t nextField = 0;
+        for (const auto& entry : initList->entries) {
+            if (entry.designator.kind == InitListExpr::Designator::Index)
+                throw std::runtime_error("Global struct initializer cannot use an array designator: " + name);
+            size_t fieldIndex = nextField;
+            if (entry.designator.kind == InitListExpr::Designator::Field) {
+                fieldIndex = findFieldIndex(*type.structInfo, entry.designator.field);
+                if (fieldIndex == type.structInfo->fields.size())
+                    throw std::runtime_error("Unknown global struct initializer field: " + entry.designator.field);
+            }
+            if (fieldIndex >= type.structInfo->fields.size())
+                throw std::runtime_error("Too many values in global record initializer: " + name);
+            storeGlobalInitializerBytes(
+                type.structInfo->fields[fieldIndex].type,
+                bytes,
+                offset + type.structInfo->fields[fieldIndex].offset,
+                *entry.value,
+                name);
+            nextField = fieldIndex + 1;
+        }
+    }
+}
+
 void CodeGen::declareGlobal(const GlobalDecl& decl) {
     if (decl.type.isVoid())
         throw std::runtime_error("Global variable cannot have void type: " + decl.name);
@@ -192,12 +338,33 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
     if (decl.type.arraySize > 0) {
         CType elementType = decl.type;
         elementType.arraySize = 0;
-        if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0 && decl.init)
-            throw std::runtime_error("Global record array initializer is not supported yet: " + decl.name);
         if (decl.init) {
             auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get());
             if (!initList)
                 throw std::runtime_error("Global array initializer must be a braced list: " + decl.name);
+            if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0) {
+                std::vector<aurora::Constant*> elements(
+                    static_cast<size_t>(decl.type.arraySize),
+                    buildGlobalRecordInitializer(elementType, InitListExpr({}), decl.name));
+                uint64_t nextIndex = 0;
+                for (const auto& entry : initList->entries) {
+                    if (entry.designator.kind == InitListExpr::Designator::Field)
+                        throw std::runtime_error("Global record array initializer cannot use a field designator: " + decl.name);
+                    uint64_t targetIndex = entry.designator.kind == InitListExpr::Designator::Index
+                        ? entry.designator.index
+                        : nextIndex;
+                    if (targetIndex >= decl.type.arraySize)
+                        throw std::runtime_error("Too many values in global array initializer: " + decl.name);
+                    auto* elementInit = dynamic_cast<const InitListExpr*>(entry.value.get());
+                    if (!elementInit)
+                        throw std::runtime_error("Global record array element initializer must be a braced list: " + decl.name);
+                    elements[static_cast<size_t>(targetIndex)] = buildGlobalRecordInitializer(elementType, *elementInit, decl.name);
+                    nextIndex = targetIndex + 1;
+                }
+                globalIt->second.variable->setInitializer(aurora::ConstantArray::get(toAirType(decl.type, false), std::move(elements)));
+                return;
+            }
+
             std::vector<int64_t> values(static_cast<size_t>(decl.type.arraySize), 0);
             uint64_t nextIndex = 0;
             for (const auto& entry : initList->entries) {
@@ -227,8 +394,14 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
     }
 
     if ((decl.type.kind == CTypeKind::Struct || decl.type.kind == CTypeKind::Union) && decl.type.pointerDepth == 0) {
-        if (decl.init)
-            throw std::runtime_error("Global record initializer is not supported yet: " + decl.name);
+        if (decl.init) {
+            if (!globalIt->second.variable)
+                throw std::runtime_error("Extern global declaration cannot have an initializer: " + decl.name);
+            auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get());
+            if (!initList)
+                throw std::runtime_error("Global record initializer must be a braced list: " + decl.name);
+            globalIt->second.variable->setInitializer(buildGlobalRecordInitializer(decl.type, *initList, decl.name));
+        }
         return;
     }
 

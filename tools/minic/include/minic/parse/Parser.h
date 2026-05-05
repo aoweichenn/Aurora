@@ -36,7 +36,8 @@ private:
     CType parseParamArraySuffix(CType type);
     bool isTypeToken(TokenKind kind) const;
     bool isTypeQualifier(TokenKind kind) const;
-    void consumeTypeQualifiers();
+    uint64_t consumeTypeQualifiers();
+    uint64_t parseAlignmentSpecifier();
     void parseTypedefDecl();
     void parseStaticAssertDecl();
     void parseEnumBody();

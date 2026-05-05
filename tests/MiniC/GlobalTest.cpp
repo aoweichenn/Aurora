@@ -172,6 +172,184 @@ long main() {
     EXPECT_EQ(init->getSExtValue(), 42);
 }
 
+TEST(MiniCGlobalTest, CodeGenEmitsGlobalStructInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Pair {
+    long first;
+    long second;
+};
+
+struct Pair pair = {.second = 9, .first = 4};
+
+long main() {
+    return pair.first + pair.second;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    const auto& global = module->getGlobals()[0];
+    EXPECT_EQ(global->getName(), "pair");
+    ASSERT_TRUE(global->getType()->isArray());
+    EXPECT_EQ(global->getType()->getNumElements(), 2u);
+
+    auto* init = dynamic_cast<ConstantArray*>(global->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 2u);
+    auto* first = dynamic_cast<ConstantInt*>(init->getElement(0));
+    auto* second = dynamic_cast<ConstantInt*>(init->getElement(1));
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(first->getSExtValue(), 4);
+    EXPECT_EQ(second->getSExtValue(), 9);
+}
+
+TEST(MiniCGlobalTest, CodeGenEmitsGlobalUnionInitializers) {
+    auto module = generateMiniC(R"mini(
+union Slot {
+    long first;
+    long second;
+};
+
+union Slot slot = {.second = 11};
+
+long main() {
+    return slot.second;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    auto* init = dynamic_cast<ConstantArray*>(module->getGlobals()[0]->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 1u);
+    auto* value = dynamic_cast<ConstantInt*>(init->getElement(0));
+    ASSERT_NE(value, nullptr);
+    EXPECT_EQ(value->getSExtValue(), 11);
+}
+
+TEST(MiniCGlobalTest, CodeGenEmitsAlignedGlobalRecordInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Packet {
+    char tag;
+    alignas(16) long payload;
+};
+
+struct Packet packet = {.payload = 7, .tag = 1};
+
+long main() {
+    return packet.tag + packet.payload;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    auto* init = dynamic_cast<ConstantArray*>(module->getGlobals()[0]->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 4u);
+    const int64_t expected[] = {1, 0, 7, 0};
+    for (unsigned index = 0; index < 4; ++index) {
+        auto* element = dynamic_cast<ConstantInt*>(init->getElement(index));
+        ASSERT_NE(element, nullptr);
+        EXPECT_EQ(element->getSExtValue(), expected[index]);
+    }
+}
+
+TEST(MiniCGlobalTest, CodeGenEmitsGlobalStructArrayInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Pair {
+    long first;
+    long second;
+};
+
+struct Pair pairs[3] = {{1, 2}, {.second = 5, .first = 4}, [2] = {.second = 9}};
+
+long main() {
+    return pairs[0].second + pairs[1].first + pairs[2].second;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    auto* init = dynamic_cast<ConstantArray*>(module->getGlobals()[0]->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 3u);
+
+    const int64_t expected[3][2] = {{1, 2}, {4, 5}, {0, 9}};
+    for (unsigned row = 0; row < 3; ++row) {
+        auto* element = dynamic_cast<ConstantArray*>(init->getElement(row));
+        ASSERT_NE(element, nullptr);
+        ASSERT_EQ(element->getNumElements(), 2u);
+        for (unsigned column = 0; column < 2; ++column) {
+            auto* value = dynamic_cast<ConstantInt*>(element->getElement(column));
+            ASSERT_NE(value, nullptr);
+            EXPECT_EQ(value->getSExtValue(), expected[row][column]);
+        }
+    }
+}
+
+TEST(MiniCGlobalTest, CodeGenEmitsGlobalUnionArrayInitializers) {
+    auto module = generateMiniC(R"mini(
+union Slot {
+    long first;
+    long second;
+};
+
+union Slot slots[2] = {{.second = 7}, [1] = {3}};
+
+long main() {
+    return slots[0].second + slots[1].first;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    auto* init = dynamic_cast<ConstantArray*>(module->getGlobals()[0]->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 2u);
+    const int64_t expected[] = {7, 3};
+    for (unsigned index = 0; index < 2; ++index) {
+        auto* element = dynamic_cast<ConstantArray*>(init->getElement(index));
+        ASSERT_NE(element, nullptr);
+        ASSERT_EQ(element->getNumElements(), 1u);
+        auto* value = dynamic_cast<ConstantInt*>(element->getElement(0));
+        ASSERT_NE(value, nullptr);
+        EXPECT_EQ(value->getSExtValue(), expected[index]);
+    }
+}
+
+TEST(MiniCGlobalTest, CodeGenEmitsNestedGlobalRecordInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Inner {
+    long x;
+    long y;
+};
+
+union Slot {
+    long first;
+    long second;
+};
+
+struct Outer {
+    long values[2];
+    struct Inner inner;
+    union Slot slot;
+};
+
+struct Outer outer = {{1, 2}, {.y = 5, .x = 4}, {.second = 7}};
+
+long main() {
+    return outer.values[1] + outer.inner.y + outer.slot.second;
+}
+)mini");
+
+    ASSERT_EQ(module->getGlobals().size(), 1u);
+    auto* init = dynamic_cast<ConstantArray*>(module->getGlobals()[0]->getInitializer());
+    ASSERT_NE(init, nullptr);
+    ASSERT_EQ(init->getNumElements(), 5u);
+    const int64_t expected[] = {1, 2, 4, 5, 7};
+    for (unsigned index = 0; index < 5; ++index) {
+        auto* value = dynamic_cast<ConstantInt*>(init->getElement(index));
+        ASSERT_NE(value, nullptr);
+        EXPECT_EQ(value->getSExtValue(), expected[index]);
+    }
+}
+
 TEST(MiniCGlobalTest, RejectsConflictingGlobalDeclarations) {
     Program program = parseMiniC(R"mini(
 extern long value;
@@ -245,4 +423,15 @@ long main() {
 
     CodeGen codegen;
     EXPECT_THROW((void)codegen.generate(program), std::runtime_error);
+}
+
+TEST(MiniCGlobalTest, RejectsInvalidGlobalRecordInitializers) {
+    EXPECT_THROW((void)generateMiniC("struct Pair { long first; }; struct Pair pair = {[0] = 1}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("struct Pair { long first; }; struct Pair pair = {.missing = 1}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("struct Pair { long first; }; struct Pair pair = {1, 2}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("union Slot { long first; }; union Slot slot = {1, 2}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("long next() { return 1; } struct Pair { long first; }; struct Pair pair = {next()}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("struct WithArray { long values[2]; }; struct WithArray bad = {1}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("struct Pair { long first; }; struct Pair pairs[1] = {.first = 1}; long main() { return 0; }"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC("struct Pair { long first; }; struct Pair pairs[1] = {1}; long main() { return 0; }"), std::runtime_error);
 }

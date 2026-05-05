@@ -26,11 +26,11 @@ cmake --build build-coverage -j8 --target minic_coverage
 MiniC 接受一个 `.mini` 源文件，支持 C-like 整数子集：
 
 - 函数定义和函数原型：`long name(long a, long b) { ... }`、`extern long name(long);`，支持 `void` 返回值、简单指针形参 / 返回值、原型中可省略形参名、会退化为指针的数组形参，以及常见存储类 / 限定符解析
-- 顶层全局变量：标量全局如 `long counter = 7;`、`extern long imported;`，以及定长一维数组如 `long values[3] = {1, 2};`，支持函数内读取、写入、下标和取地址
-- 局部变量和可选初始化：标量、指针、命名 `struct` / `union` 对象，以及带一维大括号初始化列表和数组 / 记录 designator 的定长数组
+- 顶层全局变量：标量全局如 `long counter = 7;`、`extern long imported;`，定长一维数组如 `long values[3] = {1, 2};`，以及带大括号初始化的命名 `struct` / `union` 全局变量或 record 数组，包括嵌套数组和 record 字段，支持函数内读取、写入、下标、字段访问和取地址
+- 局部变量和可选初始化：标量、指针、命名 `struct` / `union` 对象，以及包含 record 数组在内、带嵌套大括号初始化列表和数组 / 记录 designator 的定长数组
 - 语句：`return`、块、`if` / `else`、`while`、`do` / `while`、`for`、`switch` / `case` / `default`、`break`、`continue`
 - 表达式：赋值、复合赋值、函数调用、三元 `?:`、短路 `&&` / `||`、C 风格 cast、`(struct Pair){.x = 1}` 与 `(long[3]){[2] = 5}` 这类 compound literal、`sizeof`、`alignof` / `_Alignof`、`.` / `->` 记录类型字段访问、指针算术、指针解引用 / 取地址、指针下标、前后缀 `++` / `--`
-- 声明和常量：`typedef`、`enum`、带标量 / 指针 / 数组字段的命名 `struct` / `union` 定义、声明和 compound literal 中的 `[2] = 7` 与 `.field = 7` 这类 designated initializer、`static_assert` / `_Static_assert`、`bool` / `_Bool`、`true`、`false`、`nullptr`
+- 声明和常量：`typedef`、`enum`、带标量 / 指针 / 数组 / record 字段的命名 `struct` / `union` 定义、`alignas` / `_Alignas` 对齐说明符、声明和 compound literal 中的 `[2] = 7` 与 `.field = 7` 这类 designated initializer、`static_assert` / `_Static_assert`、`bool` / `_Bool`、`true`、`false`、`nullptr`
 - 运算符：`+ - * / %`、有符号和无符号比较 / 除法 / 取余 / 右移、逻辑运算、位运算、移位，以及 `&= |= ^= <<= >>=`
 - 兼容旧表达式函数：`fn name(a, b) = expr`
 

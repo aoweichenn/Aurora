@@ -25,6 +25,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Default:return "default";
     case TokenKind::Sizeof: return "sizeof";
     case TokenKind::Alignof:return "alignof";
+    case TokenKind::Alignas:return "alignas";
     case TokenKind::Typedef:return "typedef";
     case TokenKind::Enum:   return "enum";
     case TokenKind::Struct: return "struct";

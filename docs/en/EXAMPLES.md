@@ -75,13 +75,26 @@ static_assert(alignof(long) == 8, "alignment constants work");
 
 struct Pair {
     long first;
-    long second;
+    alignas(16) long second;
 };
+
+static_assert(alignof(struct Pair) == 16, "alignas raises record alignment");
+
+struct Pair global_pair = {.second = 6, .first = 2};
+struct Pair global_pairs[2] = {{1, 2}, {.second = 8, .first = 4}};
 
 union Slot {
     char tag;
     long value;
 };
+
+struct Outer {
+    long values[2];
+    struct Pair pair;
+    union Slot slot;
+};
+
+struct Outer global_outer = {{1, 2}, {.second = 8, .first = 4}, {.value = 9}};
 
 long use_c23_bits(usize value) {
     bool ok = true;
@@ -104,11 +117,28 @@ long use_global_array() {
     return global_values[0] + global_values[1] + global_values[2];
 }
 
+long use_global_record() {
+    return global_pair.first + global_pair.second;
+}
+
+long use_global_record_array() {
+    return global_pairs[0].second + global_pairs[1].first;
+}
+
+long use_global_nested_record() {
+    return global_outer.values[1] + global_outer.pair.second + global_outer.slot.value;
+}
+
 long use_struct_fields() {
     struct Pair pair = {.second = 5, .first = 4};
-    struct Pair *cursor = &pair;
+    alignas(16) struct Pair *cursor = &pair;
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
+}
+
+long use_nested_records() {
+    struct Outer outer = {{1, 2}, {.second = 5, .first = 4}, {.value = 7}};
+    return outer.values[1] + outer.pair.first + outer.slot.value;
 }
 
 long use_union_fields() {
@@ -129,9 +159,10 @@ This exercises:
 - `Parser` AST construction for functions, statements, and expressions
 - `tools/minic/CodeGen` emission of AIR local variables, calls, branches, and loops
 - function prototypes / external declarations that stay callable without emitting bodies
-- scalar and one-dimensional array global definitions plus `extern` global declarations
+- scalar, one-dimensional array, named record, and record-array global definitions plus `extern` global declarations
 - C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
-- named `struct` / `union` layout, ordered local record initialization, and `.` / `->` field access
+- C23 alignment specifiers through `alignas(n)` and `_Alignas(type)`
+- named `struct` / `union` layout, global and local record initialization including nested array and record fields, and `.` / `->` field access
 - designated initializers for arrays and records, including global integer arrays
 - compound literals for scalar, array, `struct`, and `union` temporaries
 - backend lowering to x86-64 or macOS arm64 assembly

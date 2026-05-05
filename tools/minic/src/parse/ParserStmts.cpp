@@ -208,7 +208,7 @@ std::unique_ptr<Expr> Parser::parseInitializer() {
                 consume(TokenKind::Assign);
                 designator = InitListExpr::Designator(static_cast<uint64_t>(index));
             }
-            entries.emplace_back(std::move(designator), parseAssignment());
+            entries.emplace_back(std::move(designator), parseInitializer());
         } while (match(TokenKind::Comma));
     }
     consume(TokenKind::RBrace);

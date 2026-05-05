@@ -1,4 +1,5 @@
 #include "minic/ast/ASTUtils.h"
+#include <algorithm>
 
 namespace minic {
 
@@ -39,25 +40,28 @@ uint64_t sizeOfType(CType type) noexcept {
 }
 
 uint64_t alignOfType(CType type) noexcept {
+    uint64_t naturalAlign = 8;
     if (type.arraySize > 0) {
         CType elementType = type;
         elementType.arraySize = 0;
-        return alignOfType(elementType);
+        naturalAlign = alignOfType(elementType);
+        return std::max(naturalAlign, type.requiredAlign);
     }
     if (type.pointerDepth > 0)
-        return 8;
+        return std::max<uint64_t>(8, type.requiredAlign);
     switch (type.kind) {
-    case CTypeKind::Bool: return 1;
-    case CTypeKind::Char: return 1;
-    case CTypeKind::Short: return 2;
-    case CTypeKind::Int: return 4;
-    case CTypeKind::Long: return 8;
-    case CTypeKind::Void: return 1;
+    case CTypeKind::Bool: naturalAlign = 1; break;
+    case CTypeKind::Char: naturalAlign = 1; break;
+    case CTypeKind::Short: naturalAlign = 2; break;
+    case CTypeKind::Int: naturalAlign = 4; break;
+    case CTypeKind::Long: naturalAlign = 8; break;
+    case CTypeKind::Void: naturalAlign = 1; break;
     case CTypeKind::Struct:
     case CTypeKind::Union:
-        return type.structInfo && type.structInfo->complete ? type.structInfo->align : 1;
+        naturalAlign = type.structInfo && type.structInfo->complete ? type.structInfo->align : 1;
+        break;
     }
-    return 8;
+    return std::max(naturalAlign, type.requiredAlign);
 }
 
 const CField* findStructField(const CType& type, const std::string& name) noexcept {

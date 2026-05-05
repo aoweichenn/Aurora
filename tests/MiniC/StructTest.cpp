@@ -111,6 +111,75 @@ long main() {
     EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 5));
 }
 
+TEST(MiniCStructTest, SupportsLocalStructArrayInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Pair {
+    long first;
+    long second;
+};
+
+long main() {
+    struct Pair pairs[3] = {{1, 2}, {.second = 5, .first = 4}, [2] = {.second = 9}};
+    return pairs[0].first + pairs[1].second + pairs[2].second;
+}
+)mini");
+
+    ASSERT_EQ(module->getFunctions().size(), 1u);
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 1));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 4));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 5));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 9));
+}
+
+TEST(MiniCStructTest, SupportsNestedLocalRecordFieldInitializers) {
+    auto module = generateMiniC(R"mini(
+struct Inner {
+    long x;
+    long y;
+};
+
+union Slot {
+    long first;
+    long second;
+};
+
+struct Outer {
+    long values[2];
+    struct Inner inner;
+    union Slot slot;
+};
+
+long main() {
+    struct Outer outer = {{1, 2}, {.y = 5, .x = 4}, {.second = 7}};
+    return outer.values[1] + outer.inner.y + outer.slot.second;
+}
+)mini");
+
+    ASSERT_EQ(module->getFunctions().size(), 1u);
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 1));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 2));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 4));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 5));
+    EXPECT_TRUE(hasConstantInt(*module->getFunctions()[0], 7));
+}
+
+TEST(MiniCStructTest, RejectsUnbracedLocalStructArrayElements) {
+    EXPECT_THROW((void)generateMiniC(R"mini(
+struct Pair { long first; long second; };
+long main() {
+    struct Pair pairs[1] = {1};
+    return 0;
+}
+)mini"), std::runtime_error);
+    EXPECT_THROW((void)generateMiniC(R"mini(
+struct WithArray { long values[2]; };
+long main() {
+    struct WithArray value = {1};
+    return 0;
+}
+)mini"), std::runtime_error);
+}
+
 TEST(MiniCStructTest, EvaluatesSizeofAndAlignofForStructs) {
     Program program = parseMiniC(R"mini(
 struct Mixed {

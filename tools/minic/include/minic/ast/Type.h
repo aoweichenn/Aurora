@@ -16,6 +16,7 @@ struct CType {
     CTypeKind kind = CTypeKind::Long;
     unsigned pointerDepth = 0;
     uint64_t arraySize = 0;
+    uint64_t requiredAlign = 0;
     bool isUnsigned = false;
     std::shared_ptr<CStructInfo> structInfo;
 

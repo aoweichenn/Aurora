@@ -77,6 +77,7 @@ add_test(NAME MC_tests COMMAND MC_tests)
 add_executable(MiniC_tests
     MiniC/GlobalTest.cpp
     MiniC/AlignofTest.cpp
+    MiniC/AlignasTest.cpp
     MiniC/StructTest.cpp
     MiniC/UnionTest.cpp
     MiniC/FeatureCoverageTest.cpp

@@ -29,7 +29,10 @@ void printGlobalInitializer(const Constant* init) {
                 std::cout << ",";
             if (auto* value = dynamic_cast<const ConstantInt*>(array->getElement(index)))
                 std::cout << " " << value->getSExtValue();
-            else
+            else if (auto* element = array->getElement(index)) {
+                std::cout << " ";
+                printGlobalInitializer(element);
+            } else
                 std::cout << " 0";
         }
         std::cout << " }";

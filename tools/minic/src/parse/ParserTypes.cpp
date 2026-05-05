@@ -25,6 +25,14 @@ bool isCompleteObjectType(CType type) noexcept {
            (type.structInfo && type.structInfo->complete);
 }
 
+bool isPowerOfTwo(uint64_t value) noexcept {
+    return value != 0 && (value & (value - 1)) == 0;
+}
+
+void applyRequiredAlign(CType& type, uint64_t requiredAlign) noexcept {
+    type.requiredAlign = std::max(type.requiredAlign, requiredAlign);
+}
+
 } // namespace
 
 bool Parser::isTypeToken(TokenKind kind) const {
@@ -42,17 +50,43 @@ bool Parser::isTypeQualifier(TokenKind kind) const {
     return kind == TokenKind::Const || kind == TokenKind::Volatile ||
            kind == TokenKind::Restrict || kind == TokenKind::Static ||
            kind == TokenKind::Extern || kind == TokenKind::Auto ||
-           kind == TokenKind::Register || kind == TokenKind::Inline;
+           kind == TokenKind::Register || kind == TokenKind::Inline ||
+           kind == TokenKind::Alignas;
 }
 
-void Parser::consumeTypeQualifiers() {
-    while (isTypeQualifier(current_.kind))
-        advance();
+uint64_t Parser::consumeTypeQualifiers() {
+    uint64_t requiredAlign = 0;
+    while (isTypeQualifier(current_.kind)) {
+        if (current_.kind == TokenKind::Alignas) {
+            requiredAlign = std::max(requiredAlign, parseAlignmentSpecifier());
+        } else {
+            advance();
+        }
+    }
+    return requiredAlign;
+}
+
+uint64_t Parser::parseAlignmentSpecifier() {
+    consume(TokenKind::Alignas);
+    consume(TokenKind::LParen);
+    uint64_t alignment = 0;
+    if (isTypeToken(current_.kind)) {
+        alignment = alignOfType(parseType());
+    } else {
+        int64_t value = evalConstantExpr(*parseAssignment());
+        if (value < 0)
+            throw std::runtime_error("alignas value cannot be negative");
+        alignment = static_cast<uint64_t>(value);
+    }
+    consume(TokenKind::RParen);
+    if (alignment != 0 && !isPowerOfTwo(alignment))
+        throw std::runtime_error("alignas value must be zero or a power of two");
+    return alignment;
 }
 
 CType Parser::parseBaseType() {
     CType type;
-    consumeTypeQualifiers();
+    uint64_t requiredAlign = consumeTypeQualifiers();
 
     if (match(TokenKind::Enum)) {
         if (current_.kind == TokenKind::Ident)
@@ -60,17 +94,22 @@ CType Parser::parseBaseType() {
         if (current_.kind == TokenKind::LBrace)
             parseEnumBody();
         type.kind = CTypeKind::Int;
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
 
-    if (current_.kind == TokenKind::Struct || current_.kind == TokenKind::Union)
-        return parseRecordSpecifier(current_.kind == TokenKind::Union);
+    if (current_.kind == TokenKind::Struct || current_.kind == TokenKind::Union) {
+        type = parseRecordSpecifier(current_.kind == TokenKind::Union);
+        applyRequiredAlign(type, requiredAlign);
+        return type;
+    }
 
     if (current_.kind == TokenKind::Ident) {
         auto typedefIt = typedefs_.find(current_.lexeme);
         if (typedefIt != typedefs_.end()) {
             type = typedefIt->second;
             advance();
+            applyRequiredAlign(type, requiredAlign);
             return type;
         }
     }
@@ -81,43 +120,50 @@ CType Parser::parseBaseType() {
         if (current_.kind == TokenKind::Unsigned)
             type.isUnsigned = true;
         advance();
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
     }
 
     if (match(TokenKind::Bool)) {
         type.kind = CTypeKind::Bool;
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (match(TokenKind::Int)) {
         type.kind = CTypeKind::Int;
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (match(TokenKind::Short)) {
         type.kind = CTypeKind::Short;
         (void)match(TokenKind::Int);
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (match(TokenKind::Long)) {
         type.kind = CTypeKind::Long;
         (void)match(TokenKind::Int);
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (match(TokenKind::Char)) {
         type.kind = CTypeKind::Char;
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (match(TokenKind::Void)) {
         type.kind = CTypeKind::Void;
-        consumeTypeQualifiers();
+        requiredAlign = std::max(requiredAlign, consumeTypeQualifiers());
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     if (sawSignedness) {
         type.kind = CTypeKind::Int;
+        applyRequiredAlign(type, requiredAlign);
         return type;
     }
     throw std::runtime_error("Expected type name");
@@ -126,7 +172,7 @@ CType Parser::parseBaseType() {
 CType Parser::parsePointerSuffix(CType type) {
     while (match(TokenKind::Star)) {
         ++type.pointerDepth;
-        consumeTypeQualifiers();
+        applyRequiredAlign(type, consumeTypeQualifiers());
     }
     return type;
 }
@@ -145,7 +191,7 @@ CType Parser::parseArraySuffix(CType type) {
 CType Parser::parseParamArraySuffix(CType type) {
     if (!match(TokenKind::LBracket))
         return type;
-    consumeTypeQualifiers();
+    applyRequiredAlign(type, consumeTypeQualifiers());
     if (current_.kind != TokenKind::RBracket)
         (void)parseAssignment();
     consume(TokenKind::RBracket);

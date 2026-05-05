@@ -75,13 +75,26 @@ static_assert(alignof(long) == 8, "alignment constants work");
 
 struct Pair {
     long first;
-    long second;
+    alignas(16) long second;
 };
+
+static_assert(alignof(struct Pair) == 16, "alignas raises record alignment");
+
+struct Pair global_pair = {.second = 6, .first = 2};
+struct Pair global_pairs[2] = {{1, 2}, {.second = 8, .first = 4}};
 
 union Slot {
     char tag;
     long value;
 };
+
+struct Outer {
+    long values[2];
+    struct Pair pair;
+    union Slot slot;
+};
+
+struct Outer global_outer = {{1, 2}, {.second = 8, .first = 4}, {.value = 9}};
 
 long use_c23_bits(usize value) {
     bool ok = true;
@@ -104,11 +117,28 @@ long use_global_array() {
     return global_values[0] + global_values[1] + global_values[2];
 }
 
+long use_global_record() {
+    return global_pair.first + global_pair.second;
+}
+
+long use_global_record_array() {
+    return global_pairs[0].second + global_pairs[1].first;
+}
+
+long use_global_nested_record() {
+    return global_outer.values[1] + global_outer.pair.second + global_outer.slot.value;
+}
+
 long use_struct_fields() {
     struct Pair pair = {.second = 5, .first = 4};
-    struct Pair *cursor = &pair;
+    alignas(16) struct Pair *cursor = &pair;
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
+}
+
+long use_nested_records() {
+    struct Outer outer = {{1, 2}, {.second = 5, .first = 4}, {.value = 7}};
+    return outer.values[1] + outer.pair.first + outer.slot.value;
 }
 
 long use_union_fields() {
@@ -129,9 +159,10 @@ long use_compound_literals() {
 - `Parser` 为函数、语句和表达式生成 AST
 - `tools/minic/CodeGen` 生成 AIR 局部变量、调用、分支和循环
 - 函数原型 / 外部声明保持可调用，但不会生成函数体
-- 标量和一维数组全局变量定义，以及 `extern` 全局变量声明
+- 标量、一维数组、命名 record 和 record 数组全局变量定义，以及 `extern` 全局变量声明
 - 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
-- 命名 `struct` / `union` 布局、有序局部记录类型初始化，以及 `.` / `->` 字段访问
+- 通过 `alignas(n)` 和 `_Alignas(type)` 描述对齐要求的 C23 写法
+- 命名 `struct` / `union` 布局、包括嵌套数组和 record 字段在内的全局 / 局部记录类型初始化，以及 `.` / `->` 字段访问
 - 数组和记录类型 designated initializer，包括全局整数数组
 - 标量、数组、`struct` 和 `union` 临时对象的 compound literal
 - 后端生成 x86-64 或 macOS arm64 汇编

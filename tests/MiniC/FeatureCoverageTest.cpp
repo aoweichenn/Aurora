@@ -53,26 +53,26 @@ std::vector<TokenKind> lexKinds(std::string_view source) {
 } // namespace
 
 TEST(MiniCFeatureCoverageTest, TokenNameCoversEveryTokenKind) {
-    constexpr std::array<TokenKind, 71> kinds = {
+    constexpr std::array<TokenKind, 72> kinds = {
         TokenKind::Eof, TokenKind::Ident, TokenKind::IntLit, TokenKind::CharLit,
         TokenKind::StringLit, TokenKind::Invalid, TokenKind::Fn, TokenKind::If,
         TokenKind::Then, TokenKind::Else, TokenKind::Return, TokenKind::While,
         TokenKind::Do, TokenKind::For, TokenKind::Break, TokenKind::Continue,
         TokenKind::Switch, TokenKind::Case, TokenKind::Default, TokenKind::Sizeof,
-        TokenKind::Alignof, TokenKind::Typedef, TokenKind::Enum, TokenKind::Struct,
-        TokenKind::Union, TokenKind::StaticAssert, TokenKind::True, TokenKind::False,
-        TokenKind::Nullptr, TokenKind::Int, TokenKind::Long, TokenKind::Short,
-        TokenKind::Char, TokenKind::Bool, TokenKind::Void, TokenKind::Signed,
-        TokenKind::Unsigned, TokenKind::Const, TokenKind::Volatile, TokenKind::Restrict,
-        TokenKind::Static, TokenKind::Extern, TokenKind::Auto, TokenKind::Register,
-        TokenKind::Inline, TokenKind::LParen, TokenKind::RParen, TokenKind::LBrace,
-        TokenKind::RBrace, TokenKind::LBracket, TokenKind::RBracket, TokenKind::Dot,
-        TokenKind::Arrow, TokenKind::Semicolon, TokenKind::Comma, TokenKind::Question,
-        TokenKind::Colon, TokenKind::Assign, TokenKind::PlusAssign, TokenKind::MinusAssign,
-        TokenKind::StarAssign, TokenKind::SlashAssign, TokenKind::PercentAssign,
-        TokenKind::AmpAssign, TokenKind::PipeAssign, TokenKind::CaretAssign,
-        TokenKind::ShlAssign, TokenKind::ShrAssign, TokenKind::Plus, TokenKind::Minus,
-        TokenKind::Star
+        TokenKind::Alignof, TokenKind::Alignas, TokenKind::Typedef, TokenKind::Enum,
+        TokenKind::Struct, TokenKind::Union, TokenKind::StaticAssert, TokenKind::True,
+        TokenKind::False, TokenKind::Nullptr, TokenKind::Int, TokenKind::Long,
+        TokenKind::Short, TokenKind::Char, TokenKind::Bool, TokenKind::Void,
+        TokenKind::Signed, TokenKind::Unsigned, TokenKind::Const, TokenKind::Volatile,
+        TokenKind::Restrict, TokenKind::Static, TokenKind::Extern, TokenKind::Auto,
+        TokenKind::Register, TokenKind::Inline, TokenKind::LParen, TokenKind::RParen,
+        TokenKind::LBrace, TokenKind::RBrace, TokenKind::LBracket, TokenKind::RBracket,
+        TokenKind::Dot, TokenKind::Arrow, TokenKind::Semicolon, TokenKind::Comma,
+        TokenKind::Question, TokenKind::Colon, TokenKind::Assign, TokenKind::PlusAssign,
+        TokenKind::MinusAssign, TokenKind::StarAssign, TokenKind::SlashAssign,
+        TokenKind::PercentAssign, TokenKind::AmpAssign, TokenKind::PipeAssign,
+        TokenKind::CaretAssign, TokenKind::ShlAssign, TokenKind::ShrAssign,
+        TokenKind::Plus, TokenKind::Minus, TokenKind::Star
     };
     for (TokenKind kind : kinds)
         EXPECT_FALSE(std::string_view(tokenName(kind)).empty());
@@ -93,7 +93,7 @@ TEST(MiniCFeatureCoverageTest, LexerRecognizesKeywordsOperatorsLiteralsAndInvali
     auto kinds = lexKinds(R"mini(
 // line comment
 /* block comment */
-fn if then else return while do for break continue switch case default sizeof alignof _Alignof
+fn if then else return while do for break continue switch case default sizeof alignof _Alignof alignas _Alignas
 typedef enum struct union static_assert _Static_assert true false nullptr
 int long short char bool _Bool void signed unsigned const volatile restrict static extern auto register inline
 ( ) { } [ ] . -> ; , ? : = += -= *= /= %= &= |= ^= <<= >>= + - * / % ++ -- == != < <= > >= & | ^ ~ ! && || << >>
@@ -103,6 +103,7 @@ int long short char bool _Bool void signed unsigned const volatile restrict stat
     EXPECT_EQ(kinds.back(), TokenKind::Invalid);
     EXPECT_NE(std::find(kinds.begin(), kinds.end(), TokenKind::Struct), kinds.end());
     EXPECT_NE(std::find(kinds.begin(), kinds.end(), TokenKind::Union), kinds.end());
+    EXPECT_NE(std::find(kinds.begin(), kinds.end(), TokenKind::Alignas), kinds.end());
     EXPECT_NE(std::find(kinds.begin(), kinds.end(), TokenKind::Arrow), kinds.end());
     EXPECT_NE(std::find(kinds.begin(), kinds.end(), TokenKind::StringLit), kinds.end());
 }

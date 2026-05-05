@@ -9,7 +9,7 @@ enum class TokenKind {
     Eof, Ident, IntLit, CharLit, StringLit,
     Invalid,
     Fn, If, Then, Else, Return, While, Do, For, Break, Continue,
-    Switch, Case, Default, Sizeof, Alignof, Typedef, Enum, Struct, Union, StaticAssert,
+    Switch, Case, Default, Sizeof, Alignof, Alignas, Typedef, Enum, Struct, Union, StaticAssert,
     True, False, Nullptr,
     Int, Long, Short, Char, Bool, Void,
     Signed, Unsigned, Const, Volatile, Restrict,
