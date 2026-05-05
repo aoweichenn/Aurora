@@ -56,6 +56,21 @@ long array_sum() {
     *cursor = 4;
     return values[0] + values[1];
 }
+
+typedef unsigned long usize;
+
+enum Mode {
+    MODE_ZERO,
+    MODE_ONE = 4,
+};
+
+static_assert(MODE_ONE == 4, "enum constants work");
+
+long use_c23_bits(usize value) {
+    bool ok = true;
+    long casted = (long)value;
+    return ok && nullptr == 0 ? casted + MODE_ONE : 0;
+}
 ```
 
 This exercises:
