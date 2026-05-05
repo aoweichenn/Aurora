@@ -217,6 +217,8 @@ unsigned AIRInstruction::getOperand(const unsigned idx) const {
         }
         return phiIncomings_[idx / 2].second;
     }
+    if (opcode_ == AIROpcode::GetElementPtr && idx > 0)
+        return gepIndices_[idx - 1];
     return operands_[idx];
 }
 unsigned AIRInstruction::getNumOperands() const noexcept {
@@ -228,6 +230,7 @@ unsigned AIRInstruction::getNumOperands() const noexcept {
         case AIROpcode::ICmp:     return 2;
         case AIROpcode::Load:     return 1;
         case AIROpcode::Alloca:   return 0;
+        case AIROpcode::GetElementPtr: return static_cast<unsigned>(1 + gepIndices_.size());
         case AIROpcode::ConstantInt:  return 0;
         case AIROpcode::GlobalAddress: return 0;
         case AIROpcode::Switch:   return 1;

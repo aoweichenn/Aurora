@@ -1,6 +1,7 @@
 #include "Lexer.h"
 #include <cctype>
 #include <cstdlib>
+#include <stdexcept>
 
 namespace minic {
 
@@ -9,6 +10,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Eof:    return "EOF";
     case TokenKind::Ident:  return "Identifier";
     case TokenKind::IntLit: return "Integer";
+    case TokenKind::CharLit:return "Character";
     case TokenKind::Invalid:return "Invalid";
     case TokenKind::Fn:     return "fn";
     case TokenKind::If:     return "if";
@@ -16,9 +18,14 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Else:   return "else";
     case TokenKind::Return: return "return";
     case TokenKind::While:  return "while";
+    case TokenKind::Do:     return "do";
     case TokenKind::For:    return "for";
     case TokenKind::Break:  return "break";
     case TokenKind::Continue:return "continue";
+    case TokenKind::Switch: return "switch";
+    case TokenKind::Case:   return "case";
+    case TokenKind::Default:return "default";
+    case TokenKind::Sizeof: return "sizeof";
     case TokenKind::Int:    return "int";
     case TokenKind::Long:   return "long";
     case TokenKind::Char:   return "char";
@@ -27,6 +34,8 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::RParen: return ")";
     case TokenKind::LBrace: return "{";
     case TokenKind::RBrace: return "}";
+    case TokenKind::LBracket:return "[";
+    case TokenKind::RBracket:return "]";
     case TokenKind::Semicolon:return ";";
     case TokenKind::Question:return "?";
     case TokenKind::Colon:  return ":";
@@ -36,6 +45,11 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::StarAssign:return "*=";
     case TokenKind::SlashAssign:return "/=";
     case TokenKind::PercentAssign:return "%=";
+    case TokenKind::AmpAssign:return "&=";
+    case TokenKind::PipeAssign:return "|=";
+    case TokenKind::CaretAssign:return "^=";
+    case TokenKind::ShlAssign:return "<<=";
+    case TokenKind::ShrAssign:return ">>=";
     case TokenKind::Plus:   return "+";
     case TokenKind::Minus:  return "-";
     case TokenKind::Star:   return "*";
@@ -91,13 +105,84 @@ void Lexer::skipWhitespace() {
 
 Token Lexer::readNumber() {
     size_t start = pos_;
-    while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_])))
-        ++pos_;
+    int base = 10;
+    if (source_[pos_] == '0' && pos_ + 1 < source_.size()) {
+        const char prefix = source_[pos_ + 1];
+        if (prefix == 'x' || prefix == 'X') {
+            base = 16;
+            pos_ += 2;
+            while (pos_ < source_.size() && std::isxdigit(static_cast<unsigned char>(source_[pos_])))
+                ++pos_;
+        } else if (prefix == 'b' || prefix == 'B') {
+            base = 2;
+            pos_ += 2;
+            while (pos_ < source_.size() && (source_[pos_] == '0' || source_[pos_] == '1'))
+                ++pos_;
+        } else {
+            base = 8;
+            ++pos_;
+            while (pos_ < source_.size() && source_[pos_] >= '0' && source_[pos_] <= '7')
+                ++pos_;
+        }
+    } else {
+        while (pos_ < source_.size() && std::isdigit(static_cast<unsigned char>(source_[pos_])))
+            ++pos_;
+    }
+    while (pos_ < source_.size()) {
+        const char suffix = source_[pos_];
+        if (suffix == 'u' || suffix == 'U' || suffix == 'l' || suffix == 'L')
+            ++pos_;
+        else
+            break;
+    }
     Token tok;
     tok.kind = TokenKind::IntLit;
     tok.lexeme = std::string(source_.substr(start, pos_ - start));
-    tok.intValue = std::stoll(tok.lexeme);
+    std::string digits = tok.lexeme;
+    while (!digits.empty()) {
+        const char suffix = digits.back();
+        if (suffix == 'u' || suffix == 'U' || suffix == 'l' || suffix == 'L')
+            digits.pop_back();
+        else
+            break;
+    }
+    if (base == 2 && digits.size() > 2)
+        digits = digits.substr(2);
+    tok.intValue = std::stoll(digits, nullptr, base);
     return tok;
+}
+
+char Lexer::readEscapedChar() {
+    if (pos_ >= source_.size())
+        return '\0';
+    char c = source_[pos_++];
+    if (c != '\\')
+        return c;
+    if (pos_ >= source_.size())
+        return '\0';
+    c = source_[pos_++];
+    switch (c) {
+    case '0': return '\0';
+    case 'n': return '\n';
+    case 'r': return '\r';
+    case 't': return '\t';
+    case '\\': return '\\';
+    case '\'': return '\'';
+    case '"': return '"';
+    default: return c;
+    }
+}
+
+Token Lexer::readCharLiteral() {
+    size_t start = pos_;
+    ++pos_;
+    if (pos_ >= source_.size())
+        return {TokenKind::Invalid, "'", 0};
+    char value = readEscapedChar();
+    if (pos_ >= source_.size() || source_[pos_] != '\'')
+        return {TokenKind::Invalid, std::string(source_.substr(start, pos_ - start)), 0};
+    ++pos_;
+    return {TokenKind::CharLit, std::string(source_.substr(start, pos_ - start)), value};
 }
 
 Token Lexer::readIdent() {
@@ -114,9 +199,14 @@ Token Lexer::readIdent() {
     else if (lexeme == "else")  tok.kind = TokenKind::Else;
     else if (lexeme == "return") tok.kind = TokenKind::Return;
     else if (lexeme == "while") tok.kind = TokenKind::While;
+    else if (lexeme == "do") tok.kind = TokenKind::Do;
     else if (lexeme == "for") tok.kind = TokenKind::For;
     else if (lexeme == "break") tok.kind = TokenKind::Break;
     else if (lexeme == "continue") tok.kind = TokenKind::Continue;
+    else if (lexeme == "switch") tok.kind = TokenKind::Switch;
+    else if (lexeme == "case") tok.kind = TokenKind::Case;
+    else if (lexeme == "default") tok.kind = TokenKind::Default;
+    else if (lexeme == "sizeof") tok.kind = TokenKind::Sizeof;
     else if (lexeme == "int") tok.kind = TokenKind::Int;
     else if (lexeme == "long") tok.kind = TokenKind::Long;
     else if (lexeme == "char") tok.kind = TokenKind::Char;
@@ -135,6 +225,7 @@ Token Lexer::next() {
     char c = source_[pos_];
 
     if (std::isdigit(static_cast<unsigned char>(c))) return readNumber();
+    if (c == '\'') return readCharLiteral();
     if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') return readIdent();
 
     ++pos_;
@@ -143,6 +234,8 @@ Token Lexer::next() {
     case ')': return {TokenKind::RParen, ")", 0};
     case '{': return {TokenKind::LBrace, "{", 0};
     case '}': return {TokenKind::RBrace, "}", 0};
+    case '[': return {TokenKind::LBracket, "[", 0};
+    case ']': return {TokenKind::RBracket, "]", 0};
     case ';': return {TokenKind::Semicolon, ";", 0};
     case '?': return {TokenKind::Question, "?", 0};
     case ':': return {TokenKind::Colon, ":", 0};
@@ -182,6 +275,7 @@ Token Lexer::next() {
         }
         if (pos_ < source_.size() && source_[pos_] == '<') {
             ++pos_;
+            if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::ShlAssign, "<<=", 0}; }
             return {TokenKind::Shl, "<<", 0};
         }
         return {TokenKind::Lt, "<", 0};
@@ -192,17 +286,22 @@ Token Lexer::next() {
         }
         if (pos_ < source_.size() && source_[pos_] == '>') {
             ++pos_;
+            if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::ShrAssign, ">>=", 0}; }
             return {TokenKind::Shr, ">>", 0};
         }
         return {TokenKind::Gt, ">", 0};
     case ',': return {TokenKind::Comma, ",", 0};
     case '&':
+        if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::AmpAssign, "&=", 0}; }
         if (pos_ < source_.size() && source_[pos_] == '&') { ++pos_; return {TokenKind::AmpAmp, "&&", 0}; }
         return {TokenKind::Amp, "&", 0};
     case '|':
+        if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::PipeAssign, "|=", 0}; }
         if (pos_ < source_.size() && source_[pos_] == '|') { ++pos_; return {TokenKind::PipePipe, "||", 0}; }
         return {TokenKind::Pipe, "|", 0};
-    case '^': return {TokenKind::Caret, "^", 0};
+    case '^':
+        if (pos_ < source_.size() && source_[pos_] == '=') { ++pos_; return {TokenKind::CaretAssign, "^=", 0}; }
+        return {TokenKind::Caret, "^", 0};
     case '~': return {TokenKind::Tilde, "~", 0};
     }
     return {TokenKind::Invalid, std::string(1, c), 0};

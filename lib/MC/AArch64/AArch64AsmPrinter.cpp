@@ -188,7 +188,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
             oss << "ldr\t";
             printOperand(mi.getOperand(1), oss);
             oss << ", ";
-            printOperand(mi.getOperand(0), oss);
+            printAddressOperand(mi.getOperand(0), oss);
         }
         break;
     case AArch64::STRfi:
@@ -196,7 +196,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr& mi) {
             oss << "str\t";
             printOperand(mi.getOperand(0), oss);
             oss << ", ";
-            printOperand(mi.getOperand(1), oss);
+            printAddressOperand(mi.getOperand(1), oss);
         }
         break;
     case AArch64::STPpre:
@@ -265,6 +265,14 @@ void AArch64AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os)
         os << "?";
         break;
     }
+}
+
+void AArch64AsmPrinter::printAddressOperand(const MachineOperand& mo, std::ostream& os) const {
+    if (mo.getKind() == MachineOperandKind::MO_Register) {
+        os << "[" << AArch64RegisterInfo::getReg(mo.getReg()).name << "]";
+        return;
+    }
+    printOperand(mo, os);
 }
 
 void AArch64AsmPrinter::printLabelOperand(const MachineOperand& mo, std::ostream& os) const {

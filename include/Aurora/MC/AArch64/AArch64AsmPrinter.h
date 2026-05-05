@@ -23,6 +23,7 @@ private:
     std::string currentFunctionName_;
 
     void printOperand(const MachineOperand& mo, std::ostream& os) const;
+    void printAddressOperand(const MachineOperand& mo, std::ostream& os) const;
     void printLabelOperand(const MachineOperand& mo, std::ostream& os) const;
     [[nodiscard]] std::string labelName(const std::string& blockName) const;
     [[nodiscard]] std::string symbolName(const std::string& name) const;

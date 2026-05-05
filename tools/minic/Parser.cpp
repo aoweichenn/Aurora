@@ -3,6 +3,20 @@
 
 namespace minic {
 
+namespace {
+
+bool isAssignableExpr(const Expr* expr) {
+    if (dynamic_cast<const VarExpr*>(expr))
+        return true;
+    if (dynamic_cast<const IndexExpr*>(expr))
+        return true;
+    if (auto* unary = dynamic_cast<const UnaryExpr*>(expr))
+        return unary->op == UnaryExpr::Deref;
+    return false;
+}
+
+} // namespace
+
 Parser::Parser(Lexer& lexer) : lexer_(lexer), current_(lexer.next()) {}
 
 void Parser::advance() {
@@ -42,7 +56,7 @@ bool Parser::isTypeToken(TokenKind kind) const {
            kind == TokenKind::Char || kind == TokenKind::Void;
 }
 
-CType Parser::parseType() {
+CType Parser::parseBaseType() {
     CType type;
     if (match(TokenKind::Int)) {
         type.kind = CTypeKind::Int;
@@ -64,11 +78,21 @@ CType Parser::parseType() {
     throw std::runtime_error("Expected type name");
 }
 
+CType Parser::parsePointerSuffix(CType type) {
+    while (match(TokenKind::Star))
+        ++type.pointerDepth;
+    return type;
+}
+
+CType Parser::parseType() {
+    return parsePointerSuffix(parseBaseType());
+}
+
 Function Parser::parseFunction() {
     if (current_.kind == TokenKind::Fn)
         return parseLegacyFunction();
 
-    CType returnType = parseType();
+    CType returnType = parsePointerSuffix(parseBaseType());
     std::string name = consume(TokenKind::Ident).lexeme;
     consume(TokenKind::LParen);
     std::vector<Param> params = parseParamList();
@@ -103,17 +127,18 @@ std::vector<Param> Parser::parseParamList() {
         return params;
 
     if (current_.kind == TokenKind::Void) {
-        CType voidType = parseType();
+        CType voidType = parseBaseType();
         if (current_.kind == TokenKind::RParen)
             return params;
+        voidType = parsePointerSuffix(voidType);
         params.push_back({voidType, consume(TokenKind::Ident).lexeme});
     } else {
-        CType type = parseType();
+        CType type = parsePointerSuffix(parseBaseType());
         params.push_back({type, consume(TokenKind::Ident).lexeme});
     }
 
     while (match(TokenKind::Comma)) {
-        CType type = parseType();
+        CType type = parsePointerSuffix(parseBaseType());
         params.push_back({type, consume(TokenKind::Ident).lexeme});
     }
     return params;
@@ -130,8 +155,14 @@ std::unique_ptr<Stmt> Parser::parseStmt() {
         return parseIfStmt();
     if (current_.kind == TokenKind::While)
         return parseWhileStmt();
+    if (current_.kind == TokenKind::Do)
+        return parseDoWhileStmt();
     if (current_.kind == TokenKind::For)
         return parseForStmt();
+    if (current_.kind == TokenKind::Switch)
+        return parseSwitchStmt();
+    if (current_.kind == TokenKind::Case || current_.kind == TokenKind::Default)
+        throw std::runtime_error("case/default label used outside of switch");
     if (match(TokenKind::Break)) {
         consume(TokenKind::Semicolon);
         return std::make_unique<BreakStmt>();
@@ -153,22 +184,30 @@ std::unique_ptr<BlockStmt> Parser::parseBlock() {
 }
 
 std::unique_ptr<Stmt> Parser::parseDeclStmt(bool consumeSemicolon) {
-    CType type = parseType();
-    if (type.isVoid())
-        throw std::runtime_error("Variables cannot have void type");
+    CType baseType = parseBaseType();
 
     std::vector<DeclStmt::Declarator> declarators;
     do {
+        CType type = parsePointerSuffix(baseType);
         std::string name = consume(TokenKind::Ident).lexeme;
+        if (match(TokenKind::LBracket)) {
+            Token size = consume(TokenKind::IntLit);
+            if (size.intValue <= 0)
+                throw std::runtime_error("Array size must be positive");
+            type.arraySize = static_cast<uint64_t>(size.intValue);
+            consume(TokenKind::RBracket);
+        }
+        if (type.isVoid())
+            throw std::runtime_error("Variables cannot have void type");
         std::unique_ptr<Expr> init;
         if (match(TokenKind::Assign))
-            init = parseExpr();
-        declarators.emplace_back(std::move(name), std::move(init));
+            init = parseAssignment();
+        declarators.emplace_back(type, std::move(name), std::move(init));
     } while (match(TokenKind::Comma));
 
     if (consumeSemicolon)
         consume(TokenKind::Semicolon);
-    return std::make_unique<DeclStmt>(type, std::move(declarators));
+    return std::make_unique<DeclStmt>(std::move(declarators));
 }
 
 std::unique_ptr<Stmt> Parser::parseReturnStmt() {
@@ -200,6 +239,17 @@ std::unique_ptr<Stmt> Parser::parseWhileStmt() {
     return std::make_unique<WhileStmt>(std::move(cond), parseStmt());
 }
 
+std::unique_ptr<Stmt> Parser::parseDoWhileStmt() {
+    consume(TokenKind::Do);
+    auto body = parseStmt();
+    consume(TokenKind::While);
+    consume(TokenKind::LParen);
+    auto cond = parseExpr();
+    consume(TokenKind::RParen);
+    consume(TokenKind::Semicolon);
+    return std::make_unique<DoWhileStmt>(std::move(body), std::move(cond));
+}
+
 std::unique_ptr<Stmt> Parser::parseForStmt() {
     consume(TokenKind::For);
     consume(TokenKind::LParen);
@@ -228,6 +278,40 @@ std::unique_ptr<Stmt> Parser::parseForStmt() {
     return std::make_unique<ForStmt>(std::move(init), std::move(cond), std::move(step), parseStmt());
 }
 
+std::unique_ptr<Stmt> Parser::parseSwitchStmt() {
+    consume(TokenKind::Switch);
+    consume(TokenKind::LParen);
+    auto cond = parseExpr();
+    consume(TokenKind::RParen);
+    consume(TokenKind::LBrace);
+
+    bool sawDefault = false;
+    std::vector<SwitchStmt::Section> sections;
+    while (current_.kind != TokenKind::RBrace && current_.kind != TokenKind::Eof) {
+        std::unique_ptr<Expr> value;
+        if (match(TokenKind::Case)) {
+            value = parseAssignment();
+            consume(TokenKind::Colon);
+        } else if (match(TokenKind::Default)) {
+            if (sawDefault)
+                throw std::runtime_error("Duplicate default label in switch");
+            sawDefault = true;
+            consume(TokenKind::Colon);
+        } else {
+            throw std::runtime_error("Expected case/default label in switch body");
+        }
+
+        std::vector<std::unique_ptr<Stmt>> statements;
+        while (current_.kind != TokenKind::Case && current_.kind != TokenKind::Default &&
+               current_.kind != TokenKind::RBrace && current_.kind != TokenKind::Eof) {
+            statements.push_back(parseStmt());
+        }
+        sections.emplace_back(std::move(value), std::move(statements));
+    }
+    consume(TokenKind::RBrace);
+    return std::make_unique<SwitchStmt>(std::move(cond), std::move(sections));
+}
+
 std::unique_ptr<Stmt> Parser::parseExprStmt() {
     if (match(TokenKind::Semicolon))
         return std::make_unique<ExprStmt>(nullptr);
@@ -237,7 +321,14 @@ std::unique_ptr<Stmt> Parser::parseExprStmt() {
 }
 
 std::unique_ptr<Expr> Parser::parseExpr() {
-    return parseAssignment();
+    return parseComma();
+}
+
+std::unique_ptr<Expr> Parser::parseComma() {
+    auto left = parseAssignment();
+    while (match(TokenKind::Comma))
+        left = std::make_unique<CommaExpr>(std::move(left), parseAssignment());
+    return left;
 }
 
 std::unique_ptr<Expr> Parser::parseAssignment() {
@@ -251,17 +342,20 @@ std::unique_ptr<Expr> Parser::parseAssignment() {
     case TokenKind::StarAssign: op = AssignExpr::MulAssign; break;
     case TokenKind::SlashAssign: op = AssignExpr::DivAssign; break;
     case TokenKind::PercentAssign: op = AssignExpr::RemAssign; break;
+    case TokenKind::AmpAssign: op = AssignExpr::BitAndAssign; break;
+    case TokenKind::PipeAssign: op = AssignExpr::BitOrAssign; break;
+    case TokenKind::CaretAssign: op = AssignExpr::BitXorAssign; break;
+    case TokenKind::ShlAssign: op = AssignExpr::ShlAssign; break;
+    case TokenKind::ShrAssign: op = AssignExpr::ShrAssign; break;
     default: isAssign = false; op = AssignExpr::Assign; break;
     }
     if (!isAssign)
         return left;
 
-    auto* var = dynamic_cast<VarExpr*>(left.get());
-    if (!var)
-        throw std::runtime_error("Left side of assignment must be a variable");
-    std::string name = var->name;
+    if (!isAssignableExpr(left.get()))
+        throw std::runtime_error("Left side of assignment must be assignable");
     advance();
-    return std::make_unique<AssignExpr>(op, std::move(name), parseAssignment());
+    return std::make_unique<AssignExpr>(op, std::move(left), parseAssignment());
 }
 
 std::unique_ptr<Expr> Parser::parseConditional() {
@@ -376,10 +470,31 @@ std::unique_ptr<Expr> Parser::parseMul() {
 }
 
 std::unique_ptr<Expr> Parser::parseUnary() {
-    if (match(TokenKind::PlusPlus))
-        return std::make_unique<IncDecExpr>(consume(TokenKind::Ident).lexeme, true, true);
-    if (match(TokenKind::MinusMinus))
-        return std::make_unique<IncDecExpr>(consume(TokenKind::Ident).lexeme, false, true);
+    if (match(TokenKind::PlusPlus)) {
+        auto target = parseUnary();
+        if (!isAssignableExpr(target.get()))
+            throw std::runtime_error("Prefix increment/decrement requires an assignable expression");
+        return std::make_unique<IncDecExpr>(std::move(target), true, true);
+    }
+    if (match(TokenKind::MinusMinus)) {
+        auto target = parseUnary();
+        if (!isAssignableExpr(target.get()))
+            throw std::runtime_error("Prefix increment/decrement requires an assignable expression");
+        return std::make_unique<IncDecExpr>(std::move(target), false, true);
+    }
+    if (match(TokenKind::Sizeof)) {
+        if (match(TokenKind::LParen)) {
+            if (isTypeToken(current_.kind)) {
+                CType type = parseType();
+                consume(TokenKind::RParen);
+                return std::make_unique<SizeofExpr>(type);
+            }
+            auto expr = parseExpr();
+            consume(TokenKind::RParen);
+            return std::make_unique<SizeofExpr>(std::move(expr));
+        }
+        return std::make_unique<SizeofExpr>(parseUnary());
+    }
     if (match(TokenKind::Plus))
         return std::make_unique<UnaryExpr>(UnaryExpr::Plus, parseUnary());
     if (match(TokenKind::Minus))
@@ -388,24 +503,41 @@ std::unique_ptr<Expr> Parser::parseUnary() {
         return std::make_unique<UnaryExpr>(UnaryExpr::LogicalNot, parseUnary());
     if (match(TokenKind::Tilde))
         return std::make_unique<UnaryExpr>(UnaryExpr::BitNot, parseUnary());
+    if (match(TokenKind::Amp)) {
+        auto target = parseUnary();
+        if (!isAssignableExpr(target.get()))
+            throw std::runtime_error("Address-of requires an assignable expression");
+        return std::make_unique<UnaryExpr>(UnaryExpr::AddressOf, std::move(target));
+    }
+    if (match(TokenKind::Star))
+        return std::make_unique<UnaryExpr>(UnaryExpr::Deref, parseUnary());
     return parsePostfix();
 }
 
 std::unique_ptr<Expr> Parser::parsePostfix() {
     auto expr = parsePrimary();
-    while (current_.kind == TokenKind::PlusPlus || current_.kind == TokenKind::MinusMinus) {
-        bool increment = current_.kind == TokenKind::PlusPlus;
-        advance();
-        auto* var = dynamic_cast<VarExpr*>(expr.get());
-        if (!var)
-            throw std::runtime_error("Postfix increment/decrement requires a variable");
-        expr = std::make_unique<IncDecExpr>(var->name, increment, false);
+    while (true) {
+        if (match(TokenKind::LBracket)) {
+            auto index = parseExpr();
+            consume(TokenKind::RBracket);
+            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+            continue;
+        }
+        if (current_.kind == TokenKind::PlusPlus || current_.kind == TokenKind::MinusMinus) {
+            bool increment = current_.kind == TokenKind::PlusPlus;
+            advance();
+            if (!isAssignableExpr(expr.get()))
+                throw std::runtime_error("Postfix increment/decrement requires an assignable expression");
+            expr = std::make_unique<IncDecExpr>(std::move(expr), increment, false);
+            continue;
+        }
+        break;
     }
     return expr;
 }
 
 std::unique_ptr<Expr> Parser::parsePrimary() {
-    if (current_.kind == TokenKind::IntLit) {
+    if (current_.kind == TokenKind::IntLit || current_.kind == TokenKind::CharLit) {
         int64_t value = current_.intValue;
         advance();
         return std::make_unique<IntLitExpr>(value);
@@ -417,9 +549,9 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         if (match(TokenKind::LParen)) {
             std::vector<std::unique_ptr<Expr>> args;
             if (current_.kind != TokenKind::RParen) {
-                args.push_back(parseExpr());
+                args.push_back(parseAssignment());
                 while (match(TokenKind::Comma))
-                    args.push_back(parseExpr());
+                    args.push_back(parseAssignment());
             }
             consume(TokenKind::RParen);
             return std::make_unique<CallExpr>(std::move(name), std::move(args));

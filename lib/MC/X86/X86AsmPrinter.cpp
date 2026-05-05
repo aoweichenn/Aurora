@@ -24,7 +24,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
         case X86::MOV64rm:
             if (mi.getNumOperands() >= 2) {
                 oss << "movq\t";
-                printOperand(mi.getOperand(1), oss);
+                printAddressOperand(mi.getOperand(1), oss);
                 oss << ", ";
                 printOperand(mi.getOperand(0), oss);
             }
@@ -34,7 +34,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 oss << "movq\t";
                 printOperand(mi.getOperand(1), oss);
                 oss << ", ";
-                printOperand(mi.getOperand(0), oss);
+                printAddressOperand(mi.getOperand(0), oss);
             }
             break;
         case X86::MOV32rr:
@@ -135,6 +135,22 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
                 printOperand(mi.getOperand(1), oss);
             }
             break;
+        case X86::SHR64ri:
+            if (mi.getNumOperands() >= 2) {
+                oss << "shrq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
+        case X86::SAR64ri:
+            if (mi.getNumOperands() >= 2) {
+                oss << "sarq\t";
+                printOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
+            }
+            break;
         case X86::CMP64rr:
             if (mi.getNumOperands() >= 2) {
                 oss << "cmpq\t";
@@ -217,6 +233,14 @@ void X86AsmPrinter::emitInstruction(const MachineInstr& mi) {
             if (mi.getNumOperands() >= 1) {
                 oss << "popq\t";
                 printOperand(mi.getOperand(0), oss);
+            }
+            break;
+        case X86::LEA64r:
+            if (mi.getNumOperands() >= 2) {
+                oss << "leaq\t";
+                printAddressOperand(mi.getOperand(0), oss);
+                oss << ", ";
+                printOperand(mi.getOperand(1), oss);
             }
             break;
         case X86::JE_1:
@@ -383,6 +407,16 @@ void X86AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) con
             os << "?";
             break;
     }
+}
+
+void X86AsmPrinter::printAddressOperand(const MachineOperand& mo, std::ostream& os) const
+{
+    if (mo.getKind() == MachineOperandKind::MO_Register) {
+        const auto reg = X86RegisterInfo::getReg(mo.getReg());
+        os << "(%" << reg.name << ")";
+        return;
+    }
+    printOperand(mo, os);
 }
 
 void X86AsmPrinter::print8BitOperand(const MachineOperand& mo, std::ostream& os) const

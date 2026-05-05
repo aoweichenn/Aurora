@@ -21,20 +21,23 @@ private:
         unsigned pointerVReg;
     };
 
-    struct LoopTargets {
-        aurora::BasicBlock* breakTarget;
-        aurora::BasicBlock* continueTarget;
+    struct LValue {
+        CType type;
+        unsigned pointerVReg;
     };
 
     std::unique_ptr<aurora::Module> module_;
     aurora::AIRBuilder* builder_;
     std::unordered_map<std::string, aurora::Function*> functionMap_;
+    std::unordered_map<std::string, CType> functionReturnTypes_;
     std::vector<std::unordered_map<std::string, Variable>> scopes_;
-    std::vector<LoopTargets> loopStack_;
+    std::vector<aurora::BasicBlock*> breakStack_;
+    std::vector<aurora::BasicBlock*> continueStack_;
     CType currentReturnType_;
     unsigned ifCounter_ = 0;
     unsigned loopCounter_ = 0;
     unsigned conditionalCounter_ = 0;
+    unsigned switchCounter_ = 0;
 
     aurora::Type* toAirType(CType type, bool allowVoid = true) const;
 
@@ -44,7 +47,9 @@ private:
     void genReturnStmt(const ReturnStmt& stmt);
     void genIfStmt(const IfStmt& stmt);
     void genWhileStmt(const WhileStmt& stmt);
+    void genDoWhileStmt(const DoWhileStmt& stmt);
     void genForStmt(const ForStmt& stmt);
+    void genSwitchStmt(const SwitchStmt& stmt);
     void genExprStmt(const ExprStmt& stmt);
     void genBreakStmt();
     void genContinueStmt();
@@ -55,12 +60,20 @@ private:
     unsigned genUnaryExpr(const UnaryExpr& ue);
     unsigned genAssignExpr(const AssignExpr& ae);
     unsigned genIncDecExpr(const IncDecExpr& ie);
+    unsigned genIndexExpr(const IndexExpr& ie);
+    unsigned genSizeofExpr(const SizeofExpr& se);
+    unsigned genCommaExpr(const CommaExpr& ce);
     unsigned genCallExpr(const CallExpr& ce);
     unsigned genConditionalExpr(const ConditionalExpr& ce);
     unsigned genIntLitExpr(const IntLitExpr& ie) const;
     unsigned genVarExpr(const VarExpr& ve);
     unsigned genConditionValue(const Expr& expr);
     bool containsCall(const Expr& expr) const;
+    LValue genLValue(const Expr& expr);
+    unsigned genAddressOfVariable(const VarExpr& ve);
+    uint64_t sizeOfType(CType type) const;
+    int64_t evalConstantExpr(const Expr& expr) const;
+    CType inferExprType(const Expr& expr);
 
     Variable& findVariable(const std::string& name);
     void declareVariable(const std::string& name, CType type, const Expr* init);

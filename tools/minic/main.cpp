@@ -87,11 +87,11 @@ int main(int argc, char** argv) {
         // Phase 3: Print AIR IR
         std::cout << "; === AIR IR ===\n";
         for (auto& fn : module->getFunctions()) {
-            std::cout << "define i64 @" << fn->getName() << "(";
             auto* fnTy = fn->getFunctionType();
+            std::cout << "define " << fnTy->getReturnType()->toString() << " @" << fn->getName() << "(";
             for (size_t i = 0; i < fnTy->getNumParams(); ++i) {
                 if (i > 0) std::cout << ", ";
-                std::cout << "i64";
+                std::cout << fnTy->getParamTypes()[i]->toString();
             }
             std::cout << ") {\n";
             for (auto& bb : fn->getBlocks()) {

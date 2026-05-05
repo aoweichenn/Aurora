@@ -12,8 +12,31 @@ enum class CTypeKind { Void, Int, Long, Char };
 
 struct CType {
     CTypeKind kind = CTypeKind::Long;
+    unsigned pointerDepth = 0;
+    uint64_t arraySize = 0;
 
-    [[nodiscard]] bool isVoid() const noexcept { return kind == CTypeKind::Void; }
+    [[nodiscard]] bool isVoid() const noexcept { return kind == CTypeKind::Void && pointerDepth == 0 && arraySize == 0; }
+    [[nodiscard]] bool isPointerLike() const noexcept { return pointerDepth > 0 || arraySize > 0; }
+
+    [[nodiscard]] CType decayArray() const noexcept {
+        CType result = *this;
+        if (result.arraySize > 0) {
+            result.arraySize = 0;
+            ++result.pointerDepth;
+        }
+        return result;
+    }
+
+    [[nodiscard]] CType pointee() const noexcept {
+        CType result = *this;
+        if (result.arraySize > 0) {
+            result.arraySize = 0;
+            return result;
+        }
+        if (result.pointerDepth > 0)
+            --result.pointerDepth;
+        return result;
+    }
 };
 
 struct ASTNode {
@@ -48,27 +71,51 @@ struct BinaryExpr : Expr {
 };
 
 struct UnaryExpr : Expr {
-    enum Op { Plus, Neg, LogicalNot, BitNot };
+    enum Op { Plus, Neg, LogicalNot, BitNot, AddressOf, Deref };
     Op op;
     std::unique_ptr<Expr> operand;
     UnaryExpr(Op o, std::unique_ptr<Expr> e) : op(o), operand(std::move(e)) {}
 };
 
 struct AssignExpr : Expr {
-    enum Op { Assign, AddAssign, SubAssign, MulAssign, DivAssign, RemAssign };
+    enum Op {
+        Assign, AddAssign, SubAssign, MulAssign, DivAssign, RemAssign,
+        BitAndAssign, BitOrAssign, BitXorAssign, ShlAssign, ShrAssign
+    };
     Op op;
-    std::string name;
+    std::unique_ptr<Expr> target;
     std::unique_ptr<Expr> value;
-    AssignExpr(Op o, std::string n, std::unique_ptr<Expr> v)
-        : op(o), name(std::move(n)), value(std::move(v)) {}
+    AssignExpr(Op o, std::unique_ptr<Expr> t, std::unique_ptr<Expr> v)
+        : op(o), target(std::move(t)), value(std::move(v)) {}
 };
 
 struct IncDecExpr : Expr {
-    std::string name;
+    std::unique_ptr<Expr> target;
     bool increment;
     bool prefix;
-    IncDecExpr(std::string n, bool inc, bool pre)
-        : name(std::move(n)), increment(inc), prefix(pre) {}
+    IncDecExpr(std::unique_ptr<Expr> t, bool inc, bool pre)
+        : target(std::move(t)), increment(inc), prefix(pre) {}
+};
+
+struct IndexExpr : Expr {
+    std::unique_ptr<Expr> base;
+    std::unique_ptr<Expr> index;
+    IndexExpr(std::unique_ptr<Expr> b, std::unique_ptr<Expr> i)
+        : base(std::move(b)), index(std::move(i)) {}
+};
+
+struct SizeofExpr : Expr {
+    CType type;
+    std::unique_ptr<Expr> expr;
+    explicit SizeofExpr(CType t) : type(t) {}
+    explicit SizeofExpr(std::unique_ptr<Expr> e) : expr(std::move(e)) {}
+};
+
+struct CommaExpr : Expr {
+    std::unique_ptr<Expr> lhs;
+    std::unique_ptr<Expr> rhs;
+    CommaExpr(std::unique_ptr<Expr> l, std::unique_ptr<Expr> r)
+        : lhs(std::move(l)), rhs(std::move(r)) {}
 };
 
 struct CallExpr : Expr {
@@ -98,15 +145,15 @@ struct ReturnStmt : Stmt {
 
 struct DeclStmt : Stmt {
     struct Declarator {
+        CType type;
         std::string name;
         std::unique_ptr<Expr> init;
-        Declarator(std::string n, std::unique_ptr<Expr> i)
-            : name(std::move(n)), init(std::move(i)) {}
+        Declarator(CType t, std::string n, std::unique_ptr<Expr> i)
+            : type(t), name(std::move(n)), init(std::move(i)) {}
     };
-    CType type;
     std::vector<Declarator> declarators;
-    DeclStmt(CType t, std::vector<Declarator> decls)
-        : type(t), declarators(std::move(decls)) {}
+    explicit DeclStmt(std::vector<Declarator> decls)
+        : declarators(std::move(decls)) {}
 };
 
 struct BlockStmt : Stmt {
@@ -128,6 +175,13 @@ struct WhileStmt : Stmt {
         : cond(std::move(c)), body(std::move(b)) {}
 };
 
+struct DoWhileStmt : Stmt {
+    std::unique_ptr<Stmt> body;
+    std::unique_ptr<Expr> cond;
+    DoWhileStmt(std::unique_ptr<Stmt> b, std::unique_ptr<Expr> c)
+        : body(std::move(b)), cond(std::move(c)) {}
+};
+
 struct ForStmt : Stmt {
     std::unique_ptr<Stmt> init;
     std::unique_ptr<Expr> cond;
@@ -140,6 +194,19 @@ struct ForStmt : Stmt {
 
 struct BreakStmt : Stmt {};
 struct ContinueStmt : Stmt {};
+
+struct SwitchStmt : Stmt {
+    struct Section {
+        std::unique_ptr<Expr> value;
+        std::vector<std::unique_ptr<Stmt>> statements;
+        Section(std::unique_ptr<Expr> v, std::vector<std::unique_ptr<Stmt>> s)
+            : value(std::move(v)), statements(std::move(s)) {}
+    };
+    std::unique_ptr<Expr> cond;
+    std::vector<Section> sections;
+    SwitchStmt(std::unique_ptr<Expr> c, std::vector<Section> s)
+        : cond(std::move(c)), sections(std::move(s)) {}
+};
 
 struct Param {
     CType type;

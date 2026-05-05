@@ -32,6 +32,21 @@ long sum_to(long n) {
     }
     return sum;
 }
+
+long classify(long value) {
+    switch (value) {
+    case 0:
+        return sizeof(long);
+    case 1:
+        return 'a' - 'a' + 1;
+    default:
+        return 2;
+    }
+}
+
+long first(long *items) {
+    return items[0];
+}
 ```
 
 这会触发：

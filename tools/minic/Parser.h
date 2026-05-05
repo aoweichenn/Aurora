@@ -22,7 +22,9 @@ private:
 
     Function parseFunction();
     Function parseLegacyFunction();
+    CType parseBaseType();
     CType parseType();
+    CType parsePointerSuffix(CType type);
     bool isTypeToken(TokenKind kind) const;
 
     std::vector<Param> parseParamList();
@@ -32,10 +34,13 @@ private:
     std::unique_ptr<Stmt> parseReturnStmt();
     std::unique_ptr<Stmt> parseIfStmt();
     std::unique_ptr<Stmt> parseWhileStmt();
+    std::unique_ptr<Stmt> parseDoWhileStmt();
     std::unique_ptr<Stmt> parseForStmt();
+    std::unique_ptr<Stmt> parseSwitchStmt();
     std::unique_ptr<Stmt> parseExprStmt();
 
     std::unique_ptr<Expr> parseExpr();
+    std::unique_ptr<Expr> parseComma();
     std::unique_ptr<Expr> parseAssignment();
     std::unique_ptr<Expr> parseConditional();
     std::unique_ptr<Expr> parseLogicalOr();

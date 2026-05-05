@@ -144,6 +144,9 @@ void X86InstrInfo::buildOpcodeTable() {
     setDesc(X86::SHL64rCL,"shlq\t%cl, $dst",  2, false, false, false, false, false, false, false);
     setDesc(X86::SHR64rCL,"shrq\t%cl, $dst",  2, false, false, false, false, false, false, false);
     setDesc(X86::SAR64rCL,"sarq\t%cl, $dst",  2, false, false, false, false, false, false, false);
+    setDesc(X86::SHL64ri, "shlq\t$src, $dst", 2, false, false, false, false, false, false, false);
+    setDesc(X86::SHR64ri, "shrq\t$src, $dst", 2, false, false, false, false, false, false, false);
+    setDesc(X86::SAR64ri, "sarq\t$src, $dst", 2, false, false, false, false, false, false, false);
 
     // Comparison
     setDesc(X86::CMP32rr, "cmpl\t$src, $dst", 2, false, false, false, false, false, true, false);

@@ -308,6 +308,7 @@ private:
                 case AIROpcode::Alloca: iselAlloca(mf, *mbb, mi); break;
                 case AIROpcode::Load: a64Load(*mbb, mi); break;
                 case AIROpcode::Store: a64Store(*mbb, mi); break;
+                case AIROpcode::GetElementPtr: a64GEP(*mbb, mi); break;
                 case AIROpcode::Call: a64Call(*mbb, mi); break;
                 case AIROpcode::SExt:
                 case AIROpcode::ZExt:
@@ -539,6 +540,26 @@ private:
         else
             store->addOperand(MachineOperand::createVReg(ptrVReg));
         replaceMI(mbb, mi, store);
+    }
+
+    void a64GEP(MachineBasicBlock& mbb, MachineInstr* mi) {
+        if (mi->getNumOperands() < 2) return;
+        unsigned baseVReg = mi->getOperand(0).getVirtualReg();
+        unsigned resultVReg = getResultVReg(mi);
+        auto frameIt = frameIndexMap_.find(baseVReg);
+        if (frameIt != frameIndexMap_.end()) {
+            auto* add = new MachineInstr(AArch64::ADDri);
+            add->addOperand(MachineOperand::createReg(AArch64RegisterInfo::FP));
+            add->addOperand(MachineOperand::createImm(-(frameIt->second + 1) * 8));
+            add->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, add);
+            return;
+        }
+
+        auto* mov = new MachineInstr(AArch64::MOVrr);
+        mov->addOperand(MachineOperand::createVReg(baseVReg));
+        mov->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, mov);
     }
 
     void a64Call(MachineBasicBlock& mbb, MachineInstr* mi) {
@@ -811,6 +832,30 @@ private:
             default: x86Op = 0; break;
             }
         }
+        else if (airOp == AIROpcode::Shl || airOp == AIROpcode::LShr || airOp == AIROpcode::AShr) {
+            if (rhsIsConst) {
+                switch (airOp) {
+                case AIROpcode::Shl: x86Op = X86::SHL64ri; break;
+                case AIROpcode::LShr: x86Op = X86::SHR64ri; break;
+                case AIROpcode::AShr: x86Op = X86::SAR64ri; break;
+                default: x86Op = 0; break;
+                }
+                auto* newMI = new MachineInstr(x86Op);
+                newMI->addOperand(MachineOperand::createImm(rhsConst));
+                newMI->addOperand(MachineOperand::createVReg(resultVReg));
+                replaceMI(mbb, mi, newMI);
+            } else {
+                auto* movCount = new MachineInstr(X86::MOV64rr);
+                movCount->addOperand(MachineOperand::createVReg(rhsVReg));
+                movCount->addOperand(MachineOperand::createReg(X86RegisterInfo::RCX));
+                mbb.insertBefore(mi, movCount);
+
+                x86Op = X86OpcodeMapper::getBinaryOpcode(airOp, 64);
+                auto* newMI = new MachineInstr(x86Op);
+                newMI->addOperand(MachineOperand::createVReg(resultVReg));
+                replaceMI(mbb, mi, newMI);
+            }
+        }
         else if (rhsIsConst) {
             switch (airOp) {
             case AIROpcode::Add: x86Op = X86::ADD64ri32; break;
@@ -974,27 +1019,41 @@ private:
             }
         }
 
-        auto* movMI = new MachineInstr(X86::MOV64rr);
-        movMI->addOperand(MachineOperand::createVReg(baseVReg));
-        movMI->addOperand(MachineOperand::createVReg(resultVReg));
-        replaceMI(mbb, mi, movMI);
+        auto frameIt = frameIndexMap_.find(baseVReg);
+        MachineInstr* cursor = nullptr;
+        if (frameIt != frameIndexMap_.end()) {
+            auto* leaMI = new MachineInstr(X86::LEA64r);
+            leaMI->addOperand(MachineOperand::createFrameIndex(frameIt->second));
+            leaMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, leaMI);
+            cursor = leaMI;
+        } else {
+            auto* movMI = new MachineInstr(X86::MOV64rr);
+            movMI->addOperand(MachineOperand::createVReg(baseVReg));
+            movMI->addOperand(MachineOperand::createVReg(resultVReg));
+            replaceMI(mbb, mi, movMI);
+            cursor = movMI;
+        }
 
         if (totalOffset != 0) {
             auto* addMI = new MachineInstr(X86::ADD64ri32);
             addMI->addOperand(MachineOperand::createImm(totalOffset));
             addMI->addOperand(MachineOperand::createVReg(resultVReg));
-            mbb.pushBack(addMI);
+            mbb.insertAfter(cursor, addMI);
+            cursor = addMI;
         }
 
         for (auto idxVReg : idxVRegs) {
             auto* shlMI = new MachineInstr(X86::SHL64ri);
             shlMI->addOperand(MachineOperand::createImm(3));
             shlMI->addOperand(MachineOperand::createVReg(idxVReg));
-            mbb.pushBack(shlMI);
+            mbb.insertAfter(cursor, shlMI);
+            cursor = shlMI;
             auto* addIdxMI = new MachineInstr(X86::ADD64rr);
             addIdxMI->addOperand(MachineOperand::createVReg(idxVReg));
             addIdxMI->addOperand(MachineOperand::createVReg(resultVReg));
-            mbb.pushBack(addIdxMI);
+            mbb.insertAfter(cursor, addIdxMI);
+            cursor = addIdxMI;
         }
     }
 
