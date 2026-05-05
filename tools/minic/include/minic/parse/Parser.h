@@ -19,7 +19,7 @@ private:
     Token current_;
     std::unordered_map<std::string, CType> typedefs_;
     std::unordered_map<std::string, int64_t> enumConstants_;
-    std::unordered_map<std::string, std::shared_ptr<CStructInfo>> structs_;
+    std::unordered_map<std::string, std::shared_ptr<CStructInfo>> records_;
     void advance();
     Token consume(TokenKind expected);
     bool match(TokenKind kind);
@@ -40,8 +40,8 @@ private:
     void parseTypedefDecl();
     void parseStaticAssertDecl();
     void parseEnumBody();
-    CType parseStructSpecifier();
-    std::vector<CField> parseStructFields();
+    CType parseRecordSpecifier(bool isUnion);
+    std::vector<CField> parseRecordFields();
     int64_t evalConstantExpr(const Expr& expr) const;
 
     std::vector<Param> parseParamList();

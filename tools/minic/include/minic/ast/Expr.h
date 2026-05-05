@@ -96,9 +96,26 @@ struct AlignofExpr : Expr {
 };
 
 struct InitListExpr : Expr {
-    std::vector<std::unique_ptr<Expr>> values;
-    explicit InitListExpr(std::vector<std::unique_ptr<Expr>> v)
-        : values(std::move(v)) {}
+    struct Designator {
+        enum Kind { None, Index, Field } kind = None;
+        uint64_t index = 0;
+        std::string field;
+
+        Designator() = default;
+        explicit Designator(uint64_t i) : kind(Index), index(i) {}
+        explicit Designator(std::string f) : kind(Field), field(std::move(f)) {}
+    };
+
+    struct Entry {
+        Designator designator;
+        std::unique_ptr<Expr> value;
+        Entry(Designator d, std::unique_ptr<Expr> v)
+            : designator(std::move(d)), value(std::move(v)) {}
+    };
+
+    std::vector<Entry> entries;
+    explicit InitListExpr(std::vector<Entry> e)
+        : entries(std::move(e)) {}
 };
 
 struct CommaExpr : Expr {

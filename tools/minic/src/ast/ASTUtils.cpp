@@ -29,7 +29,9 @@ uint64_t sizeOfType(CType type) noexcept {
     case CTypeKind::Int: return 4;
     case CTypeKind::Long: return 8;
     case CTypeKind::Void: return 1;
-    case CTypeKind::Struct: return type.structInfo && type.structInfo->complete ? type.structInfo->size : 0;
+    case CTypeKind::Struct:
+    case CTypeKind::Union:
+        return type.structInfo && type.structInfo->complete ? type.structInfo->size : 0;
     }
     return 8;
 }
@@ -49,13 +51,15 @@ uint64_t alignOfType(CType type) noexcept {
     case CTypeKind::Int: return 4;
     case CTypeKind::Long: return 8;
     case CTypeKind::Void: return 1;
-    case CTypeKind::Struct: return type.structInfo && type.structInfo->complete ? type.structInfo->align : 1;
+    case CTypeKind::Struct:
+    case CTypeKind::Union:
+        return type.structInfo && type.structInfo->complete ? type.structInfo->align : 1;
     }
     return 8;
 }
 
 const CField* findStructField(const CType& type, const std::string& name) noexcept {
-    if (type.kind != CTypeKind::Struct || !type.structInfo || !type.structInfo->complete)
+    if ((type.kind != CTypeKind::Struct && type.kind != CTypeKind::Union) || !type.structInfo || !type.structInfo->complete)
         return nullptr;
     for (const auto& field : type.structInfo->fields) {
         if (field.name == name)

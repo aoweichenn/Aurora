@@ -113,7 +113,7 @@ CType CodeGen::inferExprType(const Expr& expr) {
         if (member->viaPointer) {
             CType pointerType = inferExprType(*member->base).decayArray();
             if (!pointerType.isPointerLike())
-                throw std::runtime_error("Member access with -> requires a pointer to struct");
+                throw std::runtime_error("Member access with -> requires a pointer to a record");
             objectType = pointerType.pointee();
         } else {
             objectType = inferExprType(*member->base);

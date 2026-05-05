@@ -155,6 +155,7 @@ Token Lexer::readIdent() {
     else if (lexeme == "typedef") tok.kind = TokenKind::Typedef;
     else if (lexeme == "enum") tok.kind = TokenKind::Enum;
     else if (lexeme == "struct") tok.kind = TokenKind::Struct;
+    else if (lexeme == "union") tok.kind = TokenKind::Union;
     else if (lexeme == "static_assert" || lexeme == "_Static_assert") tok.kind = TokenKind::StaticAssert;
     else if (lexeme == "true") tok.kind = TokenKind::True;
     else if (lexeme == "false") tok.kind = TokenKind::False;

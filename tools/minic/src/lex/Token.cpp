@@ -28,6 +28,7 @@ const char* tokenName(TokenKind kind) {
     case TokenKind::Typedef:return "typedef";
     case TokenKind::Enum:   return "enum";
     case TokenKind::Struct: return "struct";
+    case TokenKind::Union:  return "union";
     case TokenKind::StaticAssert:return "static_assert";
     case TokenKind::True:   return "true";
     case TokenKind::False:  return "false";

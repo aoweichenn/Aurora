@@ -48,7 +48,7 @@ Program Parser::parseProgram() {
             parseTopLevelDecl(program, enumType, false);
             continue;
         }
-        if (current_.kind == TokenKind::Struct) {
+        if (current_.kind == TokenKind::Struct || current_.kind == TokenKind::Union) {
             CType structType = parseBaseType();
             if (match(TokenKind::Semicolon))
                 continue;

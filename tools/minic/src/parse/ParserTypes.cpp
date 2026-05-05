@@ -21,7 +21,8 @@ bool isCompleteObjectType(CType type) noexcept {
         type.arraySize = 0;
         return isCompleteObjectType(type);
     }
-    return type.kind != CTypeKind::Struct || (type.structInfo && type.structInfo->complete);
+    return (type.kind != CTypeKind::Struct && type.kind != CTypeKind::Union) ||
+           (type.structInfo && type.structInfo->complete);
 }
 
 } // namespace
@@ -32,6 +33,7 @@ bool Parser::isTypeToken(TokenKind kind) const {
            kind == TokenKind::Bool || kind == TokenKind::Void ||
            kind == TokenKind::Signed || kind == TokenKind::Unsigned ||
            kind == TokenKind::Enum || kind == TokenKind::Struct ||
+           kind == TokenKind::Union ||
            isTypeQualifier(kind) ||
            (kind == TokenKind::Ident && typedefs_.find(current_.lexeme) != typedefs_.end());
 }
@@ -61,8 +63,8 @@ CType Parser::parseBaseType() {
         return type;
     }
 
-    if (current_.kind == TokenKind::Struct)
-        return parseStructSpecifier();
+    if (current_.kind == TokenKind::Struct || current_.kind == TokenKind::Union)
+        return parseRecordSpecifier(current_.kind == TokenKind::Union);
 
     if (current_.kind == TokenKind::Ident) {
         auto typedefIt = typedefs_.find(current_.lexeme);
@@ -200,56 +202,66 @@ void Parser::parseEnumBody() {
     consume(TokenKind::RBrace);
 }
 
-CType Parser::parseStructSpecifier() {
-    consume(TokenKind::Struct);
+CType Parser::parseRecordSpecifier(bool isUnion) {
+    consume(isUnion ? TokenKind::Union : TokenKind::Struct);
     std::string tag;
     if (current_.kind == TokenKind::Ident)
         tag = consume(TokenKind::Ident).lexeme;
 
     std::shared_ptr<CStructInfo> info;
     if (!tag.empty()) {
-        auto& slot = structs_[tag];
+        auto& slot = records_[tag];
         if (!slot) {
             slot = std::make_shared<CStructInfo>();
             slot->tag = tag;
+            slot->isUnion = isUnion;
+        } else if (slot->isUnion != isUnion) {
+            throw std::runtime_error("Tag kind mismatch for: " + tag);
         }
         info = slot;
     } else if (current_.kind == TokenKind::LBrace) {
         info = std::make_shared<CStructInfo>();
+        info->isUnion = isUnion;
     } else {
-        throw std::runtime_error("Expected struct tag or definition");
+        throw std::runtime_error(isUnion ? "Expected union tag or definition" : "Expected struct tag or definition");
     }
 
     if (match(TokenKind::LBrace)) {
         if (info->complete)
-            throw std::runtime_error("Redefinition of struct: " + (tag.empty() ? std::string("<anonymous>") : tag));
-        info->fields = parseStructFields();
+            throw std::runtime_error("Redefinition of tag: " + (tag.empty() ? std::string("<anonymous>") : tag));
+        info->fields = parseRecordFields();
         consume(TokenKind::RBrace);
 
         uint64_t offset = 0;
         uint64_t maxAlign = 1;
+        uint64_t maxSize = 0;
         for (auto& field : info->fields) {
             uint64_t fieldSize = sizeOfType(field.type);
             uint64_t fieldAlign = alignOfType(field.type);
             if (fieldSize == 0 || !isCompleteObjectType(field.type))
-                throw std::runtime_error("Struct field has incomplete type: " + field.name);
+                throw std::runtime_error("Record field has incomplete type: " + field.name);
             maxAlign = std::max(maxAlign, fieldAlign);
-            offset = alignTo(offset, fieldAlign);
-            field.offset = offset;
-            offset += fieldSize;
+            maxSize = std::max(maxSize, fieldSize);
+            if (isUnion) {
+                field.offset = 0;
+            } else {
+                offset = alignTo(offset, fieldAlign);
+                field.offset = offset;
+                offset += fieldSize;
+            }
         }
         info->align = maxAlign;
-        info->size = alignTo(offset, maxAlign);
+        info->size = alignTo(isUnion ? maxSize : offset, maxAlign);
         info->complete = true;
     }
 
     CType type;
-    type.kind = CTypeKind::Struct;
+    type.kind = isUnion ? CTypeKind::Union : CTypeKind::Struct;
     type.structInfo = info;
     return type;
 }
 
-std::vector<CField> Parser::parseStructFields() {
+std::vector<CField> Parser::parseRecordFields() {
     std::vector<CField> fields;
     while (current_.kind != TokenKind::RBrace && current_.kind != TokenKind::Eof) {
         CType baseType = parseBaseType();
@@ -258,9 +270,9 @@ std::vector<CField> Parser::parseStructFields() {
             std::string fieldName = consume(TokenKind::Ident).lexeme;
             fieldType = parseArraySuffix(fieldType);
             if (fieldType.isVoid())
-                throw std::runtime_error("Struct field cannot have void type");
+                throw std::runtime_error("Record field cannot have void type");
             if (std::any_of(fields.begin(), fields.end(), [&](const CField& field) { return field.name == fieldName; }))
-                throw std::runtime_error("Duplicate struct field: " + fieldName);
+                throw std::runtime_error("Duplicate record field: " + fieldName);
             fields.emplace_back(fieldType, std::move(fieldName));
         } while (match(TokenKind::Comma));
         consume(TokenKind::Semicolon);

@@ -97,9 +97,12 @@ add_subdirectory(tools/aurora-obj)
 
 # ---- Coverage ----
 if(AURORA_ENABLE_COVERAGE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(AuroraCommon INTERFACE -fprofile-instr-generate -fcoverage-mapping)
+        target_link_options(AuroraCommon INTERFACE -fprofile-instr-generate -fcoverage-mapping)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(AuroraCommon INTERFACE -fprofile-arcs -ftest-coverage)
-        target_link_libraries(AuroraCommon INTERFACE -fprofile-arcs -ftest-coverage --coverage)
+        target_link_options(AuroraCommon INTERFACE -fprofile-arcs -ftest-coverage --coverage)
     endif()
 endif()
 
@@ -107,4 +110,24 @@ endif()
 if(AURORA_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    if(AURORA_ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        find_package(Python3 REQUIRED COMPONENTS Interpreter)
+        find_program(LLVM_COV_EXECUTABLE llvm-cov REQUIRED)
+        find_program(LLVM_PROFDATA_EXECUTABLE llvm-profdata REQUIRED)
+        add_custom_target(minic_coverage
+            COMMAND ${Python3_EXECUTABLE}
+                ${CMAKE_CURRENT_SOURCE_DIR}/tools/coverage/llvm_coverage_gate.py
+                --llvm-cov ${LLVM_COV_EXECUTABLE}
+                --llvm-profdata ${LLVM_PROFDATA_EXECUTABLE}
+                --output-dir ${CMAKE_CURRENT_BINARY_DIR}/coverage/minic
+                --line-threshold 90
+                --branch-threshold 80
+                --test $<TARGET_FILE:MiniC_tests>
+                --object $<TARGET_FILE:MiniC_tests>
+                --source-dir ${CMAKE_CURRENT_SOURCE_DIR}/tools/minic/include/minic
+                --source-dir ${CMAKE_CURRENT_SOURCE_DIR}/tools/minic/src
+            DEPENDS MiniC_tests
+            COMMENT "Running MiniC coverage gate: lines >= 90%, branches >= 80%"
+            VERBATIM)
+    endif()
 endif()

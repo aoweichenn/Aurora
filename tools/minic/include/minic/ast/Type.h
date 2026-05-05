@@ -10,7 +10,7 @@ namespace minic {
 
 struct CStructInfo;
 
-enum class CTypeKind { Void, Bool, Char, Short, Int, Long, Struct };
+enum class CTypeKind { Void, Bool, Char, Short, Int, Long, Struct, Union };
 
 struct CType {
     CTypeKind kind = CTypeKind::Long;
@@ -60,6 +60,7 @@ struct CStructInfo {
     uint64_t size = 0;
     uint64_t align = 1;
     bool complete = false;
+    bool isUnion = false;
 };
 
 } // namespace minic

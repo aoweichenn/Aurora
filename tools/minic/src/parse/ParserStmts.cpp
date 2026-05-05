@@ -191,16 +191,28 @@ std::unique_ptr<Expr> Parser::parseInitializer() {
     if (!match(TokenKind::LBrace))
         return parseAssignment();
 
-    std::vector<std::unique_ptr<Expr>> values;
+    std::vector<InitListExpr::Entry> entries;
     if (current_.kind != TokenKind::RBrace) {
         do {
             if (current_.kind == TokenKind::RBrace)
                 break;
-            values.push_back(parseAssignment());
+            InitListExpr::Designator designator;
+            if (match(TokenKind::Dot)) {
+                designator = InitListExpr::Designator(consume(TokenKind::Ident).lexeme);
+                consume(TokenKind::Assign);
+            } else if (match(TokenKind::LBracket)) {
+                int64_t index = evalConstantExpr(*parseAssignment());
+                if (index < 0)
+                    throw std::runtime_error("Initializer array designator cannot be negative");
+                consume(TokenKind::RBracket);
+                consume(TokenKind::Assign);
+                designator = InitListExpr::Designator(static_cast<uint64_t>(index));
+            }
+            entries.emplace_back(std::move(designator), parseAssignment());
         } while (match(TokenKind::Comma));
     }
     consume(TokenKind::RBrace);
-    return std::make_unique<InitListExpr>(std::move(values));
+    return std::make_unique<InitListExpr>(std::move(entries));
 }
 
 } // namespace minic

@@ -78,6 +78,11 @@ struct Pair {
     long second;
 };
 
+union Slot {
+    char tag;
+    long value;
+};
+
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
@@ -105,6 +110,12 @@ long use_struct_fields() {
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
 }
+
+long use_union_fields() {
+    union Slot slot = {7};
+    slot.value = slot.value + alignof(union Slot);
+    return slot.value;
+}
 ```
 
 This exercises:
@@ -115,7 +126,7 @@ This exercises:
 - function prototypes / external declarations that stay callable without emitting bodies
 - scalar and one-dimensional array global definitions plus `extern` global declarations
 - C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
-- named `struct` layout, ordered local struct initialization, and `.` / `->` field access
+- named `struct` / `union` layout, ordered local record initialization, and `.` / `->` field access
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

@@ -78,6 +78,11 @@ struct Pair {
     long second;
 };
 
+union Slot {
+    char tag;
+    long value;
+};
+
 long use_c23_bits(usize value) {
     bool ok = true;
     long casted = (long)value;
@@ -105,6 +110,12 @@ long use_struct_fields() {
     cursor->second = pair.first + cursor->second;
     return pair.second + sizeof(struct Pair);
 }
+
+long use_union_fields() {
+    union Slot slot = {7};
+    slot.value = slot.value + alignof(union Slot);
+    return slot.value;
+}
 ```
 
 这会触发：
@@ -115,7 +126,7 @@ long use_struct_fields() {
 - 函数原型 / 外部声明保持可调用，但不会生成函数体
 - 标量和一维数组全局变量定义，以及 `extern` 全局变量声明
 - 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
-- 命名 `struct` 布局、有序局部结构体初始化，以及 `.` / `->` 字段访问
+- 命名 `struct` / `union` 布局、有序局部记录类型初始化，以及 `.` / `->` 字段访问
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件

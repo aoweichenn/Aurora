@@ -52,15 +52,15 @@ unsigned CodeGen::genVarExpr(const VarExpr& ve) {
     if (auto* local = findVariableInScopes(ve.name)) {
         if (local->type.arraySize > 0)
             return genAddressOfVariable(ve);
-        if (local->type.kind == CTypeKind::Struct && local->type.pointerDepth == 0)
-            throw std::runtime_error("Struct values cannot be loaded directly: " + ve.name);
+        if ((local->type.kind == CTypeKind::Struct || local->type.kind == CTypeKind::Union) && local->type.pointerDepth == 0)
+            throw std::runtime_error("Record values cannot be loaded directly: " + ve.name);
         return builder_->createLoad(toAirType(local->type, false), local->pointerVReg);
     }
     auto& variable = findGlobal(ve.name);
     if (variable.type.arraySize > 0)
         return genGlobalAddress(ve.name);
-    if (variable.type.kind == CTypeKind::Struct && variable.type.pointerDepth == 0)
-        throw std::runtime_error("Struct values cannot be loaded directly: " + ve.name);
+    if ((variable.type.kind == CTypeKind::Struct || variable.type.kind == CTypeKind::Union) && variable.type.pointerDepth == 0)
+        throw std::runtime_error("Record values cannot be loaded directly: " + ve.name);
     return builder_->createLoad(toAirType(variable.type, false), genGlobalAddress(ve.name));
 }
 
@@ -309,7 +309,7 @@ CodeGen::LValue CodeGen::genMemberLValue(const MemberExpr& me) {
     if (me.viaPointer) {
         CType pointerType = inferExprType(*me.base).decayArray();
         if (!pointerType.isPointerLike())
-            throw std::runtime_error("Member access with -> requires a pointer to struct");
+            throw std::runtime_error("Member access with -> requires a pointer to a record");
         objectType = pointerType.pointee();
         baseAddress = genExpr(*me.base);
     } else {
@@ -318,8 +318,8 @@ CodeGen::LValue CodeGen::genMemberLValue(const MemberExpr& me) {
         baseAddress = base.pointerVReg;
     }
 
-    if (objectType.kind != CTypeKind::Struct || objectType.pointerDepth != 0)
-        throw std::runtime_error("Member access requires a struct object");
+    if ((objectType.kind != CTypeKind::Struct && objectType.kind != CTypeKind::Union) || objectType.pointerDepth != 0)
+        throw std::runtime_error("Member access requires a record object");
     const CField* field = findStructField(objectType, me.field);
     if (!field)
         throw std::runtime_error("Unknown struct field: " + me.field);
@@ -342,8 +342,8 @@ unsigned CodeGen::genMemberExpr(const MemberExpr& me) {
     LValue lvalue = genMemberLValue(me);
     if (lvalue.type.arraySize > 0)
         return lvalue.pointerVReg;
-    if (lvalue.type.kind == CTypeKind::Struct && lvalue.type.pointerDepth == 0)
-        throw std::runtime_error("Struct values cannot be loaded directly");
+    if ((lvalue.type.kind == CTypeKind::Struct || lvalue.type.kind == CTypeKind::Union) && lvalue.type.pointerDepth == 0)
+        throw std::runtime_error("Record values cannot be loaded directly");
     return builder_->createLoad(toAirType(lvalue.type, false), lvalue.pointerVReg);
 }
 

@@ -19,7 +19,7 @@ bool sameType(CType lhs, CType rhs) {
     if (lhs.kind != rhs.kind || lhs.pointerDepth != rhs.pointerDepth ||
         lhs.arraySize != rhs.arraySize || lhs.isUnsigned != rhs.isUnsigned)
         return false;
-    if (lhs.kind == CTypeKind::Struct)
+    if (lhs.kind == CTypeKind::Struct || lhs.kind == CTypeKind::Union)
         return lhs.structInfo == rhs.structInfo;
     return true;
 }
@@ -48,7 +48,7 @@ aurora::Type* CodeGen::toAirType(CType type, bool allowVoid) const {
     if (type.pointerDepth > 0) {
         CType elementType = type;
         elementType.pointerDepth = 0;
-        aurora::Type* airType = (elementType.kind == CTypeKind::Struct &&
+        aurora::Type* airType = ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) &&
                                  (!elementType.structInfo || !elementType.structInfo->complete))
             ? aurora::Type::getInt8Ty()
             : toAirType(elementType, true);
@@ -68,10 +68,11 @@ aurora::Type* CodeGen::toAirType(CType type, bool allowVoid) const {
     case CTypeKind::Int:
     case CTypeKind::Long:
         return aurora::Type::getInt64Ty();
-    case CTypeKind::Struct: {
+    case CTypeKind::Struct:
+    case CTypeKind::Union: {
         uint64_t size = sizeOfType(type);
         if (size == 0)
-            throw std::runtime_error("Incomplete struct type cannot be used as an object");
+            throw std::runtime_error("Incomplete record type cannot be used as an object");
         uint64_t slots = (size + 7) / 8;
         return aurora::Type::getArrayTy(aurora::Type::getInt64Ty(), static_cast<unsigned>(slots == 0 ? 1 : slots));
     }
@@ -191,8 +192,8 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
     if (decl.type.arraySize > 0) {
         CType elementType = decl.type;
         elementType.arraySize = 0;
-        if (elementType.kind == CTypeKind::Struct && elementType.pointerDepth == 0 && decl.init)
-            throw std::runtime_error("Global struct array initializer is not supported yet: " + decl.name);
+        if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0 && decl.init)
+            throw std::runtime_error("Global record array initializer is not supported yet: " + decl.name);
         if (decl.init) {
             auto* initList = dynamic_cast<const InitListExpr*>(decl.init.get());
             if (!initList)
@@ -218,9 +219,9 @@ void CodeGen::declareGlobal(const GlobalDecl& decl) {
         return;
     }
 
-    if (decl.type.kind == CTypeKind::Struct && decl.type.pointerDepth == 0) {
+    if ((decl.type.kind == CTypeKind::Struct || decl.type.kind == CTypeKind::Union) && decl.type.pointerDepth == 0) {
         if (decl.init)
-            throw std::runtime_error("Global struct initializer is not supported yet: " + decl.name);
+            throw std::runtime_error("Global record initializer is not supported yet: " + decl.name);
         return;
     }
 

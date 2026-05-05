@@ -78,6 +78,8 @@ add_executable(MiniC_tests
     MiniC/GlobalTest.cpp
     MiniC/AlignofTest.cpp
     MiniC/StructTest.cpp
+    MiniC/UnionTest.cpp
+    MiniC/FeatureCoverageTest.cpp
 )
 target_link_libraries(MiniC_tests PRIVATE MiniCFrontend AuroraTestCommon)
 add_test(NAME MiniC_tests COMMAND MiniC_tests)

@@ -16,8 +16,8 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
     if (type.arraySize > 0) {
         CType elementType = type;
         elementType.arraySize = 0;
-        if (elementType.kind == CTypeKind::Struct && elementType.pointerDepth == 0 && init)
-            throw std::runtime_error("Struct array initializer is not supported yet: " + name);
+        if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0 && init)
+            throw std::runtime_error("Record array initializer is not supported yet: " + name);
         if (init) {
             auto* initList = dynamic_cast<const InitListExpr*>(init);
             if (!initList)
@@ -27,11 +27,11 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
         return;
     }
 
-    if (type.kind == CTypeKind::Struct && type.pointerDepth == 0) {
+    if ((type.kind == CTypeKind::Struct || type.kind == CTypeKind::Union) && type.pointerDepth == 0) {
         if (init) {
             auto* initList = dynamic_cast<const InitListExpr*>(init);
             if (!initList)
-                throw std::runtime_error("Struct initializer must be a braced list: " + name);
+                throw std::runtime_error("Record initializer must be a braced list: " + name);
             genStructInitializer(type, pointer, *initList, name);
         }
         return;
@@ -52,14 +52,17 @@ void CodeGen::declareVariable(const std::string& name, CType type, const Expr* i
 }
 
 void CodeGen::genStructInitializer(CType type, unsigned pointer, const InitListExpr& init, const std::string& name) {
-    if (type.kind != CTypeKind::Struct || !type.structInfo || !type.structInfo->complete)
-        throw std::runtime_error("Struct initializer requires a complete struct type: " + name);
+    if ((type.kind != CTypeKind::Struct && type.kind != CTypeKind::Union) || !type.structInfo || !type.structInfo->complete)
+        throw std::runtime_error("Record initializer requires a complete record type: " + name);
+    if (type.kind == CTypeKind::Union && init.values.size() > 1)
+        throw std::runtime_error("Too many values in union initializer: " + name);
     if (init.values.size() > type.structInfo->fields.size())
-        throw std::runtime_error("Too many values in struct initializer: " + name);
+        throw std::runtime_error("Too many values in record initializer: " + name);
 
     aurora::SmallVector<unsigned, 4> indices;
     unsigned base = builder_->createGEP(toAirType(type, false), pointer, indices);
-    for (size_t index = 0; index < type.structInfo->fields.size(); ++index) {
+    size_t fieldCount = type.kind == CTypeKind::Union ? 1 : type.structInfo->fields.size();
+    for (size_t index = 0; index < fieldCount; ++index) {
         const CField& field = type.structInfo->fields[index];
         unsigned address = base;
         if (field.offset != 0) {

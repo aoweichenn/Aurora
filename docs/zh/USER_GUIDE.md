@@ -8,6 +8,13 @@ cmake --build build -j8
 ctest --test-dir build
 ```
 
+MiniC 覆盖率门禁要求行覆盖率 90%、分支覆盖率 80%：
+
+```bash
+cmake -B build-coverage -S . -DCMAKE_BUILD_TYPE=Debug -DAURORA_BUILD_TESTS=ON -DAURORA_BUILD_BENCHMARKS=OFF -DAURORA_ENABLE_COVERAGE=ON
+cmake --build build-coverage -j8 --target minic_coverage
+```
+
 默认会生成：
 
 - `build/tools/minic/minic`
@@ -20,10 +27,10 @@ MiniC 接受一个 `.mini` 源文件，支持 C-like 整数子集：
 
 - 函数定义和函数原型：`long name(long a, long b) { ... }`、`extern long name(long);`，支持 `void` 返回值、简单指针形参 / 返回值、原型中可省略形参名、会退化为指针的数组形参，以及常见存储类 / 限定符解析
 - 顶层全局变量：标量全局如 `long counter = 7;`、`extern long imported;`，以及定长一维数组如 `long values[3] = {1, 2};`，支持函数内读取、写入、下标和取地址
-- 局部变量和可选初始化：标量、指针、命名 `struct` 对象，以及带一维大括号初始化列表的定长数组
+- 局部变量和可选初始化：标量、指针、命名 `struct` / `union` 对象，以及带一维大括号初始化列表的定长数组
 - 语句：`return`、块、`if` / `else`、`while`、`do` / `while`、`for`、`switch` / `case` / `default`、`break`、`continue`
-- 表达式：赋值、复合赋值、函数调用、三元 `?:`、短路 `&&` / `||`、C 风格 cast、`sizeof`、`alignof` / `_Alignof`、`.` / `->` 结构体字段访问、指针算术、指针解引用 / 取地址、指针下标、前后缀 `++` / `--`
-- 声明和常量：`typedef`、`enum`、带标量 / 指针 / 数组字段的命名 `struct` 定义、`static_assert` / `_Static_assert`、`bool` / `_Bool`、`true`、`false`、`nullptr`
+- 表达式：赋值、复合赋值、函数调用、三元 `?:`、短路 `&&` / `||`、C 风格 cast、`sizeof`、`alignof` / `_Alignof`、`.` / `->` 记录类型字段访问、指针算术、指针解引用 / 取地址、指针下标、前后缀 `++` / `--`
+- 声明和常量：`typedef`、`enum`、带标量 / 指针 / 数组字段的命名 `struct` / `union` 定义、`static_assert` / `_Static_assert`、`bool` / `_Bool`、`true`、`false`、`nullptr`
 - 运算符：`+ - * / %`、有符号和无符号比较 / 除法 / 取余 / 右移、逻辑运算、位运算、移位，以及 `&= |= ^= <<= >>=`
 - 兼容旧表达式函数：`fn name(a, b) = expr`
 
