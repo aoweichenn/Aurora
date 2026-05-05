@@ -78,6 +78,7 @@ private:
     unsigned genIncDecExpr(const IncDecExpr& ie);
     unsigned genIndexExpr(const IndexExpr& ie);
     unsigned genMemberExpr(const MemberExpr& me);
+    unsigned genCompoundLiteralExpr(const CompoundLiteralExpr& cle);
     unsigned genSizeofExpr(const SizeofExpr& se);
     unsigned genAlignofExpr(const AlignofExpr& ae);
     unsigned genCommaExpr(const CommaExpr& ce);
@@ -89,6 +90,7 @@ private:
     bool containsCall(const Expr& expr) const;
     LValue genLValue(const Expr& expr);
     LValue genMemberLValue(const MemberExpr& me);
+    unsigned genCompoundLiteralStorage(const CompoundLiteralExpr& cle);
     unsigned genAddressOfVariable(const VarExpr& ve);
     uint64_t sizeOfType(CType type) const;
     uint64_t alignOfType(CType type) const;

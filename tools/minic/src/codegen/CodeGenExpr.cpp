@@ -21,6 +21,8 @@ unsigned CodeGen::genExpr(const Expr& node) {
         return genIndexExpr(*index);
     if (auto* member = dynamic_cast<const MemberExpr*>(&node))
         return genMemberExpr(*member);
+    if (auto* compoundLiteral = dynamic_cast<const CompoundLiteralExpr*>(&node))
+        return genCompoundLiteralExpr(*compoundLiteral);
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&node))
         return genSizeofExpr(*sizeofExpr);
     if (auto* alignofExpr = dynamic_cast<const AlignofExpr*>(&node))
@@ -106,6 +108,9 @@ CodeGen::LValue CodeGen::genLValue(const Expr& expr) {
 
     if (auto* member = dynamic_cast<const MemberExpr*>(&expr))
         return genMemberLValue(*member);
+
+    if (auto* compoundLiteral = dynamic_cast<const CompoundLiteralExpr*>(&expr))
+        return {compoundLiteral->type, genCompoundLiteralStorage(*compoundLiteral)};
 
     throw std::runtime_error("Expression is not assignable");
 }
@@ -345,6 +350,50 @@ unsigned CodeGen::genMemberExpr(const MemberExpr& me) {
     if ((lvalue.type.kind == CTypeKind::Struct || lvalue.type.kind == CTypeKind::Union) && lvalue.type.pointerDepth == 0)
         throw std::runtime_error("Record values cannot be loaded directly");
     return builder_->createLoad(toAirType(lvalue.type, false), lvalue.pointerVReg);
+}
+
+unsigned CodeGen::genCompoundLiteralStorage(const CompoundLiteralExpr& cle) {
+    CType type = cle.type;
+    if (type.isVoid())
+        throw std::runtime_error("Compound literal cannot have void type");
+    unsigned pointer = builder_->createAlloca(toAirType(type, false));
+
+    if (type.arraySize > 0) {
+        CType elementType = type;
+        elementType.arraySize = 0;
+        if ((elementType.kind == CTypeKind::Struct || elementType.kind == CTypeKind::Union) && elementType.pointerDepth == 0)
+            throw std::runtime_error("Record array compound literal is not supported yet");
+        genArrayInitializer(type, pointer, *cle.init, "compound literal");
+        return pointer;
+    }
+
+    if ((type.kind == CTypeKind::Struct || type.kind == CTypeKind::Union) && type.pointerDepth == 0) {
+        genStructInitializer(type, pointer, *cle.init, "compound literal");
+        return pointer;
+    }
+
+    unsigned initialValue = builder_->createConstantInt(0);
+    if (cle.init->entries.size() > 1)
+        throw std::runtime_error("Scalar compound literal has too many values");
+    if (!cle.init->entries.empty()) {
+        const auto& entry = cle.init->entries.front();
+        if (entry.designator.kind != InitListExpr::Designator::None)
+            throw std::runtime_error("Scalar compound literal cannot use a designator");
+        initialValue = genExpr(*entry.value);
+    }
+    builder_->createStore(initialValue, pointer);
+    return pointer;
+}
+
+unsigned CodeGen::genCompoundLiteralExpr(const CompoundLiteralExpr& cle) {
+    unsigned pointer = genCompoundLiteralStorage(cle);
+    if (cle.type.arraySize > 0) {
+        aurora::SmallVector<unsigned, 4> indices;
+        return builder_->createGEP(toAirType(cle.type.decayArray(), false), pointer, indices);
+    }
+    if ((cle.type.kind == CTypeKind::Struct || cle.type.kind == CTypeKind::Union) && cle.type.pointerDepth == 0)
+        throw std::runtime_error("Record values cannot be loaded directly");
+    return builder_->createLoad(toAirType(cle.type, false), pointer);
 }
 
 unsigned CodeGen::genSizeofExpr(const SizeofExpr& se) {

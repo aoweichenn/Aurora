@@ -282,6 +282,14 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         if (isTypeToken(current_.kind)) {
             CType type = parseType();
             consume(TokenKind::RParen);
+            if (current_.kind == TokenKind::LBrace) {
+                auto init = parseInitializer();
+                auto* initList = dynamic_cast<InitListExpr*>(init.get());
+                if (!initList)
+                    throw std::runtime_error("Compound literal requires a braced initializer");
+                (void)init.release();
+                return std::make_unique<CompoundLiteralExpr>(type, std::unique_ptr<InitListExpr>(initList));
+            }
             return std::make_unique<CastExpr>(type, parseUnary());
         }
         auto expr = parseExpr();

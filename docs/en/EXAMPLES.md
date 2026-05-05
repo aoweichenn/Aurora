@@ -112,9 +112,14 @@ long use_struct_fields() {
 }
 
 long use_union_fields() {
-    union Slot slot = {.value = 7};
-    slot.value = slot.value + alignof(union Slot);
-    return slot.value;
+    union Slot *slot = &(union Slot){.value = 7};
+    slot->value = slot->value + alignof(union Slot);
+    return slot->value;
+}
+
+long use_compound_literals() {
+    long *values = (long[3]){[1] = 5, [0] = 2};
+    return values[0] + values[1] + ((struct Pair){.second = 11, .first = 3}).second;
 }
 ```
 
@@ -128,6 +133,7 @@ This exercises:
 - C23 spelling for constant alignment queries through `alignof(type)` and `_Alignof(type)`
 - named `struct` / `union` layout, ordered local record initialization, and `.` / `->` field access
 - designated initializers for arrays and records, including global integer arrays
+- compound literals for scalar, array, `struct`, and `union` temporaries
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

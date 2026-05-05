@@ -29,8 +29,8 @@ MiniC accepts a `.mini` source file and supports a C-like integer subset:
 - top-level globals: scalar globals such as `long counter = 7;`, `extern long imported;`, and fixed-size one-dimensional arrays such as `long values[3] = {1, 2};`, with reads, writes, indexing, and address-of from functions
 - local variables with optional initializers: scalars, pointers, named `struct` / `union` objects, and fixed-size arrays with one-dimensional braced initializer lists plus array/record designators
 - statements: `return`, blocks, `if` / `else`, `while`, `do` / `while`, `for`, `switch` / `case` / `default`, `break`, and `continue`
-- expressions: assignment, compound assignment, calls, ternary `?:`, short-circuit `&&` / `||`, C-style casts, `sizeof`, `alignof` / `_Alignof`, `.` / `->` record field access, pointer arithmetic, pointer dereference / address-of, pointer subscripting, prefix/postfix `++` / `--`
-- declarations and constants: `typedef`, `enum`, named `struct` / `union` definitions with scalar/pointer/array fields, designated initializers such as `[2] = 7` and `.field = 7`, `static_assert` / `_Static_assert`, `bool` / `_Bool`, `true`, `false`, `nullptr`
+- expressions: assignment, compound assignment, calls, ternary `?:`, short-circuit `&&` / `||`, C-style casts, compound literals such as `(struct Pair){.x = 1}` and `(long[3]){[2] = 5}`, `sizeof`, `alignof` / `_Alignof`, `.` / `->` record field access, pointer arithmetic, pointer dereference / address-of, pointer subscripting, prefix/postfix `++` / `--`
+- declarations and constants: `typedef`, `enum`, named `struct` / `union` definitions with scalar/pointer/array fields, designated initializers such as `[2] = 7` and `.field = 7` in declarations and compound literals, `static_assert` / `_Static_assert`, `bool` / `_Bool`, `true`, `false`, `nullptr`
 - operators: `+ - * / %`, signed and unsigned comparisons / division / remainder / right shift, logical operators, bitwise operators, shifts, and `&= |= ^= <<= >>=`
 - legacy expression functions: `fn name(a, b) = expr`
 

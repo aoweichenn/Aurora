@@ -21,6 +21,13 @@ bool CodeGen::containsCall(const Expr& expr) const {
         return containsCall(*index->base) || containsCall(*index->index);
     if (auto* member = dynamic_cast<const MemberExpr*>(&expr))
         return containsCall(*member->base);
+    if (auto* compoundLiteral = dynamic_cast<const CompoundLiteralExpr*>(&expr)) {
+        for (const auto& entry : compoundLiteral->init->entries) {
+            if (containsCall(*entry.value))
+                return true;
+        }
+        return false;
+    }
     if (auto* sizeofExpr = dynamic_cast<const SizeofExpr*>(&expr))
         return sizeofExpr->expr && containsCall(*sizeofExpr->expr);
     if (auto* comma = dynamic_cast<const CommaExpr*>(&expr))
@@ -123,6 +130,8 @@ CType CodeGen::inferExprType(const Expr& expr) {
             throw std::runtime_error("Unknown struct field: " + member->field);
         return field->type.decayArray();
     }
+    if (auto* compoundLiteral = dynamic_cast<const CompoundLiteralExpr*>(&expr))
+        return compoundLiteral->type;
     if (auto* assign = dynamic_cast<const AssignExpr*>(&expr))
         return inferExprType(*assign->target);
     if (auto* incDec = dynamic_cast<const IncDecExpr*>(&expr))

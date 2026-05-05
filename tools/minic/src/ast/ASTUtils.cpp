@@ -9,6 +9,8 @@ bool isAssignableExpr(const Expr& expr) noexcept {
         return true;
     if (dynamic_cast<const MemberExpr*>(&expr))
         return true;
+    if (dynamic_cast<const CompoundLiteralExpr*>(&expr))
+        return true;
     if (auto* unary = dynamic_cast<const UnaryExpr*>(&expr))
         return unary->op == UnaryExpr::Deref;
     return false;

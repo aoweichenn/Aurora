@@ -118,6 +118,13 @@ struct InitListExpr : Expr {
         : entries(std::move(e)) {}
 };
 
+struct CompoundLiteralExpr : Expr {
+    CType type;
+    std::unique_ptr<InitListExpr> init;
+    CompoundLiteralExpr(CType t, std::unique_ptr<InitListExpr> i)
+        : type(std::move(t)), init(std::move(i)) {}
+};
+
 struct CommaExpr : Expr {
     std::unique_ptr<Expr> lhs;
     std::unique_ptr<Expr> rhs;

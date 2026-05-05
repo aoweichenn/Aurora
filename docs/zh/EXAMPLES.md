@@ -112,9 +112,14 @@ long use_struct_fields() {
 }
 
 long use_union_fields() {
-    union Slot slot = {.value = 7};
-    slot.value = slot.value + alignof(union Slot);
-    return slot.value;
+    union Slot *slot = &(union Slot){.value = 7};
+    slot->value = slot->value + alignof(union Slot);
+    return slot->value;
+}
+
+long use_compound_literals() {
+    long *values = (long[3]){[1] = 5, [0] = 2};
+    return values[0] + values[1] + ((struct Pair){.second = 11, .first = 3}).second;
 }
 ```
 
@@ -128,6 +133,7 @@ long use_union_fields() {
 - 通过 `alignof(type)` 和 `_Alignof(type)` 查询常量对齐值的 C23 写法
 - 命名 `struct` / `union` 布局、有序局部记录类型初始化，以及 `.` / `->` 字段访问
 - 数组和记录类型 designated initializer，包括全局整数数组
+- 标量、数组、`struct` 和 `union` 临时对象的 compound literal
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件
