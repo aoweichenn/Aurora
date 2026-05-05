@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AST.h"
+#include "minic/AST.h"
 #include "Aurora/Air/Module.h"
 #include "Aurora/Air/Builder.h"
 #include "Aurora/Air/Type.h"

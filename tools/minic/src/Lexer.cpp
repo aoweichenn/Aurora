@@ -1,4 +1,4 @@
-#include "Lexer.h"
+#include "minic/Lexer.h"
 #include <cctype>
 #include <cstdlib>
 #include <stdexcept>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Lexer.h"
-#include "AST.h"
+#include "minic/Lexer.h"
+#include "minic/AST.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
