@@ -12,7 +12,7 @@ namespace minic {
 class Parser {
 public:
     explicit Parser(Lexer& lexer);
-    std::vector<Function> parseProgram();
+    Program parseProgram();
 
 private:
     Lexer& lexer_;
@@ -25,7 +25,9 @@ private:
 
     Function parseFunction();
     Function parseFunctionRest(CType returnType);
+    Function parseFunctionRest(CType returnType, std::string name);
     Function parseLegacyFunction();
+    void parseTopLevelDecl(Program& program, CType baseType, bool isExtern);
     CType parseBaseType();
     CType parseType();
     CType parsePointerSuffix(CType type);

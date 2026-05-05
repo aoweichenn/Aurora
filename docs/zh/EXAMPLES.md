@@ -59,8 +59,10 @@ long array_sum() {
 typedef unsigned long usize;
 
 extern long imported(long);
+extern long imported_counter;
 
 long declared_later(long);
+long global_counter = 7;
 
 enum Mode {
     MODE_ZERO,
@@ -79,6 +81,11 @@ long use_c23_bits(usize value) {
 long declared_later(long value) {
     return value + 1;
 }
+
+long use_global_counter() {
+    global_counter = global_counter + imported_counter;
+    return global_counter;
+}
 ```
 
 这会触发：
@@ -87,6 +94,7 @@ long declared_later(long value) {
 - `Parser` 为函数、语句和表达式生成 AST
 - `tools/minic/CodeGen` 生成 AIR 局部变量、调用、分支和循环
 - 函数原型 / 外部声明保持可调用，但不会生成函数体
+- 标量全局变量定义和 `extern` 全局变量声明
 - 后端生成 x86-64 或 macOS arm64 汇编
 
 ## 3. 生成对象文件

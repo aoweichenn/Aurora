@@ -59,8 +59,10 @@ long array_sum() {
 typedef unsigned long usize;
 
 extern long imported(long);
+extern long imported_counter;
 
 long declared_later(long);
+long global_counter = 7;
 
 enum Mode {
     MODE_ZERO,
@@ -79,6 +81,11 @@ long use_c23_bits(usize value) {
 long declared_later(long value) {
     return value + 1;
 }
+
+long use_global_counter() {
+    global_counter = global_counter + imported_counter;
+    return global_counter;
+}
 ```
 
 This exercises:
@@ -87,6 +94,7 @@ This exercises:
 - `Parser` AST construction for functions, statements, and expressions
 - `tools/minic/CodeGen` emission of AIR local variables, calls, branches, and loops
 - function prototypes / external declarations that stay callable without emitting bodies
+- scalar global definitions and `extern` global declarations
 - backend lowering to x86-64 or macOS arm64 assembly
 
 ## 3. Emit an Object File

@@ -5,15 +5,20 @@
 #include "Aurora/Air/Builder.h"
 #include "Aurora/Air/Type.h"
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace aurora {
+class GlobalVariable;
+}
 
 namespace minic {
 
 class CodeGen {
 public:
     explicit CodeGen();
-    std::unique_ptr<aurora::Module> generate(const std::vector<Function>& functions);
+    std::unique_ptr<aurora::Module> generate(const Program& program);
 
 private:
     struct Variable {
@@ -26,10 +31,18 @@ private:
         unsigned pointerVReg;
     };
 
+    struct Global {
+        CType type;
+        aurora::GlobalVariable* variable;
+        std::string name;
+        bool isExtern;
+    };
+
     std::unique_ptr<aurora::Module> module_;
     aurora::AIRBuilder* builder_;
     std::unordered_map<std::string, aurora::Function*> functionMap_;
     std::unordered_map<std::string, CType> functionReturnTypes_;
+    std::unordered_map<std::string, Global> globals_;
     std::vector<std::unordered_map<std::string, Variable>> scopes_;
     std::vector<aurora::BasicBlock*> breakStack_;
     std::vector<aurora::BasicBlock*> continueStack_;
@@ -80,6 +93,10 @@ private:
     unsigned genRemainder(CType lhsType, CType rhsType, unsigned lhs, unsigned rhs);
 
     Variable& findVariable(const std::string& name);
+    Variable* findVariableInScopes(const std::string& name);
+    Global& findGlobal(const std::string& name);
+    unsigned genGlobalAddress(const std::string& name);
+    void declareGlobal(const GlobalDecl& decl);
     void declareVariable(const std::string& name, CType type, const Expr* init);
     void pushScope();
     void popScope();

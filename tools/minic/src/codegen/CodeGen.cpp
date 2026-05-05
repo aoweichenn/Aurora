@@ -1,6 +1,8 @@
 #include "minic/codegen/CodeGen.h"
 #include "Aurora/Air/BasicBlock.h"
+#include "Aurora/Air/Constant.h"
 #include "Aurora/Air/Function.h"
+#include <exception>
 #include <stdexcept>
 #include <unordered_map>
 #include <unordered_set>
@@ -62,14 +64,15 @@ aurora::Type* CodeGen::toAirType(CType type, bool allowVoid) const {
     return aurora::Type::getInt64Ty();
 }
 
-std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& functions) {
+std::unique_ptr<aurora::Module> CodeGen::generate(const Program& program) {
     module_ = std::make_unique<aurora::Module>("minic");
     functionMap_.clear();
     functionReturnTypes_.clear();
+    globals_.clear();
     std::unordered_map<std::string, const Function*> functionSignatures;
     std::unordered_set<std::string> definedFunctions;
 
-    for (const auto& function : functions) {
+    for (const auto& function : program.functions) {
         auto signatureIt = functionSignatures.find(function.name);
         if (signatureIt != functionSignatures.end()) {
             if (!sameSignature(*signatureIt->second, function))
@@ -96,7 +99,10 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
             definedFunctions.insert(function.name);
     }
 
-    for (const auto& function : functions) {
+    for (const auto& global : program.globals)
+        declareGlobal(global);
+
+    for (const auto& function : program.functions) {
         if (!function.body)
             continue;
         auto* airFunction = functionMap_.at(function.name);
@@ -143,6 +149,45 @@ std::unique_ptr<aurora::Module> CodeGen::generate(const std::vector<Function>& f
     return std::move(module_);
 }
 
+void CodeGen::declareGlobal(const GlobalDecl& decl) {
+    if (decl.type.isVoid())
+        throw std::runtime_error("Global variable cannot have void type: " + decl.name);
+    if (decl.type.arraySize > 0)
+        throw std::runtime_error("Global arrays are not supported yet: " + decl.name);
+    if (functionMap_.find(decl.name) != functionMap_.end())
+        throw std::runtime_error("Global variable conflicts with function: " + decl.name);
+
+    auto globalIt = globals_.find(decl.name);
+    if (globalIt != globals_.end()) {
+        if (!sameType(globalIt->second.type, decl.type))
+            throw std::runtime_error("Conflicting global declaration: " + decl.name);
+        if (!decl.isExtern) {
+            if (!globalIt->second.isExtern)
+                throw std::runtime_error("Duplicate global definition: " + decl.name);
+            globalIt->second.variable = module_->createGlobal(toAirType(decl.type, false), decl.name);
+            globalIt->second.isExtern = false;
+        }
+    } else {
+        aurora::GlobalVariable* variable = nullptr;
+        if (!decl.isExtern)
+            variable = module_->createGlobal(toAirType(decl.type, false), decl.name);
+        globals_.emplace(decl.name, Global{decl.type, variable, decl.name, decl.isExtern});
+        globalIt = globals_.find(decl.name);
+    }
+
+    if (decl.init) {
+        if (!globalIt->second.variable)
+            throw std::runtime_error("Extern global declaration cannot have an initializer: " + decl.name);
+        int64_t value = 0;
+        try {
+            value = evalConstantExpr(*decl.init);
+        } catch (const std::exception&) {
+            throw std::runtime_error("Global initializer must be an integer constant expression: " + decl.name);
+        }
+        globalIt->second.variable->setInitializer(aurora::ConstantInt::getInt64(value));
+    }
+}
+
 void CodeGen::pushScope() {
     scopes_.emplace_back();
 }
@@ -152,12 +197,32 @@ void CodeGen::popScope() {
 }
 
 CodeGen::Variable& CodeGen::findVariable(const std::string& name) {
+    if (auto* variable = findVariableInScopes(name))
+        return *variable;
+    throw std::runtime_error("Undefined variable: " + name);
+}
+
+CodeGen::Variable* CodeGen::findVariableInScopes(const std::string& name) {
     for (auto scopeIt = scopes_.rbegin(); scopeIt != scopes_.rend(); ++scopeIt) {
         auto variableIt = scopeIt->find(name);
         if (variableIt != scopeIt->end())
-            return variableIt->second;
+            return &variableIt->second;
     }
+    return nullptr;
+}
+
+CodeGen::Global& CodeGen::findGlobal(const std::string& name) {
+    auto globalIt = globals_.find(name);
+    if (globalIt != globals_.end())
+        return globalIt->second;
     throw std::runtime_error("Undefined variable: " + name);
+}
+
+unsigned CodeGen::genGlobalAddress(const std::string& name) {
+    auto& global = findGlobal(name);
+    CType addressType = global.type;
+    ++addressType.pointerDepth;
+    return builder_->createGlobalAddress(toAirType(addressType, false), global.name.c_str());
 }
 
 bool CodeGen::currentBlockTerminated() const {

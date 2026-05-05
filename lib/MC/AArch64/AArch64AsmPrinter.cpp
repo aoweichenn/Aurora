@@ -1,8 +1,10 @@
 #include "Aurora/MC/AArch64/AArch64AsmPrinter.h"
 #include "Aurora/MC/MCStreamer.h"
+#include "Aurora/Air/Constant.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/CodeGen/MachineBasicBlock.h"
 #include "Aurora/CodeGen/MachineInstr.h"
+#include "Aurora/Air/Module.h"
 #include "Aurora/Target/AArch64/AArch64InstrInfo.h"
 #include "Aurora/Target/AArch64/AArch64RegisterInfo.h"
 #include "Aurora/Air/Function.h"
@@ -251,6 +253,28 @@ void AArch64AsmPrinter::emitFunctionHeader(MachineFunction& mf) {
 }
 
 void AArch64AsmPrinter::emitFunctionFooter(MachineFunction& /*mf*/) {}
+
+void AArch64AsmPrinter::emitGlobals(Module& mod) {
+    bool hasData = false;
+    for (auto& gv : mod.getGlobals()) {
+        if (!hasData) {
+            getStreamer().emitRawText(".data");
+            hasData = true;
+        }
+        const std::string symbol = symbolName(gv->getName());
+        getStreamer().emitRawText(".p2align 3");
+        getStreamer().emitGlobalSymbol(symbol);
+        getStreamer().emitLabel(symbol);
+        if (auto* init = gv->getInitializer()) {
+            if (auto* ci = dynamic_cast<ConstantInt*>(init))
+                getStreamer().emitRawText("\t.quad " + std::to_string(ci->getSExtValue()));
+            else
+                getStreamer().emitRawText("\t.quad 0");
+        } else {
+            getStreamer().emitRawText("\t.quad 0");
+        }
+    }
+}
 
 void AArch64AsmPrinter::printOperand(const MachineOperand& mo, std::ostream& os) const {
     switch (mo.getKind()) {

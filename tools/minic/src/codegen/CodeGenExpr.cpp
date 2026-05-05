@@ -44,14 +44,22 @@ unsigned CodeGen::genIntLitExpr(const IntLitExpr& ie) const {
 }
 
 unsigned CodeGen::genVarExpr(const VarExpr& ve) {
-    auto& variable = findVariable(ve.name);
+    if (auto* local = findVariableInScopes(ve.name)) {
+        if (local->type.arraySize > 0)
+            return genAddressOfVariable(ve);
+        return builder_->createLoad(toAirType(local->type, false), local->pointerVReg);
+    }
+    auto& variable = findGlobal(ve.name);
     if (variable.type.arraySize > 0)
-        return genAddressOfVariable(ve);
-    return builder_->createLoad(toAirType(variable.type, false), variable.pointerVReg);
+        throw std::runtime_error("Global arrays are not supported yet: " + ve.name);
+    return builder_->createLoad(toAirType(variable.type, false), genGlobalAddress(ve.name));
 }
 
 unsigned CodeGen::genAddressOfVariable(const VarExpr& ve) {
-    auto& variable = findVariable(ve.name);
+    auto* local = findVariableInScopes(ve.name);
+    if (!local)
+        return genGlobalAddress(ve.name);
+    auto& variable = *local;
     CType addressType = variable.type.arraySize > 0 ? variable.type.decayArray() : variable.type;
     if (variable.type.arraySize == 0)
         ++addressType.pointerDepth;
@@ -61,8 +69,10 @@ unsigned CodeGen::genAddressOfVariable(const VarExpr& ve) {
 
 CodeGen::LValue CodeGen::genLValue(const Expr& expr) {
     if (auto* variableExpr = dynamic_cast<const VarExpr*>(&expr)) {
-        auto& variable = findVariable(variableExpr->name);
-        return {variable.type, variable.pointerVReg};
+        if (auto* variable = findVariableInScopes(variableExpr->name))
+            return {variable->type, variable->pointerVReg};
+        auto& global = findGlobal(variableExpr->name);
+        return {global.type, genGlobalAddress(variableExpr->name)};
     }
 
     if (auto* unary = dynamic_cast<const UnaryExpr*>(&expr)) {
@@ -284,10 +294,14 @@ unsigned CodeGen::genIndexExpr(const IndexExpr& ie) {
 unsigned CodeGen::genSizeofExpr(const SizeofExpr& se) {
     CType type = se.type;
     if (se.expr) {
-        if (auto* variable = dynamic_cast<const VarExpr*>(se.expr.get()))
-            type = findVariable(variable->name).type;
-        else
+        if (auto* variable = dynamic_cast<const VarExpr*>(se.expr.get())) {
+            if (auto* local = findVariableInScopes(variable->name))
+                type = local->type;
+            else
+                type = findGlobal(variable->name).type;
+        } else {
             type = inferExprType(*se.expr);
+        }
     }
     return builder_->createConstantInt(static_cast<int64_t>(sizeOfType(type)));
 }

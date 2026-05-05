@@ -79,8 +79,11 @@ int64_t CodeGen::evalConstantExpr(const Expr& expr) const {
 }
 
 CType CodeGen::inferExprType(const Expr& expr) {
-    if (auto* variable = dynamic_cast<const VarExpr*>(&expr))
-        return findVariable(variable->name).type.decayArray();
+    if (auto* variable = dynamic_cast<const VarExpr*>(&expr)) {
+        if (auto* local = findVariableInScopes(variable->name))
+            return local->type.decayArray();
+        return findGlobal(variable->name).type.decayArray();
+    }
     if (auto* unary = dynamic_cast<const UnaryExpr*>(&expr)) {
         if (unary->op == UnaryExpr::AddressOf) {
             CType type = inferExprType(*unary->operand);

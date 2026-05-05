@@ -82,7 +82,7 @@ This document lists the main public interfaces exposed by the current headers. T
 ## tools/minic
 
 - `TokenKind` / `Token` / `Lexer`: lexical-analysis interfaces.
-- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, expressions, comparisons, arithmetic, `if`, calls, literals, and variables.
+- `Parser`: `parseProgram()`, plus parsing for function definitions/prototypes, top-level scalar globals, expressions, comparisons, arithmetic, `if`, calls, literals, and variables.
 - AST nodes: `IntLitExpr`, `VarExpr`, `BinaryExpr`, `NegExpr`, `IfExpr`, `Function`.
 - `CodeGen`: `generate()` turns AST into `aurora::Module`.
 

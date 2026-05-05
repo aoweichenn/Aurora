@@ -5,3 +5,4 @@
 #include "minic/ast/Expr.h"
 #include "minic/ast/Stmt.h"
 #include "minic/ast/Function.h"
+#include "minic/ast/Decl.h"

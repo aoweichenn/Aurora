@@ -30,8 +30,8 @@ bool Parser::match(TokenKind kind) {
     return false;
 }
 
-std::vector<Function> Parser::parseProgram() {
-    std::vector<Function> functions;
+Program Parser::parseProgram() {
+    Program program;
     while (current_.kind != TokenKind::Eof) {
         if (match(TokenKind::Typedef)) {
             parseTypedefDecl();
@@ -45,12 +45,18 @@ std::vector<Function> Parser::parseProgram() {
             CType enumType = parseType();
             if (match(TokenKind::Semicolon))
                 continue;
-            functions.push_back(parseFunctionRest(enumType));
+            parseTopLevelDecl(program, enumType, false);
             continue;
         }
-        functions.push_back(parseFunction());
+        if (current_.kind == TokenKind::Fn) {
+            program.functions.push_back(parseLegacyFunction());
+            continue;
+        }
+        const bool isExtern = current_.kind == TokenKind::Extern;
+        CType baseType = parseBaseType();
+        parseTopLevelDecl(program, baseType, isExtern);
     }
-    return functions;
+    return program;
 }
 
 Function Parser::parseFunction() {
@@ -63,6 +69,10 @@ Function Parser::parseFunction() {
 
 Function Parser::parseFunctionRest(CType returnType) {
     std::string name = consume(TokenKind::Ident).lexeme;
+    return parseFunctionRest(returnType, std::move(name));
+}
+
+Function Parser::parseFunctionRest(CType returnType, std::string name) {
     consume(TokenKind::LParen);
     std::vector<Param> params = parseParamList();
     consume(TokenKind::RParen);
@@ -70,6 +80,31 @@ Function Parser::parseFunctionRest(CType returnType) {
         return Function(returnType, std::move(name), std::move(params), nullptr);
     auto body = parseBlock();
     return Function(returnType, std::move(name), std::move(params), std::move(body));
+}
+
+void Parser::parseTopLevelDecl(Program& program, CType baseType, bool isExtern) {
+    do {
+        CType type = parsePointerSuffix(baseType);
+        std::string name = consume(TokenKind::Ident).lexeme;
+        if (current_.kind == TokenKind::LParen) {
+            program.functions.push_back(parseFunctionRest(type, std::move(name)));
+            return;
+        }
+
+        type = parseArraySuffix(type);
+        if (type.isVoid())
+            throw std::runtime_error("Global variable cannot have void type: " + name);
+
+        std::unique_ptr<Expr> init;
+        if (match(TokenKind::Assign)) {
+            if (isExtern)
+                throw std::runtime_error("Extern global declaration cannot have an initializer: " + name);
+            init = parseInitializer();
+        }
+        program.globals.emplace_back(type, std::move(name), std::move(init), isExtern);
+    } while (match(TokenKind::Comma));
+
+    consume(TokenKind::Semicolon);
 }
 
 Function Parser::parseLegacyFunction() {

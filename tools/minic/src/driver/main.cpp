@@ -1,6 +1,7 @@
 #include "minic/lex/Lexer.h"
 #include "minic/parse/Parser.h"
 #include "minic/codegen/CodeGen.h"
+#include "Aurora/Air/Constant.h"
 #include "Aurora/CodeGen/PassManager.h"
 #include "Aurora/CodeGen/MachineFunction.h"
 #include "Aurora/Target/TargetMachine.h"
@@ -78,14 +79,28 @@ int main(int argc, char** argv) {
         // Phase 1: Lex and Parse
         minic::Lexer lexer(source);
         minic::Parser parser(lexer);
-        auto functions = parser.parseProgram();
+        auto program = parser.parseProgram();
 
         // Phase 2: Generate AIR IR
         minic::CodeGen codegen;
-        auto module = codegen.generate(functions);
+        auto module = codegen.generate(program);
 
         // Phase 3: Print AIR IR
         std::cout << "; === AIR IR ===\n";
+        for (auto& gv : module->getGlobals()) {
+            std::cout << "@" << gv->getName() << " = global " << gv->getType()->toString();
+            if (auto* init = gv->getInitializer()) {
+                if (auto* value = dynamic_cast<ConstantInt*>(init))
+                    std::cout << " " << value->getSExtValue();
+                else
+                    std::cout << " 0";
+            } else {
+                std::cout << " 0";
+            }
+            std::cout << "\n";
+        }
+        if (!module->getGlobals().empty())
+            std::cout << "\n";
         for (auto& fn : module->getFunctions()) {
             auto* fnTy = fn->getFunctionType();
             std::cout << (fn->isDeclaration() ? "declare " : "define ") << fnTy->getReturnType()->toString() << " @" << fn->getName() << "(";
@@ -117,6 +132,7 @@ int main(int argc, char** argv) {
         if (backendTarget == BackendTarget::AArch64Apple) {
             const auto& ri = dynamic_cast<const AArch64RegisterInfo&>(tm->getRegisterInfo());
             AArch64AsmPrinter printer(streamer, ri);
+            printer.emitGlobals(*module);
             for (auto& fn : module->getFunctions()) {
                 if (fn->isDeclaration())
                     continue;
@@ -129,6 +145,7 @@ int main(int argc, char** argv) {
         } else {
             const auto& ri = dynamic_cast<const X86RegisterInfo&>(tm->getRegisterInfo());
             X86AsmPrinter printer(streamer, ri);
+            printer.emitGlobals(*module);
             for (auto& fn : module->getFunctions()) {
                 if (fn->isDeclaration())
                     continue;

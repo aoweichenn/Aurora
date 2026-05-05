@@ -114,7 +114,7 @@ public:
     [[nodiscard]] Function* getCalledFunction() const noexcept;
     [[nodiscard]] ICmpCond getICmpCondition() const noexcept;
     [[nodiscard]] int64_t getConstantValue() const noexcept { return constantVal_; }
-    [[nodiscard]] const char* getGlobalName() const noexcept { return globalName_; }
+    [[nodiscard]] const char* getGlobalName() const noexcept { return globalName_.empty() ? nullptr : globalName_.c_str(); }
     [[nodiscard]] const SmallVector<unsigned, 4>& getStructIndices() const { return gepIndices_; }
     [[nodiscard]] BasicBlock* getSwitchDefault() const noexcept;
     [[nodiscard]] const SmallVector<std::pair<int64_t, BasicBlock*>, 8>& getSwitchCases() const;
@@ -154,11 +154,10 @@ private:
     SmallVector<std::pair<BasicBlock*, unsigned>, 4> phiIncomings_;
     SmallVector<std::pair<int64_t, BasicBlock*>, 8> switchCases_;
     int64_t constantVal_ = 0;
-    const char* globalName_ = nullptr;
+    std::string globalName_;
 };
 
 [[nodiscard]] const char* opcodeName(AIROpcode op);
 [[nodiscard]] const char* icmpCondName(ICmpCond c);
 
 } // namespace aurora
-

@@ -82,7 +82,7 @@
 ## tools/minic
 
 - `TokenKind` / `Token` / `Lexer`：词法分析接口。
-- `Parser`：`parseProgram()`，以及函数定义 / 原型、表达式、比较、加减乘除、`if`、`call`、字面量、变量解析。
+- `Parser`：`parseProgram()`，以及函数定义 / 原型、顶层标量全局变量、表达式、比较、加减乘除、`if`、`call`、字面量、变量解析。
 - AST 结构：`IntLitExpr`、`VarExpr`、`BinaryExpr`、`NegExpr`、`IfExpr`、`Function`。
 - `CodeGen`：`generate()` 将 AST 转成 `aurora::Module`。
 

@@ -74,6 +74,12 @@ add_executable(MC_tests
 target_link_libraries(MC_tests PRIVATE AuroraMC AuroraTestCommon)
 add_test(NAME MC_tests COMMAND MC_tests)
 
+add_executable(MiniC_tests
+    MiniC/GlobalTest.cpp
+)
+target_link_libraries(MiniC_tests PRIVATE MiniCFrontend AuroraTestCommon)
+add_test(NAME MiniC_tests COMMAND MiniC_tests)
+
 # ---- Benchmarks ----
 if(AURORA_BUILD_BENCHMARKS)
     add_library(AuroraBenchCommon INTERFACE)

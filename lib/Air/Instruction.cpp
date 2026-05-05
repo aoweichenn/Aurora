@@ -171,7 +171,8 @@ AIRInstruction* AIRInstruction::createConstantInt(Type* ty, const int64_t val) {
 }
 AIRInstruction* AIRInstruction::createGlobalAddress(Type* ty, const char* globalName) {
     auto* i = new AIRInstruction(AIROpcode::GlobalAddress, ty);
-    i->globalName_ = globalName;
+    if (globalName)
+        i->globalName_ = globalName;
     return i;
 }
 AIRInstruction* AIRInstruction::createSwitch(Type* ty, const unsigned cond, BasicBlock* defaultBB,
@@ -324,7 +325,7 @@ std::string AIRInstruction::toString() const {
             for (auto& op : operands_) os << " %" << op;
             break;
         case AIROpcode::GlobalAddress:
-            os << " @" << (globalName_ ? globalName_ : "?");
+            os << " @" << (globalName_.empty() ? "?" : globalName_);
             break;
         default:
             break;

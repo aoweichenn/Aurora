@@ -318,6 +318,7 @@ private:
                 case AIROpcode::Load: a64Load(*mbb, mi); break;
                 case AIROpcode::Store: a64Store(*mbb, mi); break;
                 case AIROpcode::GetElementPtr: a64GEP(*mbb, mi); break;
+                case AIROpcode::GlobalAddress: a64GlobalAddress(*mbb, mi); break;
                 case AIROpcode::Call: a64Call(*mbb, mi); break;
                 case AIROpcode::SExt:
                 case AIROpcode::ZExt:
@@ -379,6 +380,19 @@ private:
             while (airInst) {
                 if (airInst->getOpcode() == AIROpcode::Call && airInst->hasResult() && airInst->getDestVReg() == resultVReg && airInst->getCalledFunction())
                     return airInst->getCalledFunction()->getName().c_str();
+                airInst = airInst->getNext();
+            }
+        }
+        return nullptr;
+    }
+
+    static const char* findGlobalNameForVReg(const Function& airFunc, const unsigned resultVReg) {
+        for (auto& airBB : airFunc.getBlocks()) {
+            const AIRInstruction* airInst = airBB->getFirst();
+            while (airInst) {
+                if (airInst->getOpcode() == AIROpcode::GlobalAddress &&
+                    airInst->hasResult() && airInst->getDestVReg() == resultVReg)
+                    return airInst->getGlobalName();
                 airInst = airInst->getNext();
             }
         }
@@ -569,6 +583,18 @@ private:
         auto* mov = new MachineInstr(AArch64::MOVrr);
         mov->addOperand(MachineOperand::createVReg(baseVReg));
         mov->addOperand(MachineOperand::createVReg(resultVReg));
+        replaceMI(mbb, mi, mov);
+    }
+
+    void a64GlobalAddress(MachineBasicBlock& mbb, MachineInstr* mi) {
+        const unsigned resultVReg = getResultVReg(mi);
+        auto* mov = new MachineInstr(AArch64::MOVri);
+        if (const char* globalName = findGlobalNameForVReg(mbb.getParent()->getAIRFunction(), resultVReg))
+            mov->addOperand(MachineOperand::createGlobalSym(globalName));
+        else
+            mov->addOperand(MachineOperand::createImm(0));
+        if (resultVReg != ~0U)
+            mov->addOperand(MachineOperand::createVReg(resultVReg));
         replaceMI(mbb, mi, mov);
     }
 

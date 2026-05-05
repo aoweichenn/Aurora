@@ -14,6 +14,7 @@ public:
 
     void emitBasicBlock(MachineBasicBlock& mbb) override;
     void emitInstruction(const MachineInstr& mi) override;
+    void emitGlobals(Module& mod) override;
 
 protected:
     void emitFunctionHeader(MachineFunction& mf) override;
